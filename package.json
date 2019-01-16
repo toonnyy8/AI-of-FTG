@@ -1,0 +1,31 @@
+{
+  "name": "electron-quick-start",
+  "version": "1.0.0",
+  "description": "A minimal Electron application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package_mac": "electron-packager . ai-electron --platform=darwin --arch=x64 --ignore=node_modules/electron-* ",
+    "package_win32": "electron-packager . ai-electron --platform=win32 --arch=x64 --ignore=node_modules/electron-* ",
+    "package_linux": "electron-packager . ai-electron --platform=linux --arch=x64 --ignore=node_modules/electron-* "
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "GitHub",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "@babel/standalone": "^7.2.5",
+    "electron": "^4.0.1"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^0.14.2",
+    "electron-packager": "^13.0.1",
+    "keyboardjs": "^2.5.1"
+  }
+}
