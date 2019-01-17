@@ -3,5 +3,7 @@
 
 ## 安裝
 >git clone https://github.com/toonnyy8/AI-of-FTG.git
+
 >npm install
+
 >npm run start
