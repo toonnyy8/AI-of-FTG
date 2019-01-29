@@ -14,4 +14,4 @@ npm run build
 npm start
 `
 
-然後在瀏覽器開啟`http://127.0.0.1:8080`
+然後在瀏覽器開啟`http://127.0.0.1:8080/build`
