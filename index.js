@@ -1,5 +1,5 @@
-const Koa = require('koa');
-const app = new Koa();
+const koa = require('koa');
+const app = new koa();
 const path = require('path');
 const serve = require('koa-static');
 
