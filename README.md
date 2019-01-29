@@ -4,7 +4,8 @@
 ## 安裝
 `
 git clone https://github.com/toonnyy8/AI-of-FTG.git
-
+`
+`
 cd AI-of-FTG
 
 npm i
