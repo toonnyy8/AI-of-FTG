@@ -6,7 +6,13 @@
     "dependencies": {
         "@babel/polyfill": "^7.2.5",
         "@tensorflow/tfjs": "^0.14.2",
+        "@types/chrome": "0.0.78",
+        "gpu": "^1.0.0",
+        "gpu.js": "^1.10.4",
+        "jimp": "^0.6.0",
         "koa": "^2.7.0",
+        "koa-body": "^4.0.7",
+        "koa-router": "^7.4.0",
         "koa-static": "^5.0.0",
         "parcel": "^1.11.0",
         "robotjs": "^0.5.1"

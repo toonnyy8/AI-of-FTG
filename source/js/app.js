@@ -1,19 +1,21 @@
 import "@babel/polyfill"
-import * as tf from "@tensorflow/tfjs"
+import "./kernel"
+import "./preview"
 
-// Define a model for linear regression.
-const model = tf.sequential()
-model.add(tf.layers.dense({ units: 1, inputShape: [1] }))
 
-model.compile({ loss: 'meanSquaredError', optimizer: 'sgd' })
-
-// Generate some synthetic data for training.
-const xs = tf.tensor2d([1, 2, 3, 4], [4, 1])
-const ys = tf.tensor2d([1, 3, 5, 7], [4, 1])
-
-// Train the model using the data.
-model.fit(xs, ys, { epochs: 10 }).then(() => {
-    // Use the model to do inference on a data point the model hasn't seen before:
-    model.predict(tf.tensor2d([5], [1, 1])).print()
-    // Open the browser devtools to see the output
-})
+function postData(url, data) {
+    // Default options are marked with *
+    return fetch(url, {
+        body: JSON.stringify(data), // must match 'Content-Type' header
+        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: 'same-origin', // include, same-origin, *omit
+        headers: {
+            'user-agent': 'Mozilla/4.0 MDN Example',
+            'content-type': 'application/json'
+        },
+        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        mode: 'no-cors', // no-cors, cors, *same-origin
+        redirect: 'follow', // manual, *follow, error
+        referrer: 'no-referrer', // *client, no-referrer
+    })
+}

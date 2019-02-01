@@ -2,7 +2,24 @@
 <html>
 
 <head>
-    <script src="../source/js/app.js"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flat-ui/2.3.0/css/flat-ui.css">
+
 </head>
+
+<body>
+    <div class="content">
+        <p class="ctrls">
+            <a id="recodBtn" class="btn btn-primary btn-large btn-block" href="#"><span class="fui-video-24"></span>開始錄制</a>
+            <a id="stopBtn" class="btn btn-large btn-block btn-danger" href="#">停止錄制</a>
+        </p>
+        <h3>Canvas的截錄畫面</h3>
+        <canvas id="canvas" style="width:800px" class="box"></canvas>
+        <canvas id="gray" style="width:800px" class="box"></canvas>
+    </div>
+    <script src="../source/js/app.js"></script>
+</body>
 
 </html>
