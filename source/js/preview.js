@@ -1,9 +1,8 @@
-import * as gpuJs from 'gpu.js'
-
+import * as gpuJs from "gpu.js"
 
 global.tempBuffer = {};
 
-(function (exports) {
+(async function (exports) {
     //API兼容處理
     exports.URL = exports.URL || exports.webkitURL
 
@@ -18,11 +17,11 @@ global.tempBuffer = {};
     var isRecoding = false
     //預覽影片，使用原始的dom物件操作
     var video = document.createElement("video")
-    var videoWidth = 192 * 2
-    var videoHeight = 108 * 2
+    var videoWidth = 192 //* 3
+    var videoHeight = 108 //* 3
     video.autoplay = true
-    video.height = videoHeight
     video.width = videoWidth
+    video.height = videoHeight
 
     //畫面展示需要，使用jquery dom 
     var dRecordBtn = document.getElementById("recodBtn")
@@ -31,53 +30,95 @@ global.tempBuffer = {};
 
     let preFrame
 
+    let originCanvas = document.createElement("canvas")
+    document.getElementById("view").appendChild(originCanvas)
     //錄制畫面用的canvas
-    var canvas = document.getElementById('canvas')
-    canvas.height = videoHeight
-    canvas.width = videoWidth
-
-    var ctx = canvas.getContext('2d')
+    originCanvas.width = videoWidth
+    originCanvas.height = videoHeight
+    originCanvas.style = "width:800px"
+    const ctx = originCanvas.getContext('2d')
     ctx.fillRect(0, 0, videoWidth, videoHeight)
-    //灰階canvas
-    var grayCanvas = document.getElementById('gray')
-    grayCanvas.height = videoHeight
-    grayCanvas.width = videoWidth
 
-    var gctx = grayCanvas.getContext('2d')
+    let img = new Image()
+    img.src = originCanvas.toDataURL()
 
-    let gpu = new GPU()
+    console.log(ctx.getImageData(0, 0, videoWidth, videoHeight))
 
-    const toGray = function (a) {
+    let greyCanvas = document.createElement("canvas")
+    document.getElementById("view").appendChild(document.createElement("br"))
+    document.getElementById("view").appendChild(greyCanvas)
+    //轉為灰階用的canvas
+    greyCanvas.width = videoWidth
+    greyCanvas.height = videoHeight
+
+    const gl = greyCanvas.getContext('webgl2', {})
+
+    console.log(gl)
+
+    let gpu = new GPU({
+        "mode": "gpu",
+        greyCanvas,
+        "webGl": gl
+    })
+
+    kernel = function (data) {
+        var x = this.thread.x,
+            y = this.thread.y
+
+        var n = 4 * (x + this.constants.w * (this.constants.h - y));
+        var grey = .399 * data[n] + .587 * data[n + 1] + .114 * data[n + 2]
+        this.color(grey / 255, grey / 255, grey / 255, 1);
+    }
+
+    const toGray = gpu.createKernel(
+        function (data) {
+            var x = this.thread.x,
+                y = this.thread.y
+
+            var n = 4 * (x + this.constants.w * (this.constants.h - y));
+            var grey = .399 * data[n] + .587 * data[n + 1] + .114 * data[n + 2]
+
+            this.color(grey / 255, grey / 255, grey / 255, 1);
+        }
+    )
+        .setConstants({ w: videoWidth, h: videoHeight })
+        .setOutput([videoWidth, videoHeight])
+        .setGraphical(true)
+        .setDebug(true)
+
+
+
+    /*const toGray = function (a) {
         let reA = new Array()
         for (var x = 0; x < a.width; x++) {
             for (var y = 0; y < a.height; y++) {
-
+ 
                 // Index of the pixel in the array  
                 var idx = (x + y * a.width) * 4;
                 var r = a.data[idx + 0];
                 var g = a.data[idx + 1];
                 var b = a.data[idx + 2];
-
+ 
                 // calculate gray scale value  
                 var gray = .299 * r + .587 * g + .114 * b;
-
+ 
                 // assign gray scale value  
                 reA.push(gray) // Red channel  
             }
         }
-
+ 
         return reA
     }
-
+ 
     const bufferDif = gpu.createKernel(function (a, b) {
         return Math.abs(a[this.thread.y][this.thread.x] - b[this.thread.y][this.thread.x])
-
+ 
     }).setOutput([videoWidth, videoHeight])
-
+ 
     const overlap = gpu.createKernel(function (a, b) {
         return Math.max(a[this.thread.y][this.thread.x], b[this.thread.y][this.thread.x] * 0.9)
-
-    }).setOutput([videoWidth, videoHeight])
+ 
+    }).setOutput([videoWidth, videoHeight])*/
     //準備用來存放 requestAnimationFrame 的id 以便在停止時取消Canvas的截錄繪制
     var rafId = null
     //準備畢來存放，cnavas的錄制相關的物件
@@ -96,28 +137,18 @@ global.tempBuffer = {};
         sourceTrack = stream.getTracks()[0]
 
         let grayBuffer = new Array()
-        let workingFrame = true
 
         function drawVideoFrame(time) {
             rafId = requestAnimationFrame(drawVideoFrame)
-            if (workingFrame) {
-                ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
 
-                grayBuffer.push(new Float32Array(toGray(ctx.getImageData(0, 0, videoWidth, videoHeight))))
+            toGray(new Float32Array(ctx.getImageData(0, 0, videoWidth, videoHeight).data))
 
-                let temp_ = bufferDif(gpuJs.input(grayBuffer.shift(), [videoWidth, videoHeight]), gpuJs.input(grayBuffer[0], [videoWidth, videoHeight]))
-                global.tempBuffer = overlap(gpuJs.input(global.tempBuffer, [videoWidth, videoHeight]), gpuJs.input(temp_, [videoWidth, videoHeight]))
-            }
-            workingFrame = !workingFrame
+            ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
         }
         //開始截取畫面並把requestAnimationFrame的id儲存起來以便控制
 
-        cStream = canvas.captureStream(30)
+        cStream = originCanvas.captureStream(60)
         recorder = new MediaRecorder(cStream)
-
-        grayBuffer.push(new Float32Array(toGray(ctx.getImageData(0, 0, videoWidth, videoHeight))))
-
-        global.tempBuffer = new Float32Array(toGray(ctx.getImageData(0, 0, videoWidth, videoHeight)))
 
         rafId = requestAnimationFrame(drawVideoFrame)
         recorder.start()
