@@ -4,24 +4,19 @@
     "description": "",
     "main": "index.js",
     "dependencies": {
-        "@babel/polyfill": "^7.2.5",
+        "@babel/polyfill": "^7.4.4",
         "@tensorflow/tfjs": "^0.14.2",
-        "@types/chrome": "0.0.78",
-        "gpu": "^1.0.0",
-        "gpu.js": "^1.10.4",
-        "jimp": "^0.6.0",
-        "koa": "^2.7.0",
-        "koa-body": "^4.0.7",
-        "koa-router": "^7.4.0",
-        "koa-static": "^5.0.0",
-        "parcel": "^1.11.0",
-        "robotjs": "^0.5.1"
+        "babylonjs": "^4.0.3",
+        "babylonjs-gui": "^4.0.3",
+        "babylonjs-loaders": "^4.0.3",
+        "cannon": "^0.6.2",
+        "parcel": "^1.12.3"
     },
     "devDependencies": {},
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node ./index.js",
-        "build": "parcel build ./view/index.html --out-dir build --public-url=./"
+        "dev": "parcel ./index.html -p 8080 --open",
+        "build": "parcel build ./index.html --out-dir build --public-url=./"
     },
     "keywords": [],
     "author": "",
