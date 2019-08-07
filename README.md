@@ -9,9 +9,13 @@ cd AI-of-FTG
 
 npm i
 
-npm run build
-
-npm start
+npm run dev
 ```
 
 然後在瀏覽器開啟`http://127.0.0.1:8080`
+
+## 建置
+```
+npm run build
+```
+開啟./build/index.html
