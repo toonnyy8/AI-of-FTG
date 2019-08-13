@@ -49,7 +49,7 @@ export class Actor {
         //collision boxes
         this._collisionBoxes = []
         this.skeleton.bones.forEach((bone, index) => {
-            let box = new BABYLON.MeshBuilder.CreateBox("box", { size: 0.2, updatable: true }, this.scene)
+            let box = new BABYLON.MeshBuilder.CreateBox("box", { size: 0.1, updatable: true }, this.scene)
             box.PhysicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 0 }, this.scene)
             box.material = new BABYLON.StandardMaterial("myMaterial", this.scene);
             box.material.alpha = 0
@@ -67,7 +67,7 @@ export class Actor {
                 Object.keys(this._actions[chapter][section]).forEach(subsection => {
                     this._actions[chapter][section][subsection].forEach((anim, subsubsection, animsArray) => {
                         animsArray[subsubsection] = animationGroup.clone()
-                        // console.log(`${chapter}:${section}:${subsection}:${subsubsection}`)
+                            // console.log(`${chapter}:${section}:${subsection}:${subsubsection}`)
                         animsArray[subsubsection].normalize(Actor.actionSet()[chapter][section][subsection][subsubsection].start / this.fps, Actor.actionSet()[chapter][section][subsection][subsubsection].end / this.fps)
                     })
                     let stateEqual = (subsubsection) => {
@@ -607,7 +607,8 @@ export class Actor {
                                     this._state.subsubsection = 0
                                 }
 
-                            } this.keyDown.squat = true
+                            }
+                            this.keyDown.squat = true
                         }
                         break;
                     }
@@ -946,22 +947,22 @@ export class Actor {
                 },
                 squat: {
                     main: [{
-                        start: 801,
-                        end: 820,
-                        atk: 0,
-                        speed: 3
-                    },
-                    {
-                        start: 821,
-                        end: 880,
-                        atk: 0
-                    },
-                    {
-                        start: 1101,
-                        end: 1120,
-                        atk: 0,
-                        speed: 3
-                    }
+                            start: 801,
+                            end: 820,
+                            atk: 0,
+                            speed: 3
+                        },
+                        {
+                            start: 821,
+                            end: 880,
+                            atk: 0
+                        },
+                        {
+                            start: 1101,
+                            end: 1120,
+                            atk: 0,
+                            speed: 3
+                        }
                     ],
                     // forward: [{
                     //     start: 881,
@@ -1048,43 +1049,41 @@ export class Actor {
                         atk: 0,
                         speed: 1.5
                     }],
-                    medium: [
-                        {
-                            start: 471,
-                            end: 485,
-                            atk: 0,
-                            speed: 1.5
-                        }, {
-                            start: 485,
-                            end: 493,
-                            atk: 240,
-                            speed: 1.5,
-                            boxes: [12],
-                            hitVector: [0, 0.25, 0]
-                        }, {
-                            start: 493,
-                            end: 510,
-                            atk: 0,
-                        }],
-                    large: [
-                        {
-                            start: 511,
-                            end: 520,
-                            atk: 0,
-                            speed: 1.8
-                        }, {
-                            start: 520,
-                            end: 555,
-                            atk: 500,
-                            speed: 4,
-                            boxes: [7, 6],
-                            hitVector: [0, -0.5, 0]
-                        }, {
-                            start: 555,
-                            end: 570,
-                            atk: 0,
-                            speed: 1.2
-                        }],
+                    medium: [{
+                        start: 471,
+                        end: 485,
+                        atk: 0,
+                        speed: 1.5
+                    }, {
+                        start: 485,
+                        end: 493,
+                        atk: 240,
+                        speed: 1.5,
+                        boxes: [12],
+                        hitVector: [0, 0.25, 0]
+                    }, {
+                        start: 493,
+                        end: 510,
+                        atk: 0,
+                    }],
+                    large: [{
+                        start: 511,
+                        end: 520,
+                        atk: 0,
+                        speed: 1.8
+                    }, {
+                        start: 520,
+                        end: 555,
+                        atk: 500,
+                        speed: 4,
+                        boxes: [7, 6],
+                        hitVector: [0, -0.5, 0]
+                    }, {
+                        start: 555,
+                        end: 570,
+                        atk: 0,
+                        speed: 1.2
+                    }],
                     fall: [{
                         start: 571,
                         end: 580,
@@ -1102,7 +1101,8 @@ export class Actor {
                         start: 601,
                         end: 630,
                         atk: 20,
-                        speed: 2, boxes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                        speed: 2,
+                        boxes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                         hitVector: [-0.1, 0, 0]
                     }]
                 },
@@ -1141,27 +1141,27 @@ export class Actor {
                         atk: 0
                     }],
                     large: [{
-                        start: 1041,
-                        end: 1051,
-                        atk: 0
-                    },
-                    {
-                        start: 1051,
-                        end: 1058,
-                        atk: 350,
-                        boxes: [12],
-                        hitVector: [0.00001, 0.32, 0]
-                    },
-                    {
-                        start: 1058,
-                        end: 1071,
-                        atk: 0,
-                        speed: 2
-                    }, {
-                        start: 1071,
-                        end: 1100,
-                        atk: 0
-                    }
+                            start: 1041,
+                            end: 1051,
+                            atk: 0
+                        },
+                        {
+                            start: 1051,
+                            end: 1058,
+                            atk: 350,
+                            boxes: [12],
+                            hitVector: [0.00001, 0.32, 0]
+                        },
+                        {
+                            start: 1058,
+                            end: 1071,
+                            atk: 0,
+                            speed: 2
+                        }, {
+                            start: 1071,
+                            end: 1100,
+                            atk: 0
+                        }
                     ]
                 }
             },
@@ -1289,16 +1289,16 @@ export class Actor {
                 },
                 reStand: {
                     main: [{
-                        start: 1300,
-                        end: 1301,
-                        atk: 0,
-                        speed: 0.1
-                    },
-                    {
-                        start: 1301,
-                        end: 1330,
-                        atk: 0
-                    }
+                            start: 1300,
+                            end: 1301,
+                            atk: 0,
+                            speed: 0.1
+                        },
+                        {
+                            start: 1301,
+                            end: 1330,
+                            atk: 0
+                        }
                     ]
                 }
             }
@@ -1339,7 +1339,7 @@ export class Actor {
                     this._actions[chapter][section][subsection].forEach((anim, subsubsection) => {
                         if (`${chapter}:${section}:${subsection}:${subsubsection}` != `${this._state["chapter"]}:${this._state["section"]}:${this._state["subsection"]}:${this._state["subsubsection"]}`) {
                             anim.stop()
-                        } else { }
+                        } else {}
                     })
                 }))
             }))
@@ -1357,7 +1357,7 @@ export class Actor {
         }
 
         this.stopAnimation()
-        this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/)
+        this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/ )
 
         // if (`${this._state["chapter"]}:${this._state["section"]}:${this._state["subsection"]}` == "normal:stand:main") {
         //     this.vector.x = 0
@@ -1676,7 +1676,7 @@ export class Actor {
         console.log(this.vector)
 
         this.beInjuredObj.atk = null
-        // this.isHit = false
+            // this.isHit = false
     }
 
     restart() {
