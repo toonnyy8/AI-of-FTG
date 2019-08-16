@@ -1,3 +1,4 @@
+import * as tf from "@tensorflow/tfjs"
 export class Transformer_XL {
     constructor({ }) {
         super()
