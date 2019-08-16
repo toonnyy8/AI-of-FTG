@@ -1,0 +1,30 @@
+{
+  "name": "tfjs-extensions",
+  "version": "1.0.0",
+  "description": "tfjs的補充庫",
+  "main": "index.js",
+  "dependencies": {
+    "@babel/polyfill": "^7.4.4",
+    "@tensorflow/tfjs": "^1.2.7",
+    "parcel": "^1.12.3"
+  },
+  "devDependencies": {
+    "typescript": "^3.5.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "parcel test/index.html -p 8080 --open",
+    "build": "parcel build --no-content-hash src/index.ts --out-dir build --public-url=./ "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toonnyy8/tfjs-extensions.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/toonnyy8/tfjs-extensions/issues"
+  },
+  "homepage": "https://github.com/toonnyy8/tfjs-extensions#readme"
+}
