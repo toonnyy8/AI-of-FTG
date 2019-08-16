@@ -1,5 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
-import { Transformer_XL } from "./transformer_xl"
+import { Transformer_XL } from "./Transformer_XL"
 
 declare class MirageNet {
     actionModel: tf.Model[]
