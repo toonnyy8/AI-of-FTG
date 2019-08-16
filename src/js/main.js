@@ -1,4 +1,6 @@
+import "@babel/polyfill"
 import * as game from "./game"
+import * as model from "./model/model"
 
 let main = () => {
     console.log("finished")
