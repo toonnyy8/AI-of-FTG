@@ -1,6 +1,7 @@
-import "@babel/polyfill"
+import "core-js/stable"
+import "regenerator-runtime/runtime"
 import * as game from "./game"
-import * as model from "./model/model"
+// import * as model from "./model/model"
 
 let main = () => {
     console.log("finished")

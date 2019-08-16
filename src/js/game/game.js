@@ -1,6 +1,4 @@
-import "@babel/polyfill"
-
-import * as BABYLON from './babylon-module'
+import * as BABYLON from './babylon-module.js'
 
 import * as slime from "../../../file/slime/slime.js"
 import * as CANNON from "cannon"
