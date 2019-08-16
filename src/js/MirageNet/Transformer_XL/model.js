@@ -2,8 +2,8 @@ import * as tf from "./node_modules/@tensorflow/tfjs"
 export class Transformer_XL {
     constructor({ }) {
         super()
-
     }
+
 }
 
 export function transformer_xl() {
