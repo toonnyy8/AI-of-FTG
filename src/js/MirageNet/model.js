@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import * as a3c from "./a3c"
 import * as dddqn from "./dddqn"
-import { transformer_xl } from "./transformer_xl"
+import { transformerXL } from "./transformerXL"
 
 //Forecast action reward status
 export class MirageNet {

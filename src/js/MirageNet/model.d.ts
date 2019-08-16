@@ -1,11 +1,11 @@
 import * as tf from "@tensorflow/tfjs"
-import { Transformer_XL } from "./Transformer_XL"
+import { TransformerXL } from "./transformerXL"
 
 declare class MirageNet {
-    actionModel: tf.Model[]
-    predictionNet: Transformer_XL
+    actionModel: tf.LayersModel
+    predictionNet: TransformerXL
     constructor({ }: { predictionNum: number, stepNum: number })
-    buildActionModel(): tf.Model
+    buildActionModel(): tf.LayersModel
     inference(): tf.Tensor
     loss(): tf.Tensor
     train(): void
