@@ -1,0 +1,15 @@
+{
+  "ecmaVersion": 8,
+  "libs": [
+    "browser"
+  ],
+  "loadEagerly": [
+      "./node_modules/@tensorflow/tfjs/dist/tf.js"
+  ],
+  "plugins": {
+    "modules": {},
+    "es_modules": {},
+    "node": {},
+    "node_resolve": {}
+  }
+}
