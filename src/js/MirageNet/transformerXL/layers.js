@@ -224,3 +224,12 @@ export function relMultiheadAttn(
     )
     return output
 }
+//----------embedding lookup
+export function embeddingLookup(args = { lookupTable, x }) {
+    return tfex.layers.lambda({
+        func: (lookupTable, x) => {
+            return tf.gather(lookupTable, x)
+        }
+    }).apply([args.lookupTable, args.x])
+}
+
