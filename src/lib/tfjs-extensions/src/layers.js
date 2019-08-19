@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
+import { TypeFlags } from "typescript";
 
 // https://github.com/GistNoesis/Wisteria/blob/master/tfjs/src/LayerNorm.js
 export class LayerNormalization extends tf.layers.Layer {
@@ -78,10 +79,9 @@ tf.serialization.registerClass(LayerNormalization)
 
 
 export class Lambda extends tf.layers.Layer {
-    constructor({ func = () => { }, outputShape = null }) {
+    constructor({ func = () => { } }) {
         super({})
         this.func = func
-        this.oS = outputShape
     }
 
     apply(inputs, kwargs) {
@@ -95,7 +95,31 @@ export class Lambda extends tf.layers.Layer {
     }
 
     computeOutputShape(inputShape) {
-        return this.oS || inputShape
+        console.log("compute output shape : ", inputShape)
+        return tf.tidy(() => {
+            let tempInput
+            let tempOutput
+            if (inputShape[0] != null) {
+                tempInput = inputShape.map((shape) => {
+                    shape.shift()
+                    return tf.ones(shape)
+                })
+                tempOutput = this.func(...tempInput)
+            } else {
+                inputShape.shift()
+                tempInput = tf.ones(inputShape)
+                tempOutput = this.func(tempInput)
+            }
+
+            if (tempOutput instanceof tf.Tensor) {
+                return [null].concat(tempOutput.shape)
+            } else {
+                return tempOutput.map((t) => {
+                    return [null].concat(t.shape)
+                })
+            }
+
+        })
     }
 
     /*
@@ -107,8 +131,8 @@ export class Lambda extends tf.layers.Layer {
     }
 }
 
-export function lambda({ func = () => { }, outputShape = null }) {
-    return new Lambda({ func, outputShape })
+export function lambda({ func = () => { } }) {
+    return new Lambda({ func })
 }
 
 // registerClass

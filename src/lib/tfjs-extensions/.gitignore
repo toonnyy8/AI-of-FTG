@@ -69,3 +69,5 @@ dist/
 #build/
 
 *.lnk
+
+chrome

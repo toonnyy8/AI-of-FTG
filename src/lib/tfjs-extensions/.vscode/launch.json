@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Chrome against localhost, with sourcemaps",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8080", // 前端URL
+            "port": 9222, // Chrome port 後續會設定
+            "sourceMaps": true, //開啟sourceMaps對應模式
+            "userDataDir": "${workspaceRoot}/.vscode/chrome", // 專案目錄的Extension的設定檔路徑
+            "webRoot": "${workspaceRoot}/src/" //實體的開發js目錄
+        }
+    ]
+}
