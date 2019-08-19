@@ -95,7 +95,6 @@ export class Lambda extends tf.layers.Layer {
     }
 
     computeOutputShape(inputShape) {
-        console.log("compute output shape : ", inputShape)
         return tf.tidy(() => {
             let tempInput
             let tempOutput

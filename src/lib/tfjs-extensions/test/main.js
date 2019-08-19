@@ -57,8 +57,10 @@ import * as tfex from "../src"
 //     console.log(`${msg}--kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`);
 // }
 
-let a = tfex.layers.lambda({ func: (x, y) => { return [tf.add(x, y), tf.add(x, y), tf.add(x, y)] }, outputShape: [3] })
+let a = tfex.layers.lambda({ func: (x, y) => { return [tf.add(x, y), tf.add(x, y), tf.add(x, y)] } })
 console.log(tf.memory())
-a.apply([tf.input({ shape: [3] }), tf.input({ shape: [3] })])
+console.log(
+    a.apply([tf.input({ shape: [3] }), tf.input({ shape: [3] })])
+)
 console.log(tf.memory())
 

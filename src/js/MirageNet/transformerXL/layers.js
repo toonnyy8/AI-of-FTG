@@ -5,7 +5,8 @@ import * as tfex from "../../../lib/tfjs-extensions/src"
 export function positionalEmbedding(
     args = {
         bsz: null,
-        outputShape
+        posSeq,
+        invFreq
     }
 ) {
     return tfex.layers.lambda({
@@ -18,129 +19,54 @@ export function positionalEmbedding(
             else {
                 return posEmb.expandDims(1)
             }
-        },
-        outputShape: args.outputShape
-    })
+        }
+    }).apply([args.posSeq, args.invFreq])
 }
 //----------positionwise feed forward
-export class PositionwiseFF extends tf.layers.Layer {
-    constructor(
-        args = {
-            dModel,
-            dInner,
-            dropout,
-            kernelInitializer,
-            isTraining: true
-        }
-    ) {
-        super({})
-        console.log(this.args)
-        this.dModel = args.dModel
-        this.dInner = args.dInner
-        this.dropout = args.dropout
-        this.kernelInitializer = args.kernelInitializer
-        this.isTraining = args.isTraining
-        //console.log("PositionwiseFF constructor")
-
-    }
-
-    build(inputShape) {
-        //console.log("PositionwiseFF build : ")
-
-        this.w_ = {
-            kernel1: this.addWeight(
-                "kernel1",
-                [
-                    inputShape.reduce((last, val) => last * val, 1),
-                    this.dInner
-                ],
-                "float32"
-            ),
-            bias1: this.addWeight(
-                "bias1",
-                [
-                    this.dInner
-                ],
-                "float32"
-            ),
-            kernel2: this.addWeight(
-                "kernel2",
-                [
-                    this.dInner,
-                    this.dModel
-                ],
-                "float32"
-            ),
-            bias2: this.addWeight(
-                "bias2",
-                [
-                    this.dModel
-                ],
-                "float32"
-            )
-        }
-        this.built = true
-    }
-
-    computeOutputShape(inputShape) {
-        //console.log("PositionwiseFF computeOutputShape")
-        //console.log(inputShape)
-        return inputShape
-    }
-
-    call(inputs, kwargs) {
-        let input = inputs
-        if (Array.isArray(input)) {
-            input = input[0]
-        }
-        //console.log("PositionwiseFF call")
-        this.invokeCallHook(inputs, kwargs)
-
-        return tf.tidy(() => {
-            return tf.dropout(
-                tf.dropout(
-                    input
-                        .reshape([-1])
-                        .dot(this.w_.kernel1)
-                        .add(this.w_.bias1),
-                    this.dropout
-                )
-                    .dot(this.w_.kernel2)
-                    .add(this.w_.bias2),
-                this.dropout
-            ).reshape([this.dModel])
-        })
-    }
-
-    /*
-    * If a custom layer class is to support serialization, it must implement
-    * the `className` static getter.
-    */
-    static get className() {
-        return "PositionwiseFF"
-    }
-
-    getClassName() {
-        return "PositionwiseFF"
-    }
-}
-tf.serialization.registerClass(PositionwiseFF)
-
-export function positionwiseFF(
+export function positionwise_FF(
     args = {
+        inp,
         dModel,
         dInner,
         dropout,
         kernelInitializer,
-        isTraining: true
+        isTraining = true
     }
 ) {
-    return new PositionwiseFF(args)
+    output = args.inp
+    let output = tf.layers.dense({
+        units: args.dInner,
+        activation: "relu",
+        kernelInitializer: args.kernelInitializer
+    }).apply(args.inp)
+    output = tf.layers.dropout({
+        rate: args.dropout,
+        trainable: args.isTraining
+    }).apply(output)
+
+    output = tf.layers.dense({
+        units: args.dModel,
+        activation: "relu",
+        kernelInitializer: args.kernelInitializer
+    }).apply(output)
+    output = tf.layers.dropout({
+        rate: args.dropout,
+        trainable: args.isTraining
+    }).apply(output)
+
+    output = tfex.layers.lambda({
+        func: (x, y) => {
+            return tf.add(x, y)
+        }
+    }).apply([output, args.inp])
+    output = tfex.layers.layerNormalization({ axis: -1 }).apply(output)
+
+    return output
 }
 //----------relative shift
 export function relShift(
     args = {
-        outputShape
+        x
     }
 ) {
     return tfex.layers.lambda({
@@ -151,185 +77,150 @@ export function relShift(
             x = tf.slice(x, [1, 0, 0, 0], [-1, -1, -1, -1])
             x = tf.reshape(x, x_size)
             return x
-        },
-        outputShape: outputShape
-    })
+        }
+    }).apply(args.x)
 }
 //----------relative multihead attnention
-export class RelMultiheadAttn extends tf.layers.Layer {
-    constructor(
-        args = {
-            dModel: null,
-            nHead: null,
-            dHead: null,
-            dropout: null,
-            dropatt: null,
-            isTraining: null,
-            kernelInitializer: null
-        }
-    ) {
-        super({})
-        console.log(this.args)
-        this.dModel = args.dModel
-        this.nHead = args.nHead
-        this.dHead = args.dHead
-        this.dropout = args.dropout
-        this.dropatt = args.dropatt
-        this.isTraining = args.isTraining
-        this.kernelInitializer = args.kernelInitializer
-        this.scale = 1 / (args.dHead ** 0.5)
-
-        this.isInput = {
-            w: false,
-            r: false,
-            r_wBias: false,
-            r_rBias: false,
-            attnMask: false,
-            mems: false
-        }
-        //console.log("RelMultiheadAttn constructor")
-
-    }
-
-    build(inputShape) {
-        //console.log("RelMultiheadAttn build : ")
-        // [w, r, r_wBias, r_rBias, attnMask, mems]
-        console.log(inputShape)
-        let catShape = this.isInput.mems && inputShape[5].length > 1 ? inputShape[0].concat(inputShape[5]) : inputShape[0].concat([])
-        this.qlen = inputShape[0][0]
-        this.rlen = inputShape[1][0]
-        this.bsz = inputShape[0][1]
-        this.klen = this.nHead * this.dHead * 3
-        console.log(this.qlen * this.bsz * this.nHead * this.dHead)
-        this.w_ = {
-            qkvKernel: this.addWeight(
-                "qkvKernel",
-                [
-                    catShape.reduce((last, val) => last * val, 1),
-                    this.nHead * this.dHead * 3
-                ],
-                "float32",
-                this.kernelInitializer
-            ),
-            qkvBias: this.addWeight(
-                "qkvBias",
-                [
-                    this.nHead * this.dHead * 3
-                ],
-                "float32",
-                this.kernelInitializer
-            ),
-            rKernel: this.addWeight(
-                "rKernel",
-                [
-                    inputShape[1].reduce((last, val) => last * val, 1),
-                    this.nHead * this.dHead
-                ],
-                "float32",
-                this.kernelInitializer
-            ),
-            rBias: this.addWeight(
-                "rBias",
-                [
-                    this.nHead * this.dHead
-                ],
-                "float32",
-                this.kernelInitializer
-            ),
-            oKernel: this.addWeight(
-                "oKernel",
-                [
-                    this.qlen * this.bsz * this.nHead * this.dHead,
-                    this.dModel
-                ],
-                "float32",
-                this.kernelInitializer
-            ),
-            oBias: this.addWeight(
-                "oBias",
-                [
-                    this.dModel
-                ],
-                "float32",
-                this.kernelInitializer
-            )
-        }
-        this.built = true
-    }
-
-    computeOutputShape(inputShape) {
-        // console.log("RelMultiheadAttn computeOutputShape")
-        console.log(inputShape)
-        return inputShape
-    }
-
-    apply(
-        args = {
-            w: null,
-            r: null,
-            r_wBias: null,
-            r_rBias: null,
-            attnMask: null,
-            mems: null
-        },
-        kwargs
-    ) {
-        return tf.tidy(() => {
-            Object.keys(this.isInput).forEach((inputKey) => {
-                if (args[inputKey] instanceof tf.Tensor) {
-                    this.isInput[inputKey] = true
-                } else {
-                    args[inputKey] = tf.tensor([false])
-                    this.isInput[inputKey] = false
-                    console.log(`RelMultiheadAttn : ${inputKey} is not entered or the type is not tensor`)
-                }
-            })
-            let inputs = [args.w, args.r, args.r_wBias, args.r_rBias, args.attnMask, args.mems]
-            return super.apply(inputs, kwargs)
-        })
-    }
-
-    call(inputs, kwargs) {
-        let args = {
-            w: inputs[0],
-            r: inputs[1],
-            r_wBias: inputs[2],
-            r_rBias: inputs[3],
-            attnMask: inputs[4],
-            mems: inputs[5]
-        }
-        console.log("RelMultiheadAttn call")
-        this.invokeCallHook(inputs, kwargs)
-
-        return tf.tidy(() => {
-            return
-        })
-    }
-
-    /*
-    * If a custom layer class is to support serialization, it must implement
-    * the `className` static getter.
-    */
-    static get className() {
-        return "RelMultiheadAttn"
-    }
-
-    getClassName() {
-        return "RelMultiheadAttn"
-    }
-}
-tf.serialization.registerClass(RelMultiheadAttn)
-
 export function relMultiheadAttn(
     args = {
+        w,
+        r,
+        rwBias,
+        rrBias,
+        attnMask,
+        mems,
         dModel,
         nHead,
         dHead,
         dropout,
         dropatt,
         isTraining,
-        kernelInitializer
+        kernelTnitializer
     }
 ) {
-    return new RelMultiheadAttn(args)
+    let scale = 1 / (args.dHead ** 0.5)
+    let qlen = args.w.shape[0]
+    let rlen = args.r.shape[0]
+    let bsz = args.w.shape[1]
+
+    let cat = args.mems != null && args.mems.shape.length > 1 ?
+        tfex.layers.lambda({
+            func: (mems, w) => {
+                return tf.concat([mems, w], 0)
+            }
+        }).apply([args.mems, args.w]) :
+        tfex.layers.lambda({
+            func: (w) => {
+                return w
+            }
+        }).apply(args.w)
+
+    let wHeads = tf.layers.dense(
+        {
+            units: 3 * args.nHead * args.dHead,
+            useBias: false,
+            kernelInitializer: args.kernelTnitializer,
+            name: 'qkv'
+        }
+    ).apply(cat)
+    let rHeadK = tf.layers.dense({
+        units: args.nHead * args.dHead,
+        useBias: false,
+        kernelInitializer: args.kernelTnitializer,
+        name: 'r'
+    }
+    ).apply(args.r)
+
+    let [wHeadQ, wHeadK, wHeadV] = tfex.layers.lambda({
+        func: (x) => {
+            return tf.split(x, 3, -1)
+        }
+    }).apply(wHeads)
+
+    wHeadQ = tfex.layers.lambda({
+        func: (x) => {
+            return tf.slice(x, x.shape[0] - qlen, qlen)
+        }
+    }).apply(wHeadQ)
+
+    klen = wHeadK.shape[0]
+
+    wHeadQ = tf.layers.reshape({ targetShape: [qlen, bsz, nHead, dHead] }).apply(wHeadW)
+    wHeadK = tf.layers.reshape({ targetShape: [klen, bsz, nHead, dHead] }).apply(wHeadK)
+    wHeadV = tf.layers.reshape({ targetShape: [klen, bsz, nHead, dHead] }).apply(wHeadV)
+
+    rHeadK = tf.layers.reshape({ targetShape: [rlen, nHead, dHead] }).apply(rHeadK)
+
+    let rwHeadQ = tf.layers.add().apply([wHeadQ, args.rwBias])
+    let rrHeadQ = tf.layers.add().apply([wHeadQ, args.rrBias])
+
+    AC = tfex.layers.lambda({
+        func: (x, y) => {
+            return tfex.einsum('ibnd,jbnd->ijbn', x, y)
+        }
+    }).apply([rwHeadQ, wHeadK])
+
+    BD = tfex.layers.lambda({
+        func: (x, y) => {
+            return tfex.einsum('ibnd,jnd->ijbn', x, y)
+        }
+    }).apply([rrHeadQ, rHeadK])
+    BD = relShift({ x: BD })
+
+    let attnScore = tf.layers.add().apply([AC, BD])
+    attnScore = tfex.layers.lambda({
+        func: (x) => {
+            return tf.mul(x, tf.tensor([scale]))
+        }
+    }).apply(attnScore)
+
+    let attnMaskT = tfex.layers.lambda({
+        func: (x) => {
+            return x.expandDims(2).expandDims(3)
+        }
+    }).apply(attnMask)
+
+    attnScore = tf.layers.add().apply(
+        [
+            tf.layers.multiply().apply(
+                [
+                    attnScore,
+                    tfex.layers.lambda({
+                        func: (x) => {
+                            return tf.sub(tf.tensor([1]), x)
+                        }
+                    }).apply(attnMaskT)
+                ]
+            ),
+            tfex.layers.lambda({
+                func: (x) => {
+                    return tf.mul(tf.tensor([- 1e30]), x)
+                }
+            }).apply(attnMaskT)
+        ]
+    )
+
+    let attnProb = tf.layers.softmax({ axis: 1 }).apply(attnScore)
+    attnProb = tf.layers.dropout({ rate: args.dropatt, trainable: args.isTraining }).apply(attnProb)
+
+    let attnVec = tfex.layers.lambda({
+        func: (x, y) => {
+            return tf.einsum('ijbn,jbnd->ibnd', x, y)
+        }
+    }).apply([attnProb, wHeadV])
+    sizeT = attnVec.shape
+    attnVec = tf.layers.reshape({ targetShape: [sizeT[0], sizeT[1], args.nHead * args.dHead] }).apply(attnVec)
+
+    let attnOut = tf.layers.dense({
+        units: args.dModel,
+        useBias: false,
+        kernelInitializer: args.kernelInitializer,
+        name: 'o'
+    }).apply(attnVec)
+    attnOut = tf.layers.dropout({ rate: args.dropout, trainable: args.isTraining }).apply(attnOut)
+
+    output = tfex.layers.layerNormalization({ axis: -1 }).apply(
+        tf.layers.add().apply([attnOut, args.w])
+    )
+    return output
 }
