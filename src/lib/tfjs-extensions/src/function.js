@@ -25,7 +25,7 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
                 console.error("axis ${at} is not at axises")
             }
 
-            axises.sort(function(a, b) { //由大到小排序
+            axises.sort(function (a, b) { //由大到小排序
                 if (a > b) return -1;
                 if (a < b) return 1;
                 return 0;
@@ -156,7 +156,7 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
             }, [])
 
         return operand.
-        transpose(inputInfo.map((info) => info.axis))
+            transpose(inputInfo.map((info) => info.axis))
             .reshape([-1])
             .gather(indices)
             .sum(tagSum)
@@ -228,17 +228,17 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
 
         operands.unshift(
             x
-            .reshape([-1, 1])
-            .dot(y.reshape([1, -1]))
-            .reshape(x.shape.concat(y.shape))
+                .reshape([-1, 1])
+                .dot(y.reshape([1, -1]))
+                .reshape(x.shape.concat(y.shape))
         )
         subscript.inputs.unshift(
             inputInfo.x
-            .reduce((last, info) => last + info.tag, "")
-            .concat(
-                inputInfo.y
                 .reduce((last, info) => last + info.tag, "")
-            )
+                .concat(
+                    inputInfo.y
+                        .reduce((last, info) => last + info.tag, "")
+                )
         )
 
         if (subscript.inputs.length == 1) {
@@ -246,5 +246,19 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
         } else {
             return einsumMultipleInput(subscript, operands)
         }
+    })
+}
+
+export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) {
+    return tf.tidy(() => {
+        let [M, N] = [input.shape[input.shape.length - 2], input.shape[input.shape.length - 1]]
+        let output = input.reshape([-1, M, N])
+        let inBand = tf.tensor(new Array(M * N).fill(1).map((_, idx) => {
+            let n = idx % N
+            let m = (idx - n) / N
+            return (numLower < 0 || (m - n) <= numLower) && (numUpper < 0 || (n - m) <= numUpper)
+        }), [1, M, N])
+
+        return tf.mul(output, inBand).reshape(input.shape)
     })
 }

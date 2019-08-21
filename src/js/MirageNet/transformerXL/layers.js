@@ -68,7 +68,7 @@ export function positionwise_FF(
             activation: "relu",
             name: "layer_1",
             scope: args.scope
-                // kernelInitializer: args.kernelInitializer
+            // kernelInitializer: args.kernelInitializer
         })
 
         output = tf.layers.dropout({
@@ -82,7 +82,7 @@ export function positionwise_FF(
             activation: "relu",
             name: "layer_2",
             scope: args.scope
-                // kernelInitializer: args.kernelInitializer
+            // kernelInitializer: args.kernelInitializer
         })
 
         output = tf.layers.dropout({
@@ -249,7 +249,7 @@ export function maskAdaptiveEmbeddingLookup(
 ) {
     return tf.tidy(() => {
         emb_scale = d_proj ** 0.5
-            // if (div_val == 1) {
+        // if (div_val == 1) {
         let lookup_table = args.scope.getVariable('lookup_table', [n_token, d_embed], true, "float32")
         let proj_W
         let y = embeddingLookup({ lookupTable: lookup_table, x: x })
@@ -262,8 +262,84 @@ export function maskAdaptiveEmbeddingLookup(
             proj_W = null
         }
         let ret_params = [lookup_table, proj_W]
-            // }
+        // }
         y = tf.mul(y, tf.tensor([emb_scale]))
         return [y, ret_params]
     })
+}
+
+export function maskAdaptiveLogsoftmax(
+    args = {
+        hidden,
+        target,
+        n_token,
+        d_embed,
+        d_proj,
+        cutoffs,
+        params,
+        tie_projs,
+        initializer = None,
+        proj_initializer = None,
+        div_val = 1,
+        scope = 'adaptive_softmax',
+        proj_same_dim = True,
+        return_mean = True,
+        scope: tfex.scope
+    }
+) {
+    return tf.tidy(() => {
+        let _logit = (x, W, b, proj) => {
+            return tf.tidy(() => {
+                let y = x
+                if (proj != null) {
+                    y = tf.einsum('ibd,ed->ibe', y, proj)
+                }
+                return tf.add(tf.einsum('ibd,nd->ibn', y, W), b)
+            })
+        }
+
+        params_W = params[0]
+        params_projs = params[1]
+
+
+        // if (len(cutoffs) == 0) {}
+        let softmax_b = args.scope.getVariable('bias', [n_token],
+            // initializer = tf.zeros_initializer()
+        )
+        let output = _logit(hidden, params_W, softmax_b, params_projs)
+        let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(args.target, output.shape[1]), output)
+        // }
+
+
+        if (return_mean) {
+            nll = tf.reduce_mean(nll)
+        }
+        return nll
+    })
+}
+
+export function _create_mask(qlen, mlen, same_length = false) {
+    attn_mask = tf.ones([qlen, qlen])
+    mask_u = tfex.matrixBandPart(attn_mask, 0, -1)
+    mask_dia = tfex.matrixBandPart(attn_mask, 0, 0)
+    attn_mask_pad = tf.zeros([qlen, mlen])
+    ret = tf.concat([attn_mask_pad, tf.sub(mask_u, mask_dia)], 1)
+    // if (same_length) {
+    //     mask_l = tf.matrix_band_part(attn_mask, -1, 0)
+    //     ret = tf.concat([ret[: , : qlen] + mask_l - mask_dia, ret[:, qlen:]], 1)
+    // }
+    return ret
+}
+export function _cache_mem(curr_out, prev_mem, mem_len = None) {
+    let new_mem
+    if (mem_len == null || prev_mem == null) {
+        new_mem = curr_out
+    } else if (mem_len == 0) {
+        return prev_mem
+    } else {
+        new_mem = tf.concat([prev_mem, curr_out], 0)
+        new_mem = tf.slice(new_mem, [new_mem.shape[0] - mem_len], [new_mem.shape[0] - 1])
+    }
+    return tf.stop_gradient(new_mem)
+
 }
