@@ -1,83 +1,43 @@
 import * as tf from "@tensorflow/tfjs"
 
-let tfexVariables = []
+export class VariableScope {
+    constructor(name) {
+        this.scopeName = `${name == undefined ? "" : name}`
 
-export function getVariable({ Name = "name", scopeName = "scopeName" || ["scope1Name", "scope2Name"], trainable = null || true || false }) {
-    let returnVars = tfexVariables
+        if (Object.keys(VariableScope._scopeList).find((scopeListName) => this.scopeName == scopeListName) == undefined) {
+            this._variableList = {}
+            VariableScope._scopeList[this.scopeName] = this
+        }
 
-    if (Name) {
-        returnVars = returnVars.filter((value, index, obj) => {
-            return value.name.split("/").slice(-1) == Name
-        })
+        return VariableScope._scopeList[this.scopeName]
     }
 
-    if (scopeName) {
-        if (Array.isArray(scopeName)) {
-            returnVars = returnVars.filter((value, index, obj) => {
-                let scopes = value.name.split("/")
-                let scopeTrue = true
-                for (let i = 0; i < scopeName.length && scopeTrue; i++) {
-                    scopeTrue = scopes[i] == scopeName[i]
-                }
-                return scopeTrue
-            })
+    variableScope(name) {
+        return new VariableScope(`${this.scopeName}/${name}`)
+    }
+
+    getVariable(name, shape, trainable = true, dtype = "float32") {
+        if (Object.keys(this._variableList).find((variableListName) => name == variableListName) == undefined) {
+            this._variableList[name] = tf.tidy(() => tf.variable(tf.randomNormal(shape).cast(dtype), trainable, `${this.scopeName}/${name}`, dtype))
+        }
+        return this._variableList[name]
+    }
+
+    dispose(name) {
+        if (name != null) {
+            this._variableList[name].dispose()
+            delete this._variableList[name]
         } else {
-            returnVars = returnVars.filter((value, index, obj) => {
-                return !!value.name.split("/").find((value1, index1, obj1) => {
-                    return value1 == scopeName
-                })
+            Object.keys(this._variableList).forEach((key) => {
+                this._variableList[key].dispose()
             })
+            this._variableList = {}
         }
     }
 
-    if (trainable != null && trainable != undefined) {
-        returnVars = returnVars.filter((value, index, obj) => {
-            return value.trainable == trainable
-        })
+    get scopeList() {
+        return JSON.parse(JSON.stringify(VariableScope._scopeList))
     }
-    return returnVars
+
 }
-
-export function variableScope(scopeName = "scopeName" || ["scope1Name", "scope2Name"], variables = [tf.variable()] || null, joinScope = true, autoCheck = false) {
-    if (variables != [] && variables != null && variables != undefined) {
-        variables.map((x) => {
-            let tempOldScope = x.name.split("/")
-            let tempName = ""
-            for (let i = 0; i < tempOldScope.length - 1; i++) {
-                tempName += `${tempOldScope[i]}/`
-            }
-
-            if (Array.isArray(scopeName)) {
-                x.name = `${tempName}${scopeName.join("/")}/${tempOldScope.slice(-1)}`
-            } else {
-                x.name = `${tempName}${scopeName}/${tempOldScope.slice(-1)}`
-            }
-
-            if (joinScope) {
-                if (!autoCheck || !tfexVariables.find((value, index, obj) => {
-                    return value === x
-                })) {
-                    tfexVariables.push(x)
-                }
-            }
-
-            return x
-        })
-    }
-    return (f = (Vars = [tf.variable()]) => { }) => {
-        for (let i = 0; i < tfexVariables.length; i++) {
-            tfexVariables[i].trainable = false
-        }
-
-        let Vars = getVariable({ Name: null, scopeName: scopeName, trainable: null })
-        for (let i = 0; i < Vars.length; i++) {
-            Vars[i].trainable = true
-        }
-
-        f(Vars)
-
-        for (let i = 0; i < tfexVariables.length; i++) {
-            tfexVariables[i].trainable = true
-        }
-    }
-}
+VariableScope._scopeList = {}
