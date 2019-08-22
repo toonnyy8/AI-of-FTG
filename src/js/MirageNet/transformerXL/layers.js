@@ -319,27 +319,42 @@ export function maskAdaptiveLogsoftmax(
 }
 
 export function _create_mask(qlen, mlen, same_length = false) {
-    attn_mask = tf.ones([qlen, qlen])
-    mask_u = tfex.matrixBandPart(attn_mask, 0, -1)
-    mask_dia = tfex.matrixBandPart(attn_mask, 0, 0)
-    attn_mask_pad = tf.zeros([qlen, mlen])
-    ret = tf.concat([attn_mask_pad, tf.sub(mask_u, mask_dia)], 1)
-    // if (same_length) {
-    //     mask_l = tf.matrix_band_part(attn_mask, -1, 0)
-    //     ret = tf.concat([ret[: , : qlen] + mask_l - mask_dia, ret[:, qlen:]], 1)
-    // }
-    return ret
+    return tf.tidy(() => {
+        attn_mask = tf.ones([qlen, qlen])
+        mask_u = tfex.matrixBandPart(attn_mask, 0, -1)
+        mask_dia = tfex.matrixBandPart(attn_mask, 0, 0)
+        attn_mask_pad = tf.zeros([qlen, mlen])
+        ret = tf.concat([attn_mask_pad, tf.sub(mask_u, mask_dia)], 1)
+        // if (same_length) {
+        //     mask_l = tf.matrix_band_part(attn_mask, -1, 0)
+        //     ret = tf.concat([ret[: , : qlen] + mask_l - mask_dia, ret[:, qlen:]], 1)
+        // }
+        return ret
+    })
 }
-export function _cache_mem(curr_out, prev_mem, mem_len = None) {
-    let new_mem
-    if (mem_len == null || prev_mem == null) {
-        new_mem = curr_out
-    } else if (mem_len == 0) {
-        return prev_mem
-    } else {
-        new_mem = tf.concat([prev_mem, curr_out], 0)
-        new_mem = tf.slice(new_mem, [new_mem.shape[0] - mem_len], [new_mem.shape[0] - 1])
-    }
-    return tf.stop_gradient(new_mem)
 
+
+export function _cache_mem(curr_out, prev_mem, mem_len = None) {
+    tf.customGrad((x, save) => {
+        // Save x to make sure it's available later for the gradient.
+        save([x]);
+        // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+        return {
+            value: x.square(),
+            // Note `saved.x` which points to the `x` we saved earlier.
+            gradFunc: (dy, saved) => [tf.zeros(saved[0].shape)]
+        };
+    });
+    return tf.tidy(() => {
+        let new_mem
+        if (mem_len == null || prev_mem == null) {
+            new_mem = curr_out
+        } else if (mem_len == 0) {
+            return prev_mem
+        } else {
+            new_mem = tf.concat([prev_mem, curr_out], 0)
+            new_mem = tf.slice(new_mem, [new_mem.shape[0] - mem_len], [new_mem.shape[0] - 1])
+        }
+        return tf.stop_gradient(new_mem)
+    })
 }
