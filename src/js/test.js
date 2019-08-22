@@ -6,11 +6,23 @@ import * as tfex from "../lib/tfjs-extensions/src"
 // console.log(transformerXL)
 console.log(tf.memory())
 
-let input = tf.tensor([[0, 1, 2, 3],
-[-1, 0, 1, 2],
-[-2, -1, 0, 1],
-[-3, -2, -1, 0]])
+// f(x) = x ^ 2
+let h = (x) => {
+    return tf.tidy(() => {
+        let y = x.square().square()
+        return y
+    })
+}
+const f = (x) => {
+        return tf.tidy(() => {
+            let y = tf.mul(h(x), x)
+            return y
+        })
+    }
+    // f'(x) = 2x
+const fg = tf.grad(f);
 
-tfex.matrixBandPart(input, 0, -1).print()
+const x = tf.tensor1d([2, 3]);
+fg(x).print();
 
 console.log(tf.memory())
