@@ -7,14 +7,16 @@ import * as tfex from "../lib/tfjs-extensions/src"
 console.log(tf.memory())
 
 const customOp = tf.customGrad((x, y, save) => {
-    // Save x to make sure it's available later for the gradient.
-    save([x, y]);
-    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-    return {
-        value: tf.mul(x, y).square(),
-        // Note `saved.x` which points to the `x` we saved earlier.
-        gradFunc: (dy, saved) => [tf.zeros(saved[0].shape), tf.zeros(saved[1].shape)]
-    };
+    return tf.tidy(() => {
+        // Save x to make sure it's available later for the gradient.
+        save([x, y]);
+        // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+        return {
+            value: tf.mul(x, y).square(),
+            // Note `saved.x` which points to the `x` we saved earlier.
+            gradFunc: (dy, saved) => [tf.zeros(saved[0].shape), tf.zeros(saved[1].shape)]
+        };
+    })
 });
 
 const x = tf.tensor1d([-1, -2, 3]);
@@ -26,6 +28,6 @@ const dx = tf.grads((x, y) => customOp(x, y));
 console.log(`f(x,y):`);
 f(x, y).print();
 console.log(`f'(x,y):`);
-dx([x, y])[0].print();
+// dx([x, y])[0].print();
 
 console.log(tf.memory())
