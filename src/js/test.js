@@ -7,5 +7,10 @@ console.log(transformerXL)
 console.log(tf.memory())
 
 let a = tf.initializers.constant({ value: 1 })
+    // transformerXL.transformer({
+
+//     },
+//     tfex.scope.variableScope("transformerXL")
+// )
 
 console.log(tf.memory())
