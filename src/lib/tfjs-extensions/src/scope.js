@@ -16,9 +16,11 @@ export class VariableScope {
         return new VariableScope(`${this.scopeName}/${name}`)
     }
 
-    getVariable(name, shape, trainable = true, dtype = "float32") {
+    getVariable(name, shape, dtype = "float32", initializer = tf.initializers.randomNormal({ mean: 0, stddev: 1, seed: 1 }), trainable = true) {
         if (Object.keys(this._variableList).find((variableListName) => name == variableListName) == undefined) {
-            this._variableList[name] = tf.tidy(() => tf.variable(tf.randomNormal(shape).cast(dtype), trainable, `${this.scopeName}/${name}`, dtype))
+            this._variableList[name] = tf.tidy(() => {
+                return tf.variable(initializer.apply(shape, dtype), trainable, `${this.scopeName}/${name}`, dtype)
+            })
         }
         return this._variableList[name]
     }

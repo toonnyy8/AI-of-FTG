@@ -5,7 +5,9 @@ export declare class VariableScope {
     scopeList: Object
     constructor(name: String)
     variableScope(name: String): VariableScope
-    getVariable(name: String, shape?: Number[], trainable?: Boolean, dtype?: "float32" | "int32" | "bool" | "complex64" | "string"): tf.Variable
+    getVariable(
+        name: String, shape?: Number[], dtype?: "float32" | "int32" | "bool" | "complex64" | "string", initializer ?:tf.serialization.Serializable, trainable ?: Boolean
+        ): tf.Variable
     dispose(name?: String): void
 }
 
