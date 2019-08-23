@@ -57,7 +57,7 @@ export function positionwiseFF(
         dInner,
         dropout,
         kernelInitializer,
-        isTraining = true
+        isTraining: true
     },
     scope = tfex.scope
 ) {
@@ -237,7 +237,7 @@ export function maskAdaptiveEmbeddingLookup(
         x,
         nToken,
         dEmbed,
-        d_proj,
+        dProj,
         cutoffs,
         initializer,
         projInitializer,
@@ -247,23 +247,23 @@ export function maskAdaptiveEmbeddingLookup(
     scope = tfex.scope
 ) {
     return tf.tidy(() => {
-        emb_scale = d_proj ** 0.5
+        let embScale = args.dProj ** 0.5
             // if (args.divVal == 1) {
         let lookup_table = scope.getVariable('lookup_table', [args.nToken, args.dEmbed], true, "float32")
-        let proj_W
+        let projW
         let y = embeddingLookup({ lookupTable: lookup_table, x: x })
-        if (d_proj != args.dEmbed) {
-            proj_W = scope.getVariable(
-                'proj_W', [args.dEmbed, d_proj], true, "float32"
+        if (args.dProj != args.dEmbed) {
+            projW = scope.getVariable(
+                'projW', [args.dEmbed, args.dProj], true, "float32"
             )
-            y = tfex.einsum('ibe,ed->ibd', y, proj_W)
+            y = tfex.einsum('ibe,ed->ibd', y, projW)
         } else {
-            proj_W = null
+            projW = null
         }
-        let ret_params = [lookup_table, proj_W]
+        let retParams = [lookup_table, projW]
             // }
-        y = tf.mul(y, tf.tensor([emb_scale]))
-        return [y, ret_params]
+        y = tf.mul(y, tf.tensor([embScale]))
+        return [y, retParams]
     })
 }
 
@@ -273,15 +273,15 @@ export function maskAdaptiveLogsoftmax(
         target,
         nToken,
         dEmbed,
-        d_proj,
+        dProj,
         cutoffs,
         params,
         tieProjs,
-        initializer = null,
-        projInitializer = null,
-        divVal = 1,
-        projSameDim = true,
-        return_mean = true
+        initializer: null,
+        projInitializer: null,
+        divVal: 1,
+        projSameDim: true,
+        return_mean: true
     },
     scope = tfex.scope
 ) {
@@ -296,15 +296,15 @@ export function maskAdaptiveLogsoftmax(
             })
         }
 
-        params_W = params[0]
-        params_projs = params[1]
+        let paramsW = params[0]
+        let paramsProjs = params[1]
 
 
         // if (len(cutoffs) == 0) {}
         let softmax_b = scope.getVariable('bias', [args.nToken],
             // initializer = tf.zeros_initializer()
         )
-        let output = _logit(hidden, params_W, softmax_b, params_projs)
+        let output = _logit(hidden, paramsW, softmax_b, paramsProjs)
         let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(args.target, output.shape[1]), output)
             // }
 
@@ -316,23 +316,23 @@ export function maskAdaptiveLogsoftmax(
     })
 }
 
-export function _create_mask(qlen, mlen, sameLength = false) {
+export function _createMask(qlen, mlen, sameLength = false) {
     return tf.tidy(() => {
-        attn_mask = tf.ones([qlen, qlen])
-        mask_u = tfex.matrixBandPart(attn_mask, 0, -1)
-        mask_dia = tfex.matrixBandPart(attn_mask, 0, 0)
-        attn_mask_pad = tf.zeros([qlen, mlen])
-        ret = tf.concat([attn_mask_pad, tf.sub(mask_u, mask_dia)], 1)
+        let attnMask = tf.ones([qlen, qlen])
+        let maskU = tfex.matrixBandPart(attnMask, 0, -1)
+        let maskDia = tfex.matrixBandPart(attnMask, 0, 0)
+        let attnMaskPad = tf.zeros([qlen, mlen])
+        let ret = tf.concat([attnMaskPad, tf.sub(maskU, maskDia)], 1)
             // if (args.sameLength) {
-            //     mask_l = tf.matrix_band_part(attn_mask, -1, 0)
-            //     ret = tf.concat([ret[: , : qlen] + mask_l - mask_dia, ret[:, qlen:]], 1)
+            //     mask_l = tf.matrix_band_part(attnMask, -1, 0)
+            //     ret = tf.concat([ret[: , : qlen] + mask_l - maskDia, ret[:, qlen:]], 1)
             // }
         return ret
     })
 }
 
 
-export function _cache_mem(curr_out, prev_mem, memLen = null) {
+export function _cacheMem(currOut, prevMem, memLen = null) {
     return tf.customGrad((x, y, save) => {
         return tf.tidy(() => {
             // Save x to make sure it's available later for the gradient.
@@ -340,39 +340,39 @@ export function _cache_mem(curr_out, prev_mem, memLen = null) {
             // Override gradient of our custom x ^ 2 op to be dy * abs(x);
             return {
                 value: (() => {
-                    let new_mem
-                    if (args.memLen == null || prev_mem == null) {
-                        new_mem = curr_out
+                    let newMem
+                    if (args.memLen == null || prevMem == null) {
+                        newMem = currOut
                     } else if (args.memLen == 0) {
-                        return prev_mem
+                        return prevMem
                     } else {
-                        new_mem = tf.concat([prev_mem, curr_out], 0)
-                        new_mem = tf.slice(new_mem, [new_mem.shape[0] - args.memLen], [new_mem.shape[0] - 1])
+                        newMem = tf.concat([prevMem, currOut], 0)
+                        newMem = tf.slice(newMem, [newMem.shape[0] - args.memLen], [newMem.shape[0] - 1])
                     }
-                    return new_mem
+                    return newMem
                 })(),
                 // Note `saved.x` which points to the `x` we saved earlier.
                 gradFunc: (dy, saved) => [tf.zeros(saved[0].shape), tf.zeros(saved[1].shape)]
             }
         })
-    })(curr_out, prev_mem)
+    })(currOut, prevMem)
 }
 
 export function transformer(args = {
-        decInp,
-        target,
-        mems,
-        nToken,
-        nLayer,
-        dModel,
-        dEmbed,
-        nHead,
-        dHead,
-        dInner,
-        dropout,
-        dropatt,
-        initializer,
-        isTraining,
+        decInp: null,
+        target: null,
+        mems: null,
+        nToken: null,
+        nLayer: null,
+        dModel: null,
+        dEmbed: null,
+        nHead: null,
+        dHead: null,
+        dInner: null,
+        dropout: null,
+        dropatt: null,
+        initializer: null,
+        isTraining: null,
         projInitializer: null,
         memLen: null,
         cutoffs: [],
@@ -396,112 +396,113 @@ export function transformer(args = {
     // perms: a list of tensors. Each tensor should of size [len, bsz, bin_size].
     // Only used in the adaptive setting.
 
-    let new_mems = []
+    let newMems = []
     return tf.tidy(() => {
         let rwBias, rrBias
         if (args.untieR) {
             rwBias = scope.getVariable('rwBias', [args.nLayer, args.nHead, args.dHead],
-                initializer = initializer)
+                initializer = args.initializer)
             rrBias = scope.getVariable('rrBias', [args.nLayer, args.nHead, args.dHead],
-                initializer = initializer)
+                initializer = args.initializer)
         } else {
             rwBias = scope.getVariable('rwBias', [args.nHead, args.dHead],
-                initializer = initializer)
+                initializer = args.initializer)
             rrBias = scope.getVariable('rrBias', [args.nHead, args.dHead],
-                initializer = initializer)
+                initializer = args.initializer)
         }
 
         let qlen = tf.shape(args.decInp)[0]
-        let mlen = mems != null ? tf.shape(mems[0])[0] : 0
+        let mlen = args.mems != null ? args.mems[0].shape[0] : 0
         let klen = mlen + qlen
 
         if (args.projInitializer == null) {
-            args.projInitializer = initializer
+            args.projInitializer = args.initializer
         }
         let lookupFn = maskAdaptiveEmbeddingLookup
 
-        let [embeddings, shared_params] = lookupFn(
+        let [embeddings, sharedParams] = lookupFn(
             x = args.decInp,
             args.nToken = args.nToken,
             args.dEmbed = args.dEmbed,
-            d_proj = args.dModel,
-            cutoffs = cutoffs,
-            initializer = initializer,
+            dProj = args.dModel,
+            cutoffs = args.cutoffs,
+            initializer = args.initializer,
             args.projInitializer = args.projInitializer,
             args.divVal = args.divVal,
             perms = args.inputPerms,
             args.projSameDim = args.projSameDim)
 
-        attn_mask = _create_mask(qlen, mlen, args.sameLength)
+        let attnMask = _createMask(qlen, mlen, args.sameLength)
 
-        pos_seq = tf.range(klen - 1, -1, -1.0)
+        let posSeq = tf.range(klen - 1, -1, -1.0)
         if (args.clampLen > 0) {
-            pos_seq = tf.minimum(pos_seq, args.clampLen)
+            posSeq = tf.minimum(posSeq, args.clampLen)
         }
-        inv_freq = 1 / (10000 ** (tf.range(0, args.dModel, 2.0) / args.dModel))
-        pos_emb = positionalEmbedding(pos_seq, inv_freq)
+        let invFreq = 1 / (10000 ** (tf.range(0, args.dModel, 2.0) / args.dModel))
+        let posEmb = positionalEmbedding(posSeq, invFreq)
 
-        let output = tf.layers.dropout(embeddings, dropout, training = args.isTraining)
-        pos_emb = tf.layers.dropout(pos_emb, dropout, training = args.isTraining)
+        let output = tf.layers.dropout(embeddings, args.dropout, training = args.isTraining)
+        posEmb = tf.layers.dropout(posEmb, args.dropout, training = args.isTraining)
 
-        if (mems == null) {
-            mems = [null] * args.nLayer
+        if (args.mems == null) {
+            mems = new Array(args.nLayer).fill(null)
         }
 
         for (i in range(args.nLayer)) { //cache new mems
-            new_mems.push(_cache_mem(output, mems[i], args.memLen))
+            newMems.push(_cacheMem(output, mems[i], args.memLen))
             output = tf.tidy(() => {
                 let layerScope = scope.variableScope(`layer_${i}`)
                 output = relMultiheadAttn({
-                        w = output,
-                        r = pos_emb,
-                        rwBias = !args.untieR ? rwBias : rwBias[i],
-                        rrBias = !args.untieR ? rrBias : rrBias[i],
-                        attn_mask = attn_mask,
-                        mems = mems[i],
-                        dModel = args.dModel,
-                        nHead = args.nHead,
-                        dHead = args.dHead,
-                        dropout = dropout,
-                        dropatt = dropatt,
-                        isTraining = args.isTraining,
-                        kernel_initializer = initializer
+                        w: output,
+                        r: posEmb,
+                        rwBias: !args.untieR ? rwBias : rwBias[i],
+                        rrBias: !args.untieR ? rrBias : rrBias[i],
+                        attnMask: attnMask,
+                        mems: mems[i],
+                        dModel: args.dModel,
+                        nHead: args.nHead,
+                        dHead: args.dHead,
+                        dropout: args.dropout,
+                        dropatt: args.dropatt,
+                        isTraining: args.isTraining,
+                        kernel_initializer: args.initializer
                     },
                     layerScope.variableScope("rel_attn")
                 )
                 output = positionwiseFF({
-                        inp = output,
-                        dModel = args.dModel,
-                        adInner = args.dInner,
-                        dropout = dropout,
-                        kernel_initializer = initializer,
-                        isTraining = args.isTraining
+                        inp: output,
+                        dModel: args.dModel,
+                        adInner: args.dInner,
+                        dropout: args.dropout,
+                        kernel_initializer: args.initializer,
+                        isTraining: args.isTraining
                     },
                     layerScope.variableScope("ff")
                 )
                 return output
             })
         }
-        output = tf.layers.dropout(output, dropout, training = args.isTraining)
+        output = tf.layers.dropout(output, args.dropout, training = args.isTraining)
 
-        logsoftmax_fn = maskAdaptiveLogsoftmax
-        loss = logsoftmax_fn({
-            hidden = output,
-            target = target,
-            nToken = args.nToken,
-            dEmbed = args.dEmbed,
-            d_proj = args.dModel,
-            cutoffs = cutoffs,
-            params = shared_params,
-            tieProjs = args.tieProjs,
-            initializer = initializer,
-            projInitializer = args.projInitializer,
-            divVal = args.divVal,
-            perms = args.targetPerms,
-            headTarget = args.headTarget,
-            projSameDim = args.projSameDim,
-            scope: scope.variableScope("adaptive_softmax")
-        })
-        return [loss, new_mems]
+        let logsoftmax_fn = maskAdaptiveLogsoftmax
+        let loss = logsoftmax_fn({
+                hidden: output,
+                target: args.target,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                params: sharedParams,
+                tieProjs: args.tieProjs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.targetPerms,
+                headTarget: args.headTarget,
+                projSameDim: args.projSameDim
+            },
+            scope.variableScope("adaptive_softmax")
+        )
+        return [loss, newMems]
     })
 }
