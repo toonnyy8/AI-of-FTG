@@ -74,9 +74,16 @@ tf.tidy(() => {
         for (let i = 0; i < 6; i++) {
             FF.getVariable(`layer_${i}`, [1, 1, 1])
         }
+        tf.tidy(() => {
+            let pE = FF.variableScope("pE")
+            for (let i = 0; i < 2; i++) {
+                pE.getVariable(`qkv_${i}`, [1, 1, 1])
+            }
+        })
     })
 })
-console.log(tfex.scope.scopeList)
+tfex.scope.variableScope("FF").dispose()
+console.log(tfex.scope)
 
 
 console.log(tf.memory())

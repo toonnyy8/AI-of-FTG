@@ -1,19 +1,18 @@
 import * as tf from "@tensorflow/tfjs"
+import { runInThisContext } from "vm";
 
 export class VariableScope {
-    constructor(name) {
+    constructor(name, path) {
         this.scopeName = `${name == undefined ? "" : name}`
-
-        if (Object.keys(VariableScope._scopeList).find((scopeListName) => this.scopeName == scopeListName) == undefined) {
-            this._variableList = {}
-            VariableScope._scopeList[this.scopeName] = this
-        }
-
-        return VariableScope._scopeList[this.scopeName]
+        this._scopeList = {}
+        this._variableList = {}
     }
 
     variableScope(name) {
-        return new VariableScope(`${this.scopeName}/${name}`)
+        if (Object.keys(this._scopeList).find((scopeName) => name == scopeName) == undefined) {
+            this._scopeList[name] = new VariableScope(`${this.scopeName}/${name}`)
+        }
+        return this._scopeList[name]
     }
 
     getVariable(name, shape, dtype = "float32", initializer = tf.initializers.randomNormal({ mean: 0, stddev: 1, seed: 1 }), trainable = true) {
@@ -32,14 +31,16 @@ export class VariableScope {
         } else {
             Object.keys(this._variableList).forEach((key) => {
                 this._variableList[key].dispose()
+                delete this._variableList[key]
             })
-            this._variableList = {}
         }
     }
 
     get scopeList() {
-        return JSON.parse(JSON.stringify(VariableScope._scopeList))
+        return this._scopeList
     }
 
+    get variableList() {
+        return this._variableList
+    }
 }
-VariableScope._scopeList = {}

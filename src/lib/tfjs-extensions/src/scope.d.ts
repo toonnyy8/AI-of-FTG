@@ -3,6 +3,7 @@ import * as tf from "@tensorflow/tfjs"
 export declare class VariableScope {
     scopeName: String
     scopeList: Object
+    variableList:Object
     constructor(name: String)
     variableScope(name: String): VariableScope
     getVariable(
