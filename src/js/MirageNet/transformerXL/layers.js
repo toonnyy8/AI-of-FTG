@@ -14,11 +14,11 @@ function myDense(
 ) {
     return tf.tidy(() => {
         let output = tf.dot(x,
-            scope.getVariable(`${name}_kernel`, x.concat([units]), true, "float32"))
+            scope.getVariable(`${name}_kernel`, x.concat([units]), "float32", kernelInitializer, true))
 
         if (useBias) {
             output = tf.add(output,
-                scope.getVariable(`${name}_bias`, x.concat([units]), true, "float32")
+                scope.getVariable(`${name}_bias`, x.concat([units]), "float32", kernelInitializer, true)
             )
         }
 
@@ -149,7 +149,7 @@ export function relMultiheadAttn(
                 x: cat,
                 units: 3 * args.nHead * args.dHead,
                 useBias: false,
-                // kernelInitializer: args.kernelTnitializer,
+                kernelInitializer: args.kernelTnitializer,
                 name: 'qkv'
             },
             scope)
@@ -158,7 +158,7 @@ export function relMultiheadAttn(
                 x: args.r,
                 units: args.nHead * args.dHead,
                 useBias: false,
-                // kernelInitializer: args.kernelTnitializer,
+                kernelInitializer: args.kernelTnitializer,
                 name: 'r'
             },
             scope)
@@ -212,7 +212,7 @@ export function relMultiheadAttn(
                 x: attnVec,
                 units: args.dModel,
                 useBias: false,
-                // kernelInitializer: args.kernelInitializer,
+                kernelInitializer: args.kernelInitializer,
                 name: 'o'
             },
             scope)
@@ -249,18 +249,18 @@ export function maskAdaptiveEmbeddingLookup(
     return tf.tidy(() => {
         let embScale = args.dProj ** 0.5
             // if (args.divVal == 1) {
-        let lookup_table = scope.getVariable('lookup_table', [args.nToken, args.dEmbed], true, "float32")
+        let lookupTable = scope.getVariable('lookupTable', [args.nToken, args.dEmbed], "float32", args.initializer, true)
         let projW
-        let y = embeddingLookup({ lookupTable: lookup_table, x: x })
+        let y = embeddingLookup({ lookupTable: lookupTable, x: x })
         if (args.dProj != args.dEmbed) {
             projW = scope.getVariable(
-                'projW', [args.dEmbed, args.dProj], true, "float32"
+                'projW', [args.dEmbed, args.dProj], "float32", args.initializer, true
             )
             y = tfex.einsum('ibe,ed->ibd', y, projW)
         } else {
             projW = null
         }
-        let retParams = [lookup_table, projW]
+        let retParams = [lookupTable, projW]
             // }
         y = tf.mul(y, tf.tensor([embScale]))
         return [y, retParams]
@@ -301,9 +301,7 @@ export function maskAdaptiveLogsoftmax(
 
 
         // if (len(cutoffs) == 0) {}
-        let softmax_b = scope.getVariable('bias', [args.nToken],
-            // initializer = tf.zeros_initializer()
-        )
+        let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
         let output = _logit(hidden, paramsW, softmax_b, paramsProjs)
         let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(args.target, output.shape[1]), output)
             // }
@@ -400,15 +398,11 @@ export function transformer(args = {
     return tf.tidy(() => {
         let rwBias, rrBias
         if (args.untieR) {
-            rwBias = scope.getVariable('rwBias', [args.nLayer, args.nHead, args.dHead],
-                initializer = args.initializer)
-            rrBias = scope.getVariable('rrBias', [args.nLayer, args.nHead, args.dHead],
-                initializer = args.initializer)
+            rwBias = scope.getVariable('rwBias', [args.nLayer, args.nHead, args.dHead], "float32", args.initializer)
+            rrBias = scope.getVariable('rrBias', [args.nLayer, args.nHead, args.dHead], "float32", args.initializer)
         } else {
-            rwBias = scope.getVariable('rwBias', [args.nHead, args.dHead],
-                initializer = args.initializer)
-            rrBias = scope.getVariable('rrBias', [args.nHead, args.dHead],
-                initializer = args.initializer)
+            rwBias = scope.getVariable('rwBias', [args.nHead, args.dHead], "float32", args.initializer)
+            rrBias = scope.getVariable('rrBias', [args.nHead, args.dHead], "float32", args.initializer)
         }
 
         let qlen = tf.shape(args.decInp)[0]
@@ -420,17 +414,20 @@ export function transformer(args = {
         }
         let lookupFn = maskAdaptiveEmbeddingLookup
 
-        let [embeddings, sharedParams] = lookupFn(
-            x = args.decInp,
-            args.nToken = args.nToken,
-            args.dEmbed = args.dEmbed,
-            dProj = args.dModel,
-            cutoffs = args.cutoffs,
-            initializer = args.initializer,
-            args.projInitializer = args.projInitializer,
-            args.divVal = args.divVal,
-            perms = args.inputPerms,
-            args.projSameDim = args.projSameDim)
+        let [embeddings, sharedParams] = lookupFn({
+                x: args.decInp,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.inputPerms,
+                projSameDim: args.projSameDim
+            },
+            scope.variableScope("adaptiveEmbed")
+        )
 
         let attnMask = _createMask(qlen, mlen, args.sameLength)
 
@@ -465,7 +462,7 @@ export function transformer(args = {
                         dropout: args.dropout,
                         dropatt: args.dropatt,
                         isTraining: args.isTraining,
-                        kernel_initializer: args.initializer
+                        kernelInitializer: args.initializer
                     },
                     layerScope.variableScope("rel_attn")
                 )
@@ -474,7 +471,7 @@ export function transformer(args = {
                         dModel: args.dModel,
                         adInner: args.dInner,
                         dropout: args.dropout,
-                        kernel_initializer: args.initializer,
+                        kernelInitializer: args.initializer,
                         isTraining: args.isTraining
                     },
                     layerScope.variableScope("ff")
