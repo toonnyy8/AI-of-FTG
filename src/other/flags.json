@@ -1,0 +1,17 @@
+{
+    "nLayer": 24,
+    "dModel": 1024,
+    "dEmbed": 1024,
+    "nHead": 8,
+    "dHead": 128,
+    "dInner": 3072,
+    "dropout": 0,
+    "dropatt": 0,
+    "tagLen": 128,
+    "memLen": 3800,
+    "divVal": 1,
+    "sameLength": true,
+    "clampLen": 1000,
+    "untieR": false,
+    "projSameDim": true
+}
