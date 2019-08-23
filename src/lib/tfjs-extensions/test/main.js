@@ -82,8 +82,10 @@ tf.tidy(() => {
         })
     })
 })
-tfex.scope.variableScope("FF").dispose()
-console.log(tfex.scope)
+// tfex.scope.variableScope("FF").dispose()
+let saveData = tfex.scope.save()
+tfex.scope.variableScope("test").load(saveData)
+console.log(tfex.scope.save())
 
 
 console.log(tf.memory())
