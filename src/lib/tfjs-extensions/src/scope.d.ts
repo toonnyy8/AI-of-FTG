@@ -12,4 +12,6 @@ export declare class VariableScope {
     dispose(name?: String): void
     save(): Object
     load(saveData: Object): void
+    trainableVariables(): tf.Variable[]
+    allVariables(): tf.Variable[]
 }

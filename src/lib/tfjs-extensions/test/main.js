@@ -86,6 +86,7 @@ tf.tidy(() => {
 let saveData = tfex.scope.save()
 tfex.scope.variableScope("test").load(saveData)
 console.log(tfex.scope.save())
+console.log(tfex.scope.allVariables())
 
 
 console.log(tf.memory())

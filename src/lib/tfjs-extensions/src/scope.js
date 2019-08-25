@@ -1,5 +1,4 @@
 import * as tf from "@tensorflow/tfjs"
-import { runInThisContext } from "vm";
 
 export class VariableScope {
     constructor(name, path) {
@@ -80,6 +79,31 @@ export class VariableScope {
                     this.variableScope(key).load(saveData.scopes[key])
                 })
             })
+        })
+    }
+
+    trainableVariables() {
+        return tf.tidy(() => {
+            return Object.keys(this.variables)
+                .map(key => this.variables[key])
+                .filter(variable => variable.trainable == true)
+                .concat([
+                    Object.keys(this.scopes)
+                        .map(key => this.scopes[key].trainableVariables())
+                        .flat()
+                ]).flat()
+        })
+    }
+
+    allVariables() {
+        return tf.tidy(() => {
+            return Object.keys(this.variables)
+                .map(key => this.variables[key])
+                .concat([
+                    Object.keys(this.scopes)
+                        .map(key => this.scopes[key].allVariables())
+                        .flat()
+                ]).flat()
         })
     }
 }
