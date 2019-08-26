@@ -331,29 +331,18 @@ export function _createMask(qlen, mlen, sameLength = false) {
 
 
 export function _cacheMem(currOut, prevMem, memLen = null) {
-    return tf.customGrad((x, y, save) => {
-        return tf.tidy(() => {
-            // Save x to make sure it's available later for the gradient.
-            save([x, y]);
-            // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-            return {
-                value: (() => {
-                    let newMem
-                    if (args.memLen == null || prevMem == null) {
-                        newMem = currOut
-                    } else if (args.memLen == 0) {
-                        return prevMem
-                    } else {
-                        newMem = tf.concat([prevMem, currOut], 0)
-                        newMem = tf.slice(newMem, [newMem.shape[0] - args.memLen], [newMem.shape[0] - 1])
-                    }
-                    return newMem
-                })(),
-                // Note `saved.x` which points to the `x` we saved earlier.
-                gradFunc: (dy, saved) => [tf.zeros(saved[0].shape), tf.zeros(saved[1].shape)]
-            }
-        })
-    })(currOut, prevMem)
+    return tf.tidy(() => {
+        let newMem
+        if (args.memLen == null || prevMem == null) {
+            newMem = currOut
+        } else if (args.memLen == 0) {
+            return prevMem
+        } else {
+            newMem = tf.concat([prevMem, currOut], 0)
+            newMem = tf.slice(newMem, [newMem.shape[0] - args.memLen], [newMem.shape[0] - 1])
+        }
+        return tfex.stopGradient(newMem)
+    })
 }
 
 export function transformer(args = {
