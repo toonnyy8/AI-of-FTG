@@ -6,22 +6,27 @@ import * as transformerXL from "./MirageNet/transformerXL"
 console.log(transformerXL)
 console.log(tf.memory())
 
-const b = tf.tensor([-2, -3])
-// f(a, b) = a * b
-const f = () => {
-    return a.add(tf.square(b))
-};
-let h = () => { return f() }
-// df / da = b, df / db = a
-const g = tf.grads(h);
+const stopGradient = tf.customGrad((x, save) => {
+    // Save x to make sure it's available later for the gradient.
+    save([x]);
+    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+    return {
+        value: x.clone(),
+        // Note `saved.x` which points to the `x` we saved earlier.
+        gradFunc: (dy, saved) => [tf.zeros(saved[0].shape)]
+    };
+});
 
-const a = tf.tensor([2, 3])
-const c = tf.tensor([-8, 3])
-const [da, db] = g([a, b]);
-console.log('da');
-da.print();
-console.log('db');
-db.print();
+const x = tf.tensor1d([-1, -2, 3]);
+
+const f = (x) => x.add(stopGradient(x))
+const dx = tf.grad(f);
+
+console.log(`f(x):`);
+f(x).print();
+console.log(`f'(x):`);
+dx(x).print();
+
 // tf.grads(() => {
 //     return transformerXL.transformer({
 //         decInp: inp,
