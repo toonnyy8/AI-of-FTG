@@ -125,7 +125,7 @@ export function relMultiheadAttn(
         rwBias,
         rrBias,
         attnMask,
-        mems,
+        mem,
         dModel,
         nHead,
         dHead,
@@ -142,8 +142,8 @@ export function relMultiheadAttn(
         let rlen = args.r.shape[0]
         let bsz = args.w.shape[1]
 
-        let cat = args.mems != null && args.mems.shape.length > 1 ?
-            tf.concat([args.mems, args.w], 0) : args.w
+        let cat = args.mem != null && args.mem.shape.length > 1 ?
+            tf.concat([args.mem, args.w], 0) : args.w
 
         let wHeads = myDense({
             x: cat,
@@ -348,7 +348,7 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
 export function transformer(args = {
     decInp: null,
     target: null,
-    mems: null,
+    mems: null,//stack tensor
     nToken: null,//字典大小，在此視為一次傳入的狀態數(??)
     nLayer: null,
     dModel: null,
@@ -383,8 +383,9 @@ export function transformer(args = {
     // perms: a list of tensors. Each tensor should of size [len, bsz, bin_size].
     // Only used in the adaptive setting.
 
-    let newMems = []
     return tf.tidy(() => {
+        let newMems = []
+        let mems = args.mems != null ? tf.unstack(args.mems) : null
         let rwBias, rrBias
         if (args.untieR) {
             rwBias = scope.getVariable('rwBias', [args.nLayer, args.nHead, args.dHead], "float32", args.initializer)
@@ -395,7 +396,7 @@ export function transformer(args = {
         }
 
         let qlen = args.decInp.shape[0]
-        let mlen = args.mems != null ? args.mems[0].shape[0] : 0
+        let mlen = mems != null ? mems[0].shape[0] : 0
         let klen = mlen + qlen
 
         if (args.projInitializer == null) {
@@ -430,7 +431,7 @@ export function transformer(args = {
         let output = tf.layers.dropout(embeddings, args.dropout, training = args.isTraining)
         posEmb = tf.layers.dropout(posEmb, args.dropout, training = args.isTraining)
 
-        if (args.mems == null) {
+        if (mems == null) {
             mems = new Array(args.nLayer).fill(null)
         }
 
@@ -444,7 +445,7 @@ export function transformer(args = {
                     rwBias: !args.untieR ? rwBias : rwBias[i],
                     rrBias: !args.untieR ? rrBias : rrBias[i],
                     attnMask: attnMask,
-                    mems: mems[i],
+                    mem: mems[i],
                     dModel: args.dModel,
                     nHead: args.nHead,
                     dHead: args.dHead,
@@ -489,6 +490,6 @@ export function transformer(args = {
         },
             scope.variableScope("adaptive_softmax")
         )
-        return [loss, newMems]
+        return [loss, tf.stack(newMems), output]
     })
 }
