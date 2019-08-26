@@ -273,3 +273,29 @@ export let stopGradient = tf.customGrad((x, save) => {
         gradFunc: (dy, saved) => [tf.zeros(saved[0].shape)]
     }
 })
+
+export function l2Normalize(x, axis = null, epsilon = 1e-12) {
+    return tf.tidy(() => {
+        let norm = tf.sqrt(tf.sum(tf.square(x), axis, true))
+        let lower = tf.fill(norm.shape, epsilon)
+        let isGreater = tf.greater(norm, lower)
+        return tf.div(x, tf.where(isGreater, norm, lower))
+    })
+}
+
+export function clipByGlobalNorm(tList, clipNorm) {
+    return tf.tidy(() => {
+        let globalNorm = tf.sqrt(
+            tf.addN(
+                tList.map((t) => {
+                    return tf.square(l2Normalize(t))
+                })
+            )
+        )
+        return tList.map((t) => {
+            let lower = tf.fill(globalNorm.shape, clipNorm)
+            let isGreater = tf.greater(globalNorm, lower)
+            return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
+        })
+    })
+}
