@@ -2,67 +2,105 @@ import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../../lib/tfjs-extensions/src"
 import { transformer } from "./model"
 
-export function trainFn() {
+export function modelFn(inp, tgt, nToken, FLAGS) {
     return tf.tidy(() => {
-        let loss, newMems
         let allVars = tfex.scope.variableScope("transformerXL").trainableVariables()
-        let grads = tf.grads(() => {
-            [loss, newMems] = transformer({
-                decInp: inp,
-                target: tgt,
-                mems: mems,
-                nToken: n_token,
-                nLayer: FLAGS.n_layer,
-                dModel: FLAGS.d_model,
-                dEmbed: FLAGS.d_embed,
-                nHead: FLAGS.n_head,
-                dHead: FLAGS.d_head,
-                dInner: FLAGS.d_inner,
-                dropout: FLAGS.dropout,
-                dropatt: FLAGS.dropatt,
-                initializer: initializer,
-                projInitializer: proj_initializer,
-                isTraining: is_training,
-                memLen: FLAGS.mem_len,
-                cutoffs: cutoffs,
-                divVal: FLAGS.div_val,
-                tieProjs: tie_projs,
-                inputPerms: None,
-                targetPerms: None,
-                headTarget: None,
-                sameLength: FLAGS.same_length,
-                clampLen: FLAGS.clamp_len,
-                useTpu: False,
-                untieR: FLAGS.untie_r,
-                projSameDim: FLAGS.proj_same_dim
-            },
-                tfex.scope.variableScope("transformerXL")
-            )
-            tf.keep(newMems)
-            return loss
-        })(allVars)
+        let towerNamedGrads = allVars.reduce((last, v) => {
+            last[v.name] = []
+            return last
+        }, {})
+        let outputs = []
+        let mems = null
 
-        return [
-            newMems,
-            allVars.reduce((last, v, idx) => {
-                last[v.name] = grads[idx]
-            }, {})
-        ]
+        for (let i = 0; i < 1; i++) {
+            let grads = tf.grads(() => {
+                let [loss, newMems, output] = transformer({
+                        decInp: inp,
+                        target: tgt,
+                        mems: mems,
+                        nToken: nToken,
+                        nLayer: FLAGS.nLayer,
+                        dModel: FLAGS.dModel,
+                        dEmbed: FLAGS.dEmbed,
+                        nHead: FLAGS.nHead,
+                        dHead: FLAGS.dHead,
+                        dInner: FLAGS.dInner,
+                        dropout: FLAGS.dropout,
+                        dropatt: FLAGS.dropatt,
+                        initializer: initializer,
+                        projInitializer: projInitializer,
+                        isTraining: isTraining,
+                        memLen: FLAGS.memLen,
+                        cutoffs: cutoffs,
+                        divVal: FLAGS.divVal,
+                        tieProjs: tieProjs,
+                        inputPerms: null,
+                        targetPerms: null,
+                        headTarget: null,
+                        sameLength: FLAGS.sameLength,
+                        clampLen: FLAGS.clampLen,
+                        useTpu: false,
+                        untieR: FLAGS.untieR,
+                        projSameDim: FLAGS.projSameDim
+                    },
+                    tfex.scope.variableScope("transformerXL")
+                )
+                tf.dispose(mems)
+                mems = tf.keep(newMems)
+                outputs.push(tf.keep(output))
+                return loss
+            })(allVars)
+
+            Object.keys(towerNamedGrads).forEach((name, idx) => {
+                towerNamedGrads[name].push(grads[idx])
+            })
+        }
+
+        tf.dispose(mems)
+
+        return [outputs, towerNamedGrads]
     })
 }
 
-export function t() {
-    let mems = null
-    let towerNamedGrads = []
-    for (; ;) {
-        let [newMems, namedGrads] = trainFn(mems)
+function averageNamedGrads(towerNamedGrads) {
+    return tf.tidy(() => {
+        return Object.keys(towerNamedGrads).reduce((last, name) => {
+            last[name] = tf.tidy(() => {
+                return tf.div(
+                    tf.addN(towerNamedGrads[name]),
+                    towerNamedGrads.length
+                )
+            })
+            return last
+        }, {})
+    })
+}
 
-        tf.dispose(mems)
-        mems = newMems
-        towerNamedGrads.push(namedGrads)
-    }
-    gradsAndVars = averageGradsAndVars(towerGradsAndVars)
-    clipped, gnorm = tf.clipByValue(grads, FLAGS.clip)
-    grads_and_vars = list(zip(clipped, all_vars))
-    tf.train.adam().applyGradients()
+export function train() {
+    return tf.tidy(() => {
+
+        let [outputs, towerNamedGrads] = modelFn()
+
+        let namedGrads = averageNamedGrads(towerNamedGrads)
+        let [names, grads] = Object.keys(namedGrads).reduce((last, name) => {
+            last[0].push(name)
+            last[1].push(namedGrads[name])
+            return last
+        }, [
+            [],
+            []
+        ])
+        let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
+        tf.train.adam().applyGradients(
+            names.reduce((last, name, idx) => {
+                last[name] = clipped[idx]
+            }, {})
+        )
+
+        tf.dispose(outputs)
+        Object.keys(towerNamedGrads).forEach((name) => {
+            tf.dispose(towerNamedGrads[name])
+        })
+    })
+
 }
