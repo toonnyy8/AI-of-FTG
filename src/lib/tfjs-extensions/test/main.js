@@ -66,27 +66,43 @@ import * as tfex from "../src"
 
 console.log(tf.memory())
 
-tf.tidy(() => {
-    tfex.scope.getVariable("1", [3])
+let a = tf.tensor([
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+])
+let b = tf.tensor([
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+])
+tfex.l2Normalize(a, 0).print()
+tfex.l2Normalize(a, 1).print()
+tfex.l2Normalize(a).print()
+tfex.clipByGlobalNorm([a, a], 0.001)[1].print()
+tfex.clipByGlobalNorm([a, a], 0.001)[0][0].print()
+tfex.clipByGlobalNorm([a, a], 0.1)[0][0].print()
+    // tf.tidy(() => {
+    //     tfex.scope.getVariable("1", [3])
 
-    tf.tidy(() => {
-        let FF = tfex.scope.variableScope("FF")
-        for (let i = 0; i < 6; i++) {
-            FF.getVariable(`layer_${i}`, [1, 1, 1])
-        }
-        tf.tidy(() => {
-            let pE = FF.variableScope("pE")
-            for (let i = 0; i < 2; i++) {
-                pE.getVariable(`qkv_${i}`, [1, 1, 1])
-            }
-        })
-    })
-})
-// tfex.scope.variableScope("FF").dispose()
-let saveData = tfex.scope.save()
-tfex.scope.variableScope("test").load(saveData)
-console.log(tfex.scope.save())
-console.log(tfex.scope.allVariables())
+//     tf.tidy(() => {
+//         let FF = tfex.scope.variableScope("FF")
+//         for (let i = 0; i < 6; i++) {
+//             FF.getVariable(`layer_${i}`, [1, 1, 1])
+//         }
+//         tf.tidy(() => {
+//             let pE = FF.variableScope("pE")
+//             for (let i = 0; i < 2; i++) {
+//                 pE.getVariable(`qkv_${i}`, [1, 1, 1])
+//             }
+//         })
+//     })
+// })
+// // tfex.scope.variableScope("FF").dispose()
+// let saveData = tfex.scope.save()
+// tfex.scope.variableScope("test").load(saveData)
+// console.log(tfex.scope.save())
+// console.log(tfex.scope.allVariables())
 
 
 console.log(tf.memory())

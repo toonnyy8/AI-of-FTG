@@ -8,4 +8,4 @@ declare function stopGradient(x: tf.Tensor): tf.Tensor
 
 declare function l2Normalize(x: tf.Tensor, axis?: Number, epsilon?: Number): tf.Tensor
 
-declare function clipByGlobalNorm(tList: tf.Tensor[], clipNorm: Number): tf.Tensor[]
+declare function clipByGlobalNorm(tList: tf.Tensor[], clipNorm: Number): [tf.Tensor[],tf.Scalar]

@@ -25,7 +25,7 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
                 console.error("axis ${at} is not at axises")
             }
 
-            axises.sort(function (a, b) { //由大到小排序
+            axises.sort(function(a, b) { //由大到小排序
                 if (a > b) return -1;
                 if (a < b) return 1;
                 return 0;
@@ -156,7 +156,7 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
             }, [])
 
         return operand.
-            transpose(inputInfo.map((info) => info.axis))
+        transpose(inputInfo.map((info) => info.axis))
             .reshape([-1])
             .gather(indices)
             .sum(tagSum)
@@ -228,17 +228,17 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
 
         operands.unshift(
             x
-                .reshape([-1, 1])
-                .dot(y.reshape([1, -1]))
-                .reshape(x.shape.concat(y.shape))
+            .reshape([-1, 1])
+            .dot(y.reshape([1, -1]))
+            .reshape(x.shape.concat(y.shape))
         )
         subscript.inputs.unshift(
             inputInfo.x
+            .reduce((last, info) => last + info.tag, "")
+            .concat(
+                inputInfo.y
                 .reduce((last, info) => last + info.tag, "")
-                .concat(
-                    inputInfo.y
-                        .reduce((last, info) => last + info.tag, "")
-                )
+            )
         )
 
         if (subscript.inputs.length == 1) {
@@ -266,7 +266,7 @@ export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) 
 export let stopGradient = tf.customGrad((x, save) => {
     // Save x to make sure it's available later for the gradient.
     save([x])
-    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+        // Override gradient of our custom x ^ 2 op to be dy * abs(x);
     return {
         value: x.clone(),
         // Note `saved.x` which points to the `x` we saved earlier.
@@ -288,14 +288,17 @@ export function clipByGlobalNorm(tList, clipNorm) {
         let globalNorm = tf.sqrt(
             tf.addN(
                 tList.map((t) => {
-                    return tf.square(l2Normalize(t))
+                    return tf.sum(tf.square(t))
                 })
             )
         )
-        return tList.map((t) => {
-            let lower = tf.fill(globalNorm.shape, clipNorm)
-            let isGreater = tf.greater(globalNorm, lower)
-            return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
-        })
+        return [
+            tList.map((t) => {
+                let lower = tf.fill(globalNorm.shape, clipNorm)
+                let isGreater = tf.greater(globalNorm, lower)
+                return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
+            }),
+            globalNorm
+        ]
     })
 }
