@@ -2,7 +2,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../../lib/tfjs-extensions/src"
 import { transformer } from "./model"
 
-export function modelFn(inp, tgt, nToken, FLAGS) {
+export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
     return tf.tidy(() => {
         let allVars = tfex.scope.variableScope("transformerXL").trainableVariables()
         let towerNamedGrads = allVars.reduce((last, v) => {
@@ -15,34 +15,34 @@ export function modelFn(inp, tgt, nToken, FLAGS) {
         for (let i = 0; i < 1; i++) {
             let grads = tf.grads(() => {
                 let [loss, newMems, output] = transformer({
-                        decInp: inp,
-                        target: tgt,
-                        mems: mems,
-                        nToken: nToken,
-                        nLayer: FLAGS.nLayer,
-                        dModel: FLAGS.dModel,
-                        dEmbed: FLAGS.dEmbed,
-                        nHead: FLAGS.nHead,
-                        dHead: FLAGS.dHead,
-                        dInner: FLAGS.dInner,
-                        dropout: FLAGS.dropout,
-                        dropatt: FLAGS.dropatt,
-                        initializer: initializer,
-                        projInitializer: projInitializer,
-                        isTraining: isTraining,
-                        memLen: FLAGS.memLen,
-                        cutoffs: cutoffs,
-                        divVal: FLAGS.divVal,
-                        tieProjs: tieProjs,
-                        inputPerms: null,
-                        targetPerms: null,
-                        headTarget: null,
-                        sameLength: FLAGS.sameLength,
-                        clampLen: FLAGS.clampLen,
-                        useTpu: false,
-                        untieR: FLAGS.untieR,
-                        projSameDim: FLAGS.projSameDim
-                    },
+                    decInp: inp,
+                    target: tgt,
+                    mems: mems,
+                    nToken: nToken,//21
+                    nLayer: FLAGS.nLayer,
+                    dModel: FLAGS.dModel,
+                    dEmbed: FLAGS.dEmbed,
+                    nHead: FLAGS.nHead,
+                    dHead: FLAGS.dHead,
+                    dInner: FLAGS.dInner,
+                    dropout: FLAGS.dropout,
+                    dropatt: FLAGS.dropatt,
+                    initializer: initializer,
+                    projInitializer: projInitializer,
+                    isTraining: isTraining,
+                    memLen: FLAGS.memLen,
+                    cutoffs: [],
+                    divVal: FLAGS.divVal,
+                    tieProjs: [],
+                    inputPerms: null,
+                    targetPerms: null,
+                    headTarget: null,
+                    sameLength: FLAGS.sameLength,
+                    clampLen: FLAGS.clampLen,
+                    useTpu: false,
+                    untieR: FLAGS.untieR,
+                    projSameDim: FLAGS.projSameDim
+                },
                     tfex.scope.variableScope("transformerXL")
                 )
                 tf.dispose(mems)
@@ -87,9 +87,9 @@ export function train() {
             last[1].push(namedGrads[name])
             return last
         }, [
-            [],
-            []
-        ])
+                [],
+                []
+            ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
         tf.train.adam().applyGradients(
             names.reduce((last, name, idx) => {
