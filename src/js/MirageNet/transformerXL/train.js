@@ -18,7 +18,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
                     decInp: inp,
                     target: tgt,
                     mems: mems,
-                    nToken: nToken,//21
+                    nToken: nToken,//23
                     nLayer: FLAGS.nLayer,
                     dModel: FLAGS.dModel,
                     dEmbed: FLAGS.dEmbed,
