@@ -4,6 +4,7 @@ import * as BABYLON from "babylonjs"
 
 export class Actor {
     constructor({ mesh, materialMesh, animationGroup, skeleton, startPosition, startRotationQuaternion, scene, keySet = { jump: "w", squat: "s", left: "a", right: "d", attack: { small: "j", medium: "k", large: "l" } }, fps = 60 }) {
+        this._faceTo = "left"
         this._fps = fps && !Number.isNaN(fps - 0) ? fps : this.fps
         this._actions = Actor.actionSet()
         this._state = { chapter: "normal", section: "stand", subsection: "main", subsubsection: 0 }
@@ -203,7 +204,7 @@ export class Actor {
                                                 this._actions[chapter][section][subsection][0].onAnimationEndObservable.add(() => {
                                                     if (stateEqual(0)) {
                                                         this._state.subsubsection = 1
-                                                        this.vector.x = this.faceTo == "left" ? 1 : -1
+                                                        this.vector.x = this.shouldFaceTo == "left" ? 1 : -1
                                                     }
                                                 })
                                             } else if (subsection == "large") {
@@ -544,10 +545,10 @@ export class Actor {
                         if (!this.keyDown.right) {
                             if (this._state.chapter == "normal") {
                                 if (this._state.section == "stand") {
-                                    this._state.subsection = this.faceTo == "right" ? "forward" : "backward"
+                                    this._state.subsection = this.shouldFaceTo == "right" ? "forward" : "backward"
                                 }
                                 this.keyDown.right = true
-                                if (this.faceTo == "left") {
+                                if (this.shouldFaceTo == "left") {
                                     this.perfectDefenseTime = 6
                                 }
                             }
@@ -559,10 +560,10 @@ export class Actor {
                         if (!this.keyDown.left) {
                             if (this._state.chapter == "normal") {
                                 if (this._state.section == "stand") {
-                                    this._state.subsection = this.faceTo == "left" ? "forward" : "backward"
+                                    this._state.subsection = this.shouldFaceTo == "left" ? "forward" : "backward"
                                 }
                                 this.keyDown.left = true
-                                if (this.faceTo == "right") {
+                                if (this.shouldFaceTo == "right") {
                                     this.perfectDefenseTime = 6
                                 }
                             }
@@ -581,16 +582,18 @@ export class Actor {
                                 this.mesh.position.y += 0.01
                                 this.jumpTimes += 1
 
-                                if (this.faceTo == "left") {
+                                if (this.shouldFaceTo == "left") {
+                                    this._faceTo = "left"
                                     this.mesh.rotationQuaternion = new BABYLON.Vector3(0, 0, 0).toQuaternion()
                                 } else {
+                                    this._faceTo = "right"
                                     this.mesh.rotationQuaternion = new BABYLON.Vector3(0, Math.PI, 0).toQuaternion()
                                 }
                                 if (this.keyDown.left != this.keyDown.right) {
                                     if (this.keyDown.left) {
-                                        this.vector.x = this.faceTo == "left" ? 0.1 : 0.075
+                                        this.vector.x = this.shouldFaceTo == "left" ? 0.1 : 0.075
                                     } else if (this.keyDown.right) {
-                                        this.vector.x = this.faceTo == "right" ? -0.1 : -0.075
+                                        this.vector.x = this.shouldFaceTo == "right" ? -0.1 : -0.075
                                     }
                                 }
                             }
@@ -838,7 +841,7 @@ export class Actor {
                         if (this.keyDown.left) {
                             if (this._state.chapter == "normal") {
                                 if (this._state.section == "stand") {
-                                    this._state.subsection = this.faceTo == "left" ? "forward" : "backward"
+                                    this._state.subsection = this.shouldFaceTo == "left" ? "forward" : "backward"
                                 }
                             }
                         }
@@ -855,7 +858,7 @@ export class Actor {
                         if (this.keyDown.right) {
                             if (this._state.chapter == "normal") {
                                 if (this._state.section == "stand") {
-                                    this._state.subsection = this.faceTo == "right" ? "forward" : "backward"
+                                    this._state.subsection = this.shouldFaceTo == "right" ? "forward" : "backward"
                                 }
                             }
                         }
@@ -1475,13 +1478,13 @@ export class Actor {
                 this._state.subsection = "main"
             } else {
                 if (this.keyDown.left) {
-                    if (this.faceTo == "left") {
+                    if (this.shouldFaceTo == "left") {
                         this._state.subsection = "forward"
                     } else {
                         this._state.subsection = "backward"
                     }
                 } else if (this.keyDown.right) {
-                    if (this.faceTo == "right") {
+                    if (this.shouldFaceTo == "right") {
                         this._state.subsection = "forward"
                     } else {
                         this._state.subsection = "backward"
@@ -1490,9 +1493,9 @@ export class Actor {
             }
         }
         if (this._state.subsection == "forward") {
-            this.vector.x = this.faceTo == "right" ? -0.1 : 0.1
+            this.vector.x = this.shouldFaceTo == "right" ? -0.1 : 0.1
         } else if (this._state.subsection == "backward") {
-            this.vector.x = this.faceTo == "left" ? -0.075 : 0.075
+            this.vector.x = this.shouldFaceTo == "left" ? -0.075 : 0.075
         }
         if (this._state.chapter == "normal") {
             if (this._state.section == "squat") {
@@ -1523,7 +1526,7 @@ export class Actor {
         }
         //Actor Intersect Collisions
         if (this.bodyBox.intersectsMesh(this.opponent.bodyBox, true)) {
-            if (this.faceTo == "left") {
+            if (this.shouldFaceTo == "left") {
                 this.mesh.position.x -= 0.05
             } else {
                 this.mesh.position.x += 0.05
@@ -1537,9 +1540,11 @@ export class Actor {
 
 
         if (this._state.chapter == "normal" && this._state.section != "jump") {
-            if (this.faceTo == "left") {
+            if (this.shouldFaceTo == "left") {
+                this._faceTo = "left"
                 this.mesh.rotationQuaternion = new BABYLON.Vector3(0, 0, 0).toQuaternion()
             } else {
+                this._faceTo = "right"
                 this.mesh.rotationQuaternion = new BABYLON.Vector3(0, Math.PI, 0).toQuaternion()
             }
         }
@@ -1567,7 +1572,7 @@ export class Actor {
             attackBox.forEach((boxIndex) => {
                 let hitVector = Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].hitVector || [0, 0, 0]
                 hitVector = new BABYLON.Vector3(...hitVector)
-                hitVector.x = this.faceTo == "left" ? hitVector.x : hitVector.x * -1
+                hitVector.x = this.shouldFaceTo == "left" ? hitVector.x : hitVector.x * -1
 
                 let atk = Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].atk
                 if (!this.isHit) {
@@ -1611,7 +1616,7 @@ export class Actor {
     get opponent() {
         return this._opponent
     }
-    get faceTo() {
+    get shouldFaceTo() {
         return this.opponent.mesh.position.x > this.mesh.position.x ? "left" : "right"
     }
     get isInvincible() {
@@ -1619,9 +1624,9 @@ export class Actor {
     }
 
     setBeInjuredObj(atk = 100, scale = "small", beHitVector = BABYLON.Vector3.Zero()) {
-        // beHitVector.x = this.faceTo == "left" ? beHitVector.x * -1 : beHitVector.x
+        // beHitVector.x = this.shouldFaceTo == "left" ? beHitVector.x * -1 : beHitVector.x
         let isBack = () => {
-            return (this.keyDown.left && new BABYLON.Vector3(0, Math.PI, 0).toQuaternion().equals(this.mesh.rotationQuaternion)) || (this.keyDown.right && new BABYLON.Vector3(0, 0, 0).toQuaternion().equals(this.mesh.rotationQuaternion))
+            return (this.keyDown.left && this._faceTo == "right") || (this.keyDown.right && this._faceTo == "left")
         }
         if (this.keyDown.left != this.keyDown.right && isBack() && (this._state.chapter == "normal" || this._state.chapter == "defense")) {
             this._state.chapter = "defense"
@@ -1645,7 +1650,7 @@ export class Actor {
             this.beInjuredObj = { atk: atk, scale: scale == "fall" ? "small" : scale, beHitVector: beHitVector }
         }
         if (beHitVector.x == 0) {
-            this.mesh.position.x += this.faceTo == "left" ? -0.2 : 0.2
+            this.mesh.position.x += this.shouldFaceTo == "left" ? -0.2 : 0.2
         }
         // if (this._state.subsection != "backward") {
         //     this.beInjuredObj = { atk: atk, scale: scale, beHitVector: beHitVector }
