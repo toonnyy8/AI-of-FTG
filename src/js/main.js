@@ -10,9 +10,44 @@ let main = () => {
     console.log("finished")
     console.log(Object.keys(tokens.default))
     console.log(tokens.default)
-    // let getStatement = (actor = p1,actorName = "player1"||"player2") => {
-    //     return [actorName, "<", BABYLON.Vector4. actor.mesh.rotationQuaternion,`${Math.ceil((actor.HP/150))-10}`,"/",">",,"<",">"]
-    // }
+    let getStatement = (actor = p1, actorName = "player1" || "player2") => {
+        return [
+            "<start>",
+            "player", "_", "1",
+            "/",
+            "hp", "_", "+", "3", "0", "0", "0",
+            "/",
+            "faceTo", "_", "+", "1",
+            "/",
+            "chapter", "_", "0",
+            "/",
+            "section", "_", "0",
+            "/",
+            "subsection", "_", "0",
+            "/",
+            "subsubsection", "_", "0",
+            "/",
+            "reward", "_", "+", "0", "1",
+            "=>",
+            "up", "_", "0",
+            "/",
+            "down", "_", "0",
+            "/",
+            "left", "_", "0",
+            "/",
+            "right", "_", "0",
+            "/",
+            "small", "_", "0",
+            "/",
+            "medium", "_", "0",
+            "/",
+            "large", "_", "0",
+            "<end>"
+        ].map((word) => {
+            return tokens[word]
+        })
+    }
+    console.log(getStatement())
     // [tokens["{"]].concat(
     //     statements.reduce((last, statement) => {
     //         if (last == null) {
