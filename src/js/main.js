@@ -1,50 +1,34 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 import * as game from "./game"
-import * as tokens from "../param/tokens.json"
+import * as tokenSet from "../param/tokens.json"
 import * as BABYLON from "babylonjs"
 // import * as model from "./model/model"
 // import "./test"
 let main = () => {
     let statements = []
     console.log("finished")
-    console.log(Object.keys(tokens.default))
-    console.log(tokens.default)
+    console.log(tokenSet)
     let getStatement = (actor = p1, actorName = "player1" || "player2") => {
         return [
-            "<start>",
-            "player", "_", "1",
-            "/",
-            "hp", "_", "+", "3", "0", "0", "0",
-            "/",
-            "faceTo", "_", "+", "1",
-            "/",
-            "chapter", "_", "0",
-            "/",
-            "section", "_", "0",
-            "/",
-            "subsection", "_", "0",
-            "/",
-            "subsubsection", "_", "0",
-            "/",
-            "reward", "_", "+", "0", "1",
+            "<info>",
+            actorName,
+            `hp_${Math.round(actor.HP / 150)}`,
+            `faceTo_${actor._faceTo}`,
+            `position_x_${Math.round(actor.mesh.position.x / 1.1)}`,
+            `position_y_${Math.round(actor.mesh.position.y / 1.1)}`,
+            `state_chapter_${actor._state["chapter"]}`,
+            `state_section_${actor._state["section"]}`,
+            `state_subsection_${actor._state["subsection"]}`,
+            `state_subsubsection_${actor._state["subsubsection"]}`,
+            "</info>",
             "=>",
-            "up", "_", "0",
-            "/",
-            "down", "_", "0",
-            "/",
-            "left", "_", "0",
-            "/",
-            "right", "_", "0",
-            "/",
-            "small", "_", "0",
-            "/",
-            "medium", "_", "0",
-            "/",
-            "large", "_", "0",
-            "<end>"
+            "<op>",
+            "action_none",
+            "</op>"
         ].map((word) => {
-            return tokens[word]
+            console.log(word)
+            return word.split("_").reduce((set, key) => { return set[key] }, tokenSet.tokens)
         })
     }
     console.log(getStatement())
