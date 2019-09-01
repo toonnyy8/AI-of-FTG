@@ -1,6 +1,6 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
-import * as game from "./game"
+import * as game from "../lib/Slime-FTG/src/js"
 import * as tokenSet from "../param/tokens.json"
 import * as BABYLON from "babylonjs"
 // import * as model from "./model/model"
