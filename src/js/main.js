@@ -21,6 +21,7 @@ let main = () => {
             `state_section_${actor._state["section"]}`,
             `state_subsection_${actor._state["subsection"]}`,
             `state_subsubsection_${actor._state["subsubsection"]}`,
+            "reward_-1",
             "</info>",
             "=>",
             "<op>",
