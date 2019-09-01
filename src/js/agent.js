@@ -22,7 +22,7 @@ export function getStatement(actor = p1, actorName = "player1" || "player2") {
         `action_${"none"}`,//none/small/medium/large
         "</op>"
     ].map((word) => {
-        console.log(word)
+        // console.log(word)
         return word.split("_").reduce((set, key) => { return set[key] }, tokenSet.tokens)
     })
 }
