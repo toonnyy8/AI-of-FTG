@@ -40,8 +40,12 @@ let main = () => {
     }])
 
     let mainLoop = new tool.Loop(() => {
+        agent.fetchUpReward()
+        agent.control("player1", 10)
+        agent.control("player2")
         agent.nextStep()
-        console.log(agent.players.player1.memory[agent.players.player1.memory.length - 1])
+        // console.log(agent.players.player1.memory[agent.players.player1.memory.length - 1])
+
     }, 6)
 
     let loop = () => {

@@ -63,14 +63,7 @@ export function maskAction(statement) {
     }
     return cloneS
 }
-export function t() {
 
-    let statements = []
-    console.log("finished")
-    console.log(tokenSet)
-
-    console.log(getStatement())
-}
 
 export class Agent {
     constructor(players = [{
@@ -138,13 +131,18 @@ export class Agent {
         }, {})
     }
 
-    nextStep() {
+    fetchUpReward() {
         Object.keys(this.players).forEach((playerName) => {
             if (this.players[playerName]["memory"].length != 0) {
                 let lastStatement = this.players[playerName]["memory"].pop()
                 lastStatement[lastStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${getReward(this.players[playerName]["actor"])}`]
                 this.players[playerName]["memory"].push(lastStatement)
             }
+        })
+    }
+
+    nextStep() {
+        Object.keys(this.players).forEach((playerName) => {
             this.players[playerName]["memory"].push(
                 getStatement(
                     this.players[playerName]["actor"],
@@ -159,16 +157,28 @@ export class Agent {
         })
     }
 
-    control(playerName) {
-
+    control(playerName, expectedReward = 0) {
+        let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
+        newStatement = maskAction(newStatement)
+        newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
+        let mems = this.mergeMemory(playerName, 10)
+        mems.push(newStatement)
+        console.log(mems)
     }
 
-    mergeMemory(mainPlayerName, minorPlayerName, mergeLength) {
+    mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {
         let mergeMem = []
-        for (let i = this.players[mainPlayerName]["memory"].length - 1, j = i - mergeLength; i > j; j++) {
-            mergeMem.push(this.players[mainPlayerName]["memory"][j])
-            mergeMem.push(this.players[minorPlayerName]["memory"][j])
+        end = end <= this.players[mainPlayerName]["memory"].length - 1 ? end : this.players[mainPlayerName]["memory"].length - 1
+        mergeLength = end - mergeLength >= 0 ? mergeLength : end
+        for (let i = end - mergeLength + 1; i <= end; i++) {
+            mergeMem.push(this.players[mainPlayerName]["memory"][i].slice())
+            Object.keys(this.players).forEach((playerName) => {
+                if (playerName != mainPlayerName) {
+                    mergeMem.push(this.players[playerName]["memory"][i])
+                }
+            })
         }
+        return mergeMem
     }
 
     setAction(playerName, action) {
