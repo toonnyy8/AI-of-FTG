@@ -1,7 +1,8 @@
 import * as tokenSet from "../param/tokens.json"
-import * as game from "../lib/Slime-FTG/src/js"
+import * as game from "../lib/slime-FTG/src/js"
+import * as transformerXL from "./MirageNet/transformerXL"
 
-export function getStatement(actor = p1, actorName = "player1" || "player2") {
+export function getStatement(actor = game.getPlayer()[0], actorName = "player1" || "player2", action) {
     return [
         "<info>",
         actorName,
@@ -17,9 +18,9 @@ export function getStatement(actor = p1, actorName = "player1" || "player2") {
         "</info>",
         "=>",
         "<op>",
-        `action_${"none"}`,//none/left/right
-        `action_${"none"}`,//none/up/down
-        `action_${"none"}`,//none/small/medium/large
+        `action_${action["LR"]}`, //none/left/right
+        `action_${action["UD"]}`, //none/up/down
+        `action_${action["SML"]}`, //none/small/medium/large
         "</op>"
     ].map((word) => {
         // console.log(word)
@@ -47,6 +48,15 @@ export function getReward(actor = game.getPlayer()[0]) {
     return reward
 }
 
+export function maskAction(statement) {
+    let cloneS = statement.slice()
+    let opStart = cloneS.indexOf(tokenSet.tokens["<op>"])
+    let opEnd = cloneS.indexOf(tokenSet.tokens["</op>"])
+    for (let i = opStart + 1; i < opEnd; i++) {
+        cloneS[i] = tokenSet.tokens["mask"]
+    }
+    return cloneS
+}
 export function t() {
 
     let statements = []
@@ -54,13 +64,29 @@ export function t() {
     console.log(tokenSet)
 
     console.log(getStatement())
-    // [tokens["{"]].concat(
-    //     statements.reduce((last, statement) => {
-    //         if (last == null) {
-    //             return statement
-    //         } else {
-    //             return [tokens["["]].concat(last).concat(tokens["]"]).concat(statement)
-    //         }
-    //     }, null)
-    // ).concat(tokens["}"])
-} 
+}
+
+export class Agent {
+    constructor(players = [{ name: "player1", actor: game.getPlayer()[0] }]) {
+        this.players = players.reduce((last, player) => {
+            return last[player["name"]] = { actor: player["actor"], memory: [], action: [] }
+        }, {})
+    }
+
+    nextStep() {
+        Object.keys(this.players).forEach((playerName) => {
+            this.players[playerName]["memory"].push(
+                getStatement(
+                    this.players[playerName]["actor"],
+                    playerName,
+                    this.players[playerName]["action"]
+                )
+            )
+        })
+    }
+
+    control(playerName) {
+
+    }
+
+}

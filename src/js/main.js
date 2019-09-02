@@ -1,11 +1,17 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 import * as agent from "./agent"
-import * as game from "../lib/Slime-FTG/src/js"
+import * as game from "../lib/slime-FTG/src/js"
 import * as tool from "./tool"
 
-let mainLoop = new tool.Loop(() => { console.log(agent.getStatement(p1)) }, 6)
-// import "./test"
+let mainLoop = new tool.Loop(() => {
+        console.log(
+            agent.maskAction(
+                agent.getStatement(p1)
+            )
+        )
+    }, 6)
+    // import "./test"
 let main = () => {
     requestAnimationFrame(main)
     mainLoop.run()
