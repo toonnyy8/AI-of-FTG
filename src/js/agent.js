@@ -14,9 +14,7 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
         `state_section_${actor._state["section"]}`,
         `state_subsection_${actor._state["subsection"]}`,
         `state_subsubsection_${actor._state["subsubsection"]}`,
-        `reward_${getReward(actor)}`,
         "</info>",
-        "=>",
         "<op>",
         `action_${action["left"] ? "left" : "none"}`, //none/left
         `action_${action["right"] ? "right" : "none"}`, //none/right
@@ -25,7 +23,11 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
         `action_${action["small"] ? "small" : "none"}`, //none/small
         `action_${action["medium"] ? "medium" : "none"}`, //none/medium
         `action_${action["large"] ? "large" : "none"}`, //none/large
-        "</op>"
+        "</op>",
+        "=>",
+        "<reward>",
+        `mask`,
+        "</reward>"
     ].map((word) => {
         // console.log(word)
         return word.split("_").reduce((set, key) => { return set[key] }, tokenSet.tokens)
@@ -138,6 +140,11 @@ export class Agent {
 
     nextStep() {
         Object.keys(this.players).forEach((playerName) => {
+            if (this.players[playerName]["memory"].length != 0) {
+                let lastStatement = this.players[playerName]["memory"].pop()
+                lastStatement[lastStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${getReward(this.players[playerName]["actor"])}`]
+                this.players[playerName]["memory"].push(lastStatement)
+            }
             this.players[playerName]["memory"].push(
                 getStatement(
                     this.players[playerName]["actor"],
@@ -154,6 +161,14 @@ export class Agent {
 
     control(playerName) {
 
+    }
+
+    mergeMemory(mainPlayerName, minorPlayerName, mergeLength) {
+        let mergeMem = []
+        for (let i = this.players[mainPlayerName]["memory"].length - 1, j = i - mergeLength; i > j; j++) {
+            mergeMem.push(this.players[mainPlayerName]["memory"][j])
+            mergeMem.push(this.players[minorPlayerName]["memory"][j])
+        }
     }
 
     setAction(playerName, action) {
