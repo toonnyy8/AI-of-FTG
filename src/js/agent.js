@@ -1,8 +1,8 @@
 import * as tokenSet from "../param/tokens.json"
-import * as game from "../lib/slime-FTG/src/js"
+import { Game } from "../lib/slime-FTG/src/js"
 import * as transformerXL from "./MirageNet/transformerXL"
 
-export function getStatement(actor = game.getPlayer()[0], actorName = "player1" || "player2", action) {
+export function getStatement(actor, actorName = "player1" || "player2", action) {
     return [
         "<info>",
         actorName,
@@ -28,7 +28,7 @@ export function getStatement(actor = game.getPlayer()[0], actorName = "player1" 
     })
 }
 
-export function getReward(actor = game.getPlayer()[0]) {
+export function getReward(actor) {
     let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
     if (actor.isPD) {
         reward += 10
@@ -67,9 +67,19 @@ export function t() {
 }
 
 export class Agent {
-    constructor(players = [{ name: "player1", actor: game.getPlayer()[0] }]) {
+    constructor(players = [{ name: "player1", actor: new Game().player1 }], memorySize = 256) {
+        this.memorySize = memorySize
         this.players = players.reduce((last, player) => {
-            return last[player["name"]] = { actor: player["actor"], memory: [], action: [] }
+            last[player["name"]] = {
+                actor: player["actor"],
+                memory: [],
+                action: {
+                    "LR": "none",
+                    "UD": "none",
+                    "SML": "none"
+                }
+            }
+            return last
         }, {})
     }
 
@@ -82,6 +92,10 @@ export class Agent {
                     this.players[playerName]["action"]
                 )
             )
+            if (this.players[playerName]["memory"].length > this.memorySize) {
+                this.players[playerName]["memory"].shift()
+            }
+
         })
     }
 
@@ -89,4 +103,11 @@ export class Agent {
 
     }
 
+    setAction(playerName, action) {
+        this.players[playerName]["actor"] = action
+    }
+
+    train() {
+
+    }
 }

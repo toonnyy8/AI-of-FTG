@@ -1,4 +1,8 @@
 import * as slime from "../../file/slime/slime.js"
 
-export declare let getPlayer: () => [slime.Actor, slime.Actor]
-export * from "./main.js"
+export declare class Game{
+    player1:slime.Actor
+    player2:slime.Actor
+    constructor(keySets:[{},{}])
+}
+export * from "./game.js"
