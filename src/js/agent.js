@@ -18,9 +18,13 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
         "</info>",
         "=>",
         "<op>",
-        `action_${action["LR"]}`, //none/left/right
-        `action_${action["UD"]}`, //none/up/down
-        `action_${action["SML"]}`, //none/small/medium/large
+        `action_${action["left"] ? "left" : "none"}`, //none/left
+        `action_${action["right"] ? "right" : "none"}`, //none/right
+        `action_${action["jump"] ? "jump" : "none"}`, //none/jump
+        `action_${action["squat"] ? "squat" : "none"}`, //none/squat
+        `action_${action["small"] ? "small" : "none"}`, //none/small
+        `action_${action["medium"] ? "medium" : "none"}`, //none/medium
+        `action_${action["large"] ? "large" : "none"}`, //none/large
         "</op>"
     ].map((word) => {
         // console.log(word)
@@ -67,18 +71,67 @@ export function t() {
 }
 
 export class Agent {
-    constructor(players = [{ name: "player1", actor: new Game().player1 }], memorySize = 256) {
+    constructor(players = [{
+        name: "player1",
+        actor: new Game().player1,
+        keySet: {
+            jump: "w",
+            squat: "s",
+            left: "a",
+            right: "d",
+            attack: {
+                small: "j",
+                medium: "k",
+                large: "l"
+            }
+        }
+    }], memorySize = 256) {
         this.memorySize = memorySize
         this.players = players.reduce((last, player) => {
             last[player["name"]] = {
                 actor: player["actor"],
+                keySet: player["keySet"],
                 memory: [],
                 action: {
-                    "LR": "none",
-                    "UD": "none",
-                    "SML": "none"
+                    jump: false,
+                    squat: false,
+                    left: false,
+                    right: false,
+                    small: false,
+                    medium: false,
+                    large: false
                 }
             }
+            document.addEventListener('keydown', (event) => {
+                Object.keys(player["keySet"]).forEach((actionName) => {
+                    if (actionName == "attack") {
+                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
+                            if (player["keySet"]["attack"][actionName] == event.key) {
+                                last[player["name"]]["action"][actionName] = true
+                            }
+                        })
+                    } else {
+                        if (player["keySet"][actionName] == event.key) {
+                            last[player["name"]]["action"][actionName] = true
+                        }
+                    }
+                })
+            })
+            document.addEventListener('keyup', (event) => {
+                Object.keys(player["keySet"]).forEach((actionName) => {
+                    if (actionName == "attack") {
+                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
+                            if (player["keySet"]["attack"][actionName] == event.key) {
+                                last[player["name"]]["action"][actionName] = false
+                            }
+                        })
+                    } else {
+                        if (player["keySet"][actionName] == event.key) {
+                            last[player["name"]]["action"][actionName] = false
+                        }
+                    }
+                })
+            })
             return last
         }, {})
     }

@@ -28,17 +28,15 @@ let keySets = [{
 
 let game = new Game(keySets)
 
-keySets.forEach(keySet => {
-
-})
-
 let main = () => {
     let agent = new Agent([{
         name: "player1",
-        actor: game.player1
+        actor: game.player1,
+        keySet: keySets[0]
     }, {
         name: "player2",
-        actor: game.player2
+        actor: game.player2,
+        keySet: keySets[1]
     }])
 
     let mainLoop = new tool.Loop(() => {
