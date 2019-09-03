@@ -1,5 +1,6 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
+// import "./test"
 import { Agent } from "./agent"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tool from "./tool"
@@ -41,15 +42,17 @@ let main = () => {
 
     let mainLoop = new tool.Loop(() => {
         agent.fetchUpReward()
-        agent.control("player1", 10)
-        agent.control("player2")
+        agent.control("player1", 5)
+        agent.control("player2", 5)
         agent.nextStep()
-        // console.log(agent.players.player1.memory[agent.players.player1.memory.length - 1])
-
     }, 6)
+    let trainLoop = new tool.Loop(() => {
+        agent.train()
+    }, 3)
 
     let loop = () => {
         mainLoop.run()
+        trainLoop.run()
         requestAnimationFrame(loop)
     }
     loop()

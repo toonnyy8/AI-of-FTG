@@ -1,6 +1,8 @@
 import * as tokenSet from "../param/tokens.json"
 import { Game } from "../lib/slime-FTG/src/js"
+import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL"
+import * as FLAGS from "../param/flags.json"
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     return [
@@ -158,12 +160,31 @@ export class Agent {
     }
 
     control(playerName, expectedReward = 0) {
-        let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-        newStatement = maskAction(newStatement)
-        newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
-        let mems = this.mergeMemory(playerName, 10)
-        mems.push(newStatement)
-        console.log(mems)
+        tf.tidy(() => {
+            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
+            newStatement = maskAction(newStatement)
+            newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
+            let mems = this.mergeMemory(playerName, 10)
+            mems.push(newStatement)
+            let tensorMems = tf.unstack(tf.tensor(mems))
+            transformerXL.modelFn(tensorMems,
+                tensorMems,
+                tokenSet.nToken,
+                FLAGS,
+                FLAGS.initStd == "normal" ?
+                tf.initializers.randomNormal({
+                    stddev: FLAGS.initStd
+                }) :
+                tf.initializers.randomUniform({
+                    minval: FLAGS.initRange,
+                    maxval: FLAGS.initRange
+                }),
+                tf.initializers.randomNormal({
+                    stddev: FLAGS.initStd
+                })
+            )
+            console.log(mems)
+        })
     }
 
     mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {

@@ -13,17 +13,23 @@ function myDense(
     scope = tfex.scope
 ) {
     return tf.tidy(() => {
-        let output = tf.dot(x,
-            scope.getVariable(`${name}_kernel`, x.concat([units]), "float32", kernelInitializer, true))
+        let kernelShape = [args.x.shape[args.x.shape.length - 1], args.units]
+        let outputShape = args.x.shape.slice()
+        outputShape.pop()
+        outputShape.push(args.units)
 
-        if (useBias) {
+        let output = tf.dot(tf.reshape(args.x, [-1, kernelShape[0]]),
+            scope.getVariable(`${args.name}_kernel`, kernelShape, "float32", args.kernelInitializer, true)
+        )
+        output = tf.reshape(output, outputShape)
+        if (args.useBias) {
             output = tf.add(output,
-                scope.getVariable(`${name}_bias`, x.concat([units]), "float32", kernelInitializer, true)
+                scope.getVariable(`${args.name}_bias`, [args.units], "float32", args.kernelInitializer, true)
             )
         }
 
-        if (activation != null) {
-            output = tf[activation](output)
+        if (args.activation != null) {
+            output = tf[args.activation](output)
         }
 
         return output
@@ -40,6 +46,7 @@ export function positionalEmbedding(
 ) {
     return tf.tidy(() => {
         let sinusoidInp = tfex.einsum('i,j->ij', args.posSeq, args.invFreq)
+        console.log(sinusoidInp)
         let posEmb = tf.concat([tf.sin(sinusoidInp), tf.cos(sinusoidInp)], -1)
         if (args.bsz != null) {
             return posEmb.expandDims(1).tile([1, args.bsz, 1])
@@ -68,7 +75,7 @@ export function positionwiseFF(
             activation: "relu",
             name: "layer_1",
             scope: scope
-            // kernelInitializer: args.kernelInitializer
+                // kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.layers.dropout({
@@ -81,7 +88,7 @@ export function positionwiseFF(
             units: args.dInner,
             activation: "relu",
             name: "layer_2"
-            // kernelInitializer: args.kernelInitializer
+                // kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.layers.dropout({
@@ -137,6 +144,7 @@ export function relMultiheadAttn(
     scope = tfex.scope
 ) {
     return tf.tidy(() => {
+        console.log(args.w)
         let scale = 1 / (args.dHead ** 0.5)
         let qlen = args.w.shape[0]
         let rlen = args.r.shape[0]
@@ -146,34 +154,35 @@ export function relMultiheadAttn(
             tf.concat([args.mem, args.w], 0) : args.w
 
         let wHeads = myDense({
-            x: cat,
-            units: 3 * args.nHead * args.dHead,
-            useBias: false,
-            kernelInitializer: args.kernelTnitializer,
-            name: 'qkv'
-        },
+                x: cat,
+                units: 3 * args.nHead * args.dHead,
+                useBias: false,
+                kernelInitializer: args.kernelTnitializer,
+                name: 'qkv'
+            },
             scope)
 
         let rHeadK = myDense({
-            x: args.r,
-            units: args.nHead * args.dHead,
-            useBias: false,
-            kernelInitializer: args.kernelTnitializer,
-            name: 'r'
-        },
+                x: args.r,
+                units: args.nHead * args.dHead,
+                useBias: false,
+                kernelInitializer: args.kernelTnitializer,
+                name: 'r'
+            },
             scope)
-
+        console.log(wHeads)
         let [wHeadQ, wHeadK, wHeadV] = tf.split(wHeads, 3, -1)
-
+        console.log(wHeadQ.shape)
         wHeadQ = tf.slice(wHeadQ, wHeadQ.shape[0] - qlen, qlen)
+        console.log(wHeadQ.shape)
 
-        klen = wHeadK.shape[0]
+        let klen = wHeadK.shape[0]
 
-        wHeadQ = tf.reshape(wHeadQ, [qlen, bsz, nHead, dHead])
-        wHeadK = tf.reshape(wHeadK, [klen, bsz, nHead, dHead])
-        wHeadV = tf.reshape(wHeadV, [klen, bsz, nHead, dHead])
+        wHeadQ = tf.reshape(wHeadQ, [qlen, bsz, args.nHead, args.dHead])
+        wHeadK = tf.reshape(wHeadK, [klen, bsz, args.nHead, args.dHead])
+        wHeadV = tf.reshape(wHeadV, [klen, bsz, args.nHead, args.dHead])
 
-        rHeadK = tf.reshape(rHeadK, [rlen, nHead, dHead])
+        rHeadK = tf.reshape(rHeadK, [rlen, args.nHead, args.dHead])
 
         let rwHeadQ = tf.add(wHeadQ, args.rwBias)
         let rrHeadQ = tf.add(wHeadQ, args.rrBias)
@@ -209,12 +218,12 @@ export function relMultiheadAttn(
         attnVec = tf.reshape(attnVec, [sizeT[0], sizeT[1], args.nHead * args.dHead])
 
         let attnOut = myDense({
-            x: attnVec,
-            units: args.dModel,
-            useBias: false,
-            kernelInitializer: args.kernelInitializer,
-            name: 'o'
-        },
+                x: attnVec,
+                units: args.dModel,
+                useBias: false,
+                kernelInitializer: args.kernelInitializer,
+                name: 'o'
+            },
             scope)
 
         attnOut = tf.layers.dropout({ rate: args.dropout, trainable: args.isTraining }).apply(attnOut)
@@ -228,7 +237,7 @@ export function relMultiheadAttn(
 
 export function embeddingLookup(args = { lookupTable, x }) {
     return tf.tidy(() => {
-        return tf.gather(args.lookupTable, args.x)
+        return tf.gather(args.lookupTable, tf.cast(args.x, "int32"))
     })
 }
 
@@ -248,10 +257,10 @@ export function maskAdaptiveEmbeddingLookup(
 ) {
     return tf.tidy(() => {
         let embScale = args.dProj ** 0.5
-        // if (args.divVal == 1) {
+            // if (args.divVal == 1) {
         let lookupTable = scope.getVariable('lookupTable', [args.nToken, args.dEmbed], "float32", args.initializer, true)
         let projW
-        let y = embeddingLookup({ lookupTable: lookupTable, x: x })
+        let y = embeddingLookup({ lookupTable: lookupTable, x: args.x })
         if (args.dProj != args.dEmbed) {
             projW = scope.getVariable(
                 'projW', [args.dEmbed, args.dProj], "float32", args.initializer, true
@@ -261,7 +270,7 @@ export function maskAdaptiveEmbeddingLookup(
             projW = null
         }
         let retParams = [lookupTable, projW]
-        // }
+            // }
         y = tf.mul(y, tf.tensor([embScale]))
         return [y, retParams]
     })
@@ -304,7 +313,7 @@ export function maskAdaptiveLogsoftmax(
         let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
         let output = _logit(hidden, paramsW, softmax_b, paramsProjs)
         let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(args.target, output.shape[1]), output)
-        // }
+            // }
 
 
         if (return_mean) {
@@ -321,10 +330,10 @@ export function _createMask(qlen, mlen, sameLength = false) {
         let maskDia = tfex.matrixBandPart(attnMask, 0, 0)
         let attnMaskPad = tf.zeros([qlen, mlen])
         let ret = tf.concat([attnMaskPad, tf.sub(maskU, maskDia)], 1)
-        // if (args.sameLength) {
-        //     mask_l = tf.matrix_band_part(attnMask, -1, 0)
-        //     ret = tf.concat([ret[: , : qlen] + mask_l - maskDia, ret[:, qlen:]], 1)
-        // }
+            // if (args.sameLength) {
+            //     mask_l = tf.matrix_band_part(attnMask, -1, 0)
+            //     ret = tf.concat([ret[: , : qlen] + mask_l - maskDia, ret[:, qlen:]], 1)
+            // }
         return ret
     })
 }
@@ -333,9 +342,9 @@ export function _createMask(qlen, mlen, sameLength = false) {
 export function _cacheMem(currOut, prevMem, memLen = null) {
     return tf.tidy(() => {
         let newMem
-        if (args.memLen == null || prevMem == null) {
+        if (memLen == null || prevMem == null) {
             newMem = currOut
-        } else if (args.memLen == 0) {
+        } else if (memLen == 0) {
             return prevMem
         } else {
             newMem = tf.concat([prevMem, currOut], 0)
@@ -346,33 +355,33 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
 }
 
 export function transformer(args = {
-    decInp: null,
-    target: null,
-    mems: null,//stack tensor
-    nToken: null,//字典大小，在此視為一次傳入的狀態數(??)
-    nLayer: null,
-    dModel: null,
-    dEmbed: null,
-    nHead: null,
-    dHead: null,
-    dInner: null,
-    dropout: null,
-    dropatt: null,
-    initializer: null,
-    isTraining: null,
-    projInitializer: null,
-    memLen: null,
-    cutoffs: [],
-    divVal: 1,
-    tieProjs: [],
-    sameLength: false,
-    clampLen: -1,
-    inputPerms: null,
-    targetPerms: null,
-    headTarget: null,
-    untieR: false,
-    projSameDim: true
-},
+        decInp: null,
+        target: null,
+        mems: null, //stack tensor
+        nToken: null, //字典大小，在此視為一次傳入的狀態數(??)
+        nLayer: null,
+        dModel: null,
+        dEmbed: null,
+        nHead: null,
+        dHead: null,
+        dInner: null,
+        dropout: null,
+        dropatt: null,
+        initializer: null,
+        isTraining: null,
+        projInitializer: null,
+        memLen: null,
+        cutoffs: [],
+        divVal: 1,
+        tieProjs: [],
+        sameLength: false,
+        clampLen: -1,
+        inputPerms: null,
+        targetPerms: null,
+        headTarget: null,
+        untieR: false,
+        projSameDim: true
+    },
     scope = tfex.scope
 ) {
     // 
@@ -405,17 +414,17 @@ export function transformer(args = {
         let lookupFn = maskAdaptiveEmbeddingLookup
 
         let [embeddings, sharedParams] = lookupFn({
-            x: args.decInp,
-            nToken: args.nToken,
-            dEmbed: args.dEmbed,
-            dProj: args.dModel,
-            cutoffs: args.cutoffs,
-            initializer: args.initializer,
-            projInitializer: args.projInitializer,
-            divVal: args.divVal,
-            perms: args.inputPerms,
-            projSameDim: args.projSameDim
-        },
+                x: args.decInp,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.inputPerms,
+                projSameDim: args.projSameDim
+            },
             scope.variableScope("adaptiveEmbed")
         )
 
@@ -425,45 +434,46 @@ export function transformer(args = {
         if (args.clampLen > 0) {
             posSeq = tf.minimum(posSeq, args.clampLen)
         }
-        let invFreq = 1 / (10000 ** (tf.range(0, args.dModel, 2.0) / args.dModel))
-        let posEmb = positionalEmbedding(posSeq, invFreq)
+        let invFreq = tf.div(1, tf.pow(10000, (tf.div(tf.range(0, args.dModel, 2.0), args.dModel))))
 
-        let output = tf.layers.dropout(embeddings, args.dropout, training = args.isTraining)
-        posEmb = tf.layers.dropout(posEmb, args.dropout, training = args.isTraining)
+        let posEmb = positionalEmbedding({ posSeq: posSeq, invFreq: invFreq })
+
+        let output = tf.dropout(embeddings, args.dropout)
+        posEmb = tf.dropout(posEmb, args.dropout)
 
         if (mems == null) {
             mems = new Array(args.nLayer).fill(null)
         }
 
-        for (i in range(args.nLayer)) { //cache new mems
+        for (let i = 0; i < args.nLayer; i++) { //cache new mems
             newMems.push(_cacheMem(output, mems[i], args.memLen))
             output = tf.tidy(() => {
                 let layerScope = scope.variableScope(`layer_${i}`)
                 output = relMultiheadAttn({
-                    w: output,
-                    r: posEmb,
-                    rwBias: !args.untieR ? rwBias : rwBias[i],
-                    rrBias: !args.untieR ? rrBias : rrBias[i],
-                    attnMask: attnMask,
-                    mem: mems[i],
-                    dModel: args.dModel,
-                    nHead: args.nHead,
-                    dHead: args.dHead,
-                    dropout: args.dropout,
-                    dropatt: args.dropatt,
-                    isTraining: args.isTraining,
-                    kernelInitializer: args.initializer
-                },
+                        w: output,
+                        r: posEmb,
+                        rwBias: !args.untieR ? rwBias : rwBias[i],
+                        rrBias: !args.untieR ? rrBias : rrBias[i],
+                        attnMask: attnMask,
+                        mem: mems[i],
+                        dModel: args.dModel,
+                        nHead: args.nHead,
+                        dHead: args.dHead,
+                        dropout: args.dropout,
+                        dropatt: args.dropatt,
+                        isTraining: args.isTraining,
+                        kernelInitializer: args.initializer
+                    },
                     layerScope.variableScope("rel_attn")
                 )
                 output = positionwiseFF({
-                    inp: output,
-                    dModel: args.dModel,
-                    adInner: args.dInner,
-                    dropout: args.dropout,
-                    kernelInitializer: args.initializer,
-                    isTraining: args.isTraining
-                },
+                        inp: output,
+                        dModel: args.dModel,
+                        adInner: args.dInner,
+                        dropout: args.dropout,
+                        kernelInitializer: args.initializer,
+                        isTraining: args.isTraining
+                    },
                     layerScope.variableScope("ff")
                 )
                 return output
@@ -473,21 +483,21 @@ export function transformer(args = {
 
         let logsoftmax_fn = maskAdaptiveLogsoftmax
         let loss = logsoftmax_fn({
-            hidden: output,
-            target: args.target,
-            nToken: args.nToken,
-            dEmbed: args.dEmbed,
-            dProj: args.dModel,
-            cutoffs: args.cutoffs,
-            params: sharedParams,
-            tieProjs: args.tieProjs,
-            initializer: args.initializer,
-            projInitializer: args.projInitializer,
-            divVal: args.divVal,
-            perms: args.targetPerms,
-            headTarget: args.headTarget,
-            projSameDim: args.projSameDim
-        },
+                hidden: output,
+                target: args.target,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                params: sharedParams,
+                tieProjs: args.tieProjs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.targetPerms,
+                headTarget: args.headTarget,
+                projSameDim: args.projSameDim
+            },
             scope.variableScope("adaptive_softmax")
         )
         return [loss, tf.stack(newMems), output]

@@ -1,7 +1,7 @@
 {
     "nLayer": 24,
-    "dModel": 1024,
-    "dEmbed": 1024,
+    "dModel": 256,
+    "dEmbed": 256,
     "nHead": 8,
     "dHead": 128,
     "dInner": 3072,
@@ -13,5 +13,9 @@
     "sameLength": true,
     "clampLen": 1000,
     "untieR": false,
-    "projSameDim": true
+    "projSameDim": true,
+    "initStd": 0.02,
+    "projInitStd": 0.01,
+    "initRange": 0.1,
+    "init": "normal"
 }
