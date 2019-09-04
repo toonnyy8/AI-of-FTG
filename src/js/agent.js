@@ -4,6 +4,8 @@ import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL"
 import * as FLAGS from "../param/flags.json"
 
+// tf.setBackend("cpu")
+
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     return [
         "<info>",
@@ -166,24 +168,26 @@ export class Agent {
             newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
             let mems = this.mergeMemory(playerName, 10)
             mems.push(newStatement)
-            let tensorMems = tf.unstack(tf.tensor(mems))
-            transformerXL.modelFn(tensorMems,
+            let tensorMems = tf.unstack(tf.expandDims(tf.tensor(mems), 2), 0)
+            // console.log(tensorMems)
+            let output = transformerXL.modelFn(tensorMems,
                 tensorMems,
                 tokenSet.nToken,
                 FLAGS,
                 FLAGS.initStd == "normal" ?
-                tf.initializers.randomNormal({
-                    stddev: FLAGS.initStd
-                }) :
-                tf.initializers.randomUniform({
-                    minval: FLAGS.initRange,
-                    maxval: FLAGS.initRange
-                }),
+                    tf.initializers.randomNormal({
+                        stddev: FLAGS.initStd
+                    }) :
+                    tf.initializers.randomUniform({
+                        minval: FLAGS.initRange,
+                        maxval: FLAGS.initRange
+                    }),
                 tf.initializers.randomNormal({
                     stddev: FLAGS.initStd
                 })
             )
-            console.log(mems)
+
+            console.log(output)
         })
     }
 

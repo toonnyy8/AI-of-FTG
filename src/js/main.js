@@ -56,7 +56,7 @@ let main = () => {
         requestAnimationFrame(loop)
     }
     loop()
-
+    // agent.control("player1", 5)
 }
 
 let checkLoad = () => {
