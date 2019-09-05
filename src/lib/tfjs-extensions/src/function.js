@@ -361,7 +361,7 @@ export function stack(tensors = [tf.tensor()], axis) {
             tensors.map(tensor => {
                 return tensor.reshape([-1, strides[axis]])
             }),
-            axis
+            1
         ).reshape(shape)
     })
 }
