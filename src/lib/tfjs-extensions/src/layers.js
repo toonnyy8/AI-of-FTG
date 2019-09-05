@@ -1,5 +1,4 @@
 import * as tf from "@tensorflow/tfjs"
-import { TypeFlags } from "typescript";
 
 // https://github.com/GistNoesis/Wisteria/blob/master/tfjs/src/LayerNorm.js
 export class LayerNormalization extends tf.layers.Layer {
