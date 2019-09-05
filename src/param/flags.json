@@ -1,5 +1,5 @@
 {
-    "nLayer": 4,
+    "nLayer": 1,
     "dModel": 4,
     "dEmbed": 8,
     "nHead": 8,

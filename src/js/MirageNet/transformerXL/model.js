@@ -44,6 +44,7 @@ export function positionalEmbedding(
         invFreq
     }
 ) {
+    console.log("positionalEmbedding")
     return tf.tidy(() => {
         let sinusoidInp = tfex.einsum('i,j->ij', args.posSeq, args.invFreq)
         let posEmb = tf.concat([tf.sin(sinusoidInp), tf.cos(sinusoidInp)], -1)
@@ -67,6 +68,7 @@ export function positionwiseFF(
     },
     scope = tfex.scope
 ) {
+    console.log("positionwiseFF")
     return tf.tidy(() => {
         let output = myDense({
             x: args.inp,
@@ -142,6 +144,7 @@ export function relMultiheadAttn(
     },
     scope = tfex.scope
 ) {
+    console.log("relMultiheadAttn")
     return tf.tidy(() => {
         let scale = 1 / (args.dHead ** 0.5)
         let qlen = args.w.shape[0]
@@ -225,7 +228,7 @@ export function relMultiheadAttn(
         },
             scope)
 
-        attnOut = tf.layers.dropout({ rate: args.dropout, trainable: args.isTraining }).apply(attnOut)
+        attnOut = tf.dropout(attnOut, args.dropout)
 
         let output = tfex.layers.layerNormalization({ axis: -1 }).apply(
             tf.add(attnOut, args.w)
@@ -254,6 +257,7 @@ export function maskAdaptiveEmbeddingLookup(
     },
     scope = tfex.scope
 ) {
+    console.log("maskAdaptiveEmbeddingLookup")
     return tf.tidy(() => {
         let embScale = args.dProj ** 0.5
         // if (args.divVal == 1) {
@@ -276,7 +280,7 @@ export function maskAdaptiveEmbeddingLookup(
     })
 }
 
-export function maskAdaptiveLogsoftmax(
+export async function maskAdaptiveLogsoftmax(
     args = {
         hidden,
         target,
@@ -294,6 +298,7 @@ export function maskAdaptiveLogsoftmax(
     },
     scope = tfex.scope
 ) {
+    console.log("maskAdaptiveLogsoftmax")
     return tf.tidy(() => {
         let _logit = (x, W, b, proj) => {
             return tf.tidy(() => {
@@ -347,8 +352,10 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
         } else if (memLen == 0) {
             return prevMem
         } else {
+            console.log(newMem)
             newMem = tf.concat([prevMem, currOut], 0)
             newMem = tf.slice(newMem, [newMem.shape[0] - memLen], [memLen])
+            console.log(newMem)
         }
         return tfex.stopGradient(newMem)
     })
@@ -412,6 +419,7 @@ export function transformer(args = {
             args.projInitializer = args.initializer
         }
         let lookupFn = maskAdaptiveEmbeddingLookup
+        console.log(tf.memory())
 
         let [embeddings, sharedParams] = lookupFn({
             x: args.decInp,
@@ -428,6 +436,7 @@ export function transformer(args = {
             scope.variableScope("adaptiveEmbed")
         )
 
+        console.log(tf.memory())
         let attnMask = _createMask(qlen, mlen, args.sameLength)
 
         let posSeq = tf.range(klen - 1, -1, -1.0)
@@ -436,6 +445,7 @@ export function transformer(args = {
         }
         let invFreq = tf.div(1, tf.pow(10000, (tf.div(tf.range(0, args.dModel, 2.0), args.dModel))))
 
+        console.log(tf.memory())
         let posEmb = positionalEmbedding({ posSeq: posSeq, invFreq: invFreq })
 
         let output = tf.dropout(embeddings, args.dropout)
@@ -446,6 +456,7 @@ export function transformer(args = {
         }
 
         for (let i = 0; i < args.nLayer; i++) { //cache new mems
+            console.log(tf.memory())
             newMems.push(_cacheMem(output, mems[i], args.memLen))
             output = tf.tidy(() => {
                 let layerScope = scope.variableScope(`layer_${i}`)
@@ -482,6 +493,7 @@ export function transformer(args = {
         output = tf.dropout(output, args.dropout)
 
         let logsoftmax_fn = maskAdaptiveLogsoftmax
+        console.log(tf.memory())
         let loss = logsoftmax_fn({
             hidden: output,
             target: args.target,
