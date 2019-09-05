@@ -39,6 +39,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
             },
                 tfex.scope.variableScope("transformerXL")
             )
+            console.log(tf.memory())
             tf.dispose(loss)
             tf.dispose(mems)
             mems = newMems
@@ -46,6 +47,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
         }
 
         tf.dispose(mems)
+        console.log(tf.memory())
 
         return outputs
     })

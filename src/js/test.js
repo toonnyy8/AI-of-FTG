@@ -4,9 +4,7 @@ import * as tfex from "../lib/tfjs-extensions/src"
 console.log(tf.memory())
 
 tf.tidy(() => {
-    return tfex.unstack(tf.tensor([1, 2, 3, 4]))
-}).forEach((t) => {
-    t.print()
+    tfex.layers.layerNormalization({ axis: 0 }).apply(tf.tensor([1, 2, 3]))
 })
 
 console.log(tf.memory())

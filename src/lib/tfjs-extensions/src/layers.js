@@ -22,14 +22,14 @@ export class LayerNormalization extends tf.layers.Layer {
     }
     build(inputShape) {
         //console.log("LayerNorm build : ")
-        this.g = this.addWeight("g", [inputShape[inputShape.length - 1]], "float32", tf.initializers.ones())
-        this.b = this.addWeight("b", [inputShape[inputShape.length - 1]], "float32", tf.initializers.zeros())
-        let gname = this.computeCorrectName(this.g.originalName)
-        let bname = this.computeCorrectName(this.b.originalName)
-        this.g.originalName = gname
-        this.g.name = gname
-        this.b.originalName = bname
-        this.b.name = bname
+        // this.g = this.addWeight("g", [inputShape[inputShape.length - 1]], "float32", tf.initializers.ones())
+        // this.b = this.addWeight("b", [inputShape[inputShape.length - 1]], "float32", tf.initializers.zeros())
+        // let gname = this.computeCorrectName(this.g.originalName)
+        // let bname = this.computeCorrectName(this.b.originalName)
+        // this.g.originalName = gname
+        // this.g.name = gname
+        // this.b.originalName = bname
+        // this.b.name = bname
         //console.log(this.g)
         //console.log(this.b)
         this.built = true
@@ -46,6 +46,9 @@ export class LayerNormalization extends tf.layers.Layer {
         }
         //console.log("LayerNorm call")
         this.invokeCallHook(inputs, kwargs)
+        let g = tf.ones([input.shape[input.shape.length - 1]])
+        let b = tf.zeros([input.shape[input.shape.length - 1]])
+
         let x = input
         let epsilon = 1e-5
         let axis = this.axis == -1 ? input.shape.length - 1 : this.axis
@@ -54,8 +57,8 @@ export class LayerNormalization extends tf.layers.Layer {
         let s = tf.mean(tf.square(xmu), axis, true)
         x = tf.mul(xmu, tf.rsqrt(tf.add(s, epsilon)))
         //let gval = this.g.read()
-        let gval = tf.reshape(this.g.read(), [1, 1, -1])
-        let bval = tf.reshape(this.b.read(), [1, 1, -1])
+        let gval = tf.reshape(g, [1, 1, -1])
+        let bval = tf.reshape(b, [1, 1, -1])
         //x = x * + tf.reshape( this.b,[1,1,-1])
         x = tf.add(tf.mul(x, gval), bval)
         return x
