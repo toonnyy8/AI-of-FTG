@@ -155,12 +155,20 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
                 return last
             }, [])
 
-        return operand.
-        transpose(inputInfo.map((info) => info.axis))
+        return transpose(
+            transpose(
+                operand,
+                inputInfo.map((info) => info.axis)
+            )
             .reshape([-1])
             .gather(indices)
-            .sum(tagSum)
-            .transpose(outputInfo.map((info) => info.axis))
+            .sum(tagSum),
+            outputInfo
+            .reduce((last, curr, index) => {
+                last[`${curr.axis}`] = index
+                return last
+            }, [])
+        )
     })
 }
 
@@ -300,5 +308,79 @@ export function clipByGlobalNorm(tList, clipNorm) {
             }),
             globalNorm
         ]
+    })
+}
+
+export function transpose(x, perm = null) {
+    return tf.tidy(() => {
+        let rankIndex = x.shape.map((_, index) => index)
+        perm = perm ? perm : rankIndex.slice().sort((a, b) => { //由大到小排序
+            if (a > b) return -1;
+            if (a < b) return 1;
+            return 0;
+        })
+        if (perm.length != x.shape.length) {
+            console.error(`Error in transpose: rank of input ${x.shape.length} must match length of perm.`)
+        } else if (perm.find((dim) => dim < 0 || dim > x.shape.length - 1)) {
+            console.error(`All entries in 'perm' must be between 0 and ${x.shape.length - 1} but got ${perm}.`)
+        }
+        let _singleTranspose = (input, axis, perm, rankIndex) => {
+            return tf.tidy(() => {
+                let _rankIndex = rankIndex.slice()
+                let moveTo = perm.indexOf(axis)
+                let idx = _rankIndex.indexOf(axis)
+                _rankIndex.splice(idx, 1)
+                _rankIndex.splice(moveTo, 0, axis)
+
+                let output = stack(
+                    unstack(input, idx),
+                    moveTo
+                )
+                return [output, _rankIndex]
+            })
+        }
+        let output = x.clone()
+        for (let i = 0; i < x.shape.length; i++) {
+            [output, rankIndex] = _singleTranspose(output, i, perm, rankIndex)
+        }
+        return output
+    })
+}
+
+export function stack(tensors = [tf.tensor()], axis) {
+    return tf.tidy(() => {
+        axis = axis != null ? axis : 0
+        let shape = tensors[0].shape.slice()
+        let strides = [shape[0] * tensors[0].strides[0]].concat(tensors[0].strides).concat([1])
+        if (tensors.find(tensor => !(tensor instanceof tf.Tensor) || (tensor.shape.toString() != shape.toString())) != undefined) {
+            console.error(`All tensors passed to stack must match`)
+            return
+        }
+        shape.splice(axis, 0, tensors.length)
+        return tf.stack(
+            tensors.map(tensor => {
+                return tensor.reshape([-1, strides[axis]])
+            }),
+            axis
+        ).reshape(shape)
+    })
+}
+
+export function unstack(x = tf.tensor(), axis) {
+    return tf.tidy(() => {
+        axis = axis != null ? axis : 0
+        let shape = x.shape.slice()
+        let strides = [shape[0] * x.strides[0]].concat(x.strides).concat([1])
+        if (!(x instanceof tf.Tensor)) {
+            console.error(`x must be tensor`)
+            return
+        }
+
+        return tf.unstack(
+            x.reshape([-1, shape.splice(axis, 1)[0], strides[axis + 1]]),
+            1
+        ).map(t => {
+            return t.reshape(shape)
+        })
     })
 }
