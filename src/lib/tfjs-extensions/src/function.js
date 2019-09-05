@@ -351,7 +351,7 @@ export function stack(tensors = [tf.tensor()], axis) {
     return tf.tidy(() => {
         axis = axis != null ? axis : 0
         let shape = tensors[0].shape.slice()
-        let strides = [shape[0] * tensors[0].strides[0]].concat(tensors[0].strides).concat([1])
+        let strides = [shape[0] * (tensors[0].strides[0] || 1)].concat(tensors[0].strides).concat([1])
         if (tensors.find(tensor => !(tensor instanceof tf.Tensor) || (tensor.shape.toString() != shape.toString())) != undefined) {
             console.error(`All tensors passed to stack must match`)
             return
@@ -370,7 +370,7 @@ export function unstack(x = tf.tensor(), axis) {
     return tf.tidy(() => {
         axis = axis != null ? axis : 0
         let shape = x.shape.slice()
-        let strides = [shape[0] * x.strides[0]].concat(x.strides).concat([1])
+        let strides = [shape[0] * (x.strides[0] || 1)].concat(x.strides).concat([1])
         if (!(x instanceof tf.Tensor)) {
             console.error(`x must be tensor`)
             return
