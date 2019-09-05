@@ -25,7 +25,7 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
                 console.error("axis ${at} is not at axises")
             }
 
-            axises.sort(function(a, b) { //由大到小排序
+            axises.sort(function (a, b) { //由大到小排序
                 if (a > b) return -1;
                 if (a < b) return 1;
                 return 0;
@@ -155,6 +155,7 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
                 return last
             }, [])
 
+<<<<<<< HEAD
         return transpose(
             transpose(
                 operand,
@@ -168,6 +169,21 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
                 last[`${curr.axis}`] = index
                 return last
             }, [])
+=======
+        return largeRankTranspose(
+            largeRankTranspose(
+                operand,
+                inputInfo.map((info) => info.axis)
+            )
+                .reshape([-1])
+                .gather(indices)
+                .sum(tagSum),
+            outputInfo
+                .reduce((last, curr, index) => {
+                    last[`${curr.axis}`] = index
+                    return last
+                }, [])
+>>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
         )
     })
 }
@@ -236,17 +252,17 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
 
         operands.unshift(
             x
-            .reshape([-1, 1])
-            .dot(y.reshape([1, -1]))
-            .reshape(x.shape.concat(y.shape))
+                .reshape([-1, 1])
+                .dot(y.reshape([1, -1]))
+                .reshape(x.shape.concat(y.shape))
         )
         subscript.inputs.unshift(
             inputInfo.x
-            .reduce((last, info) => last + info.tag, "")
-            .concat(
-                inputInfo.y
                 .reduce((last, info) => last + info.tag, "")
-            )
+                .concat(
+                    inputInfo.y
+                        .reduce((last, info) => last + info.tag, "")
+                )
         )
 
         if (subscript.inputs.length == 1) {
@@ -274,7 +290,7 @@ export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) 
 export let stopGradient = tf.customGrad((x, save) => {
     // Save x to make sure it's available later for the gradient.
     save([x])
-        // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
     return {
         value: x.clone(),
         // Note `saved.x` which points to the `x` we saved earlier.
@@ -311,12 +327,21 @@ export function clipByGlobalNorm(tList, clipNorm) {
     })
 }
 
+<<<<<<< HEAD
 export function transpose(x, perm = null) {
     return tf.tidy(() => {
         let rankIndex = x.shape.map((_, index) => index)
         perm = perm ? perm : rankIndex.slice().sort((a, b) => { //由大到小排序
             if (a > b) return -1;
             if (a < b) return 1;
+=======
+export function largeRankTranspose(x, perm = null) {
+    return tf.tidy(() => {
+        let rankIndex = x.shape.map((_, index) => index)
+        perm = perm ? perm : rankIndex.sort((a, b) => { //由大到小排序
+            if (a.tag > b.tag) return -1;
+            if (a.tag < b.tag) return 1;
+>>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
             return 0;
         })
         if (perm.length != x.shape.length) {
@@ -331,9 +356,14 @@ export function transpose(x, perm = null) {
                 let idx = _rankIndex.indexOf(axis)
                 _rankIndex.splice(idx, 1)
                 _rankIndex.splice(moveTo, 0, axis)
+<<<<<<< HEAD
 
                 let output = stack(
                     unstack(input, idx),
+=======
+                let output = tf.stack(
+                    tf.unstack(input, idx),
+>>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
                     moveTo
                 )
                 return [output, _rankIndex]
@@ -345,6 +375,7 @@ export function transpose(x, perm = null) {
         }
         return output
     })
+<<<<<<< HEAD
 }
 
 export function stack(tensors = [tf.tensor()], axis) {
@@ -383,4 +414,6 @@ export function unstack(x = tf.tensor(), axis) {
             return t.reshape(shape)
         })
     })
+=======
+>>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
 }
