@@ -39,6 +39,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
             },
                 tfex.scope.variableScope("transformerXL")
             )
+            tf.dispose(loss)
             tf.dispose(mems)
             mems = newMems
             outputs.push(output)
@@ -135,9 +136,9 @@ export function train() {
             last[1].push(namedGrads[name])
             return last
         }, [
-                [],
-                []
-            ])
+            [],
+            []
+        ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
         tf.train.adam().applyGradients(
             names.reduce((last, name, idx) => {

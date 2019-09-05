@@ -1,13 +1,17 @@
 import * as tf from "@tensorflow/tfjs"
 
 export function repeatElements(x, rep, axis) {
-    let reps = [...Array(x.shape.length)].map(_ => 1)
-    reps[axis] = rep
-    return tf.tile(x, reps)
+    return tf.tidy(() => {
+        let reps = [...Array(x.shape.length)].map(_ => 1)
+        reps[axis] = rep
+        return tf.tile(x, reps)
+    })
 }
 
 export function batchDot(x, y, axis) {
-    return tf.sum(tf.mul(x, y), axis)
+    return tf.tidy(() => {
+        return tf.sum(tf.mul(x, y), axis)
+    })
 }
 
 export function mergeShape(tensor = tf.tensor(), axises, at = null) {
@@ -58,49 +62,51 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
 }
 
 export function einsum(subscripts = "", ...operands) {
-    let subscript = {
-        inputs: null,
-        output: null
-    };
-    let _;
+    return tf.tidy(() => {
+        let subscript = {
+            inputs: null,
+            output: null
+        };
+        let _;
 
-    [, subscript.inputs, _, subscript.output] = subscripts.match("^([a-zA-Z,.]+)(->)?([a-zA-Z.]*)?$") || [null, null, null, null]
+        [, subscript.inputs, _, subscript.output] = subscripts.match("^([a-zA-Z,.]+)(->)?([a-zA-Z.]*)?$") || [null, null, null, null]
 
-    if (_ == null) {
-        console.error(`Need "->"`)
-        return
-    }
+        if (_ == null) {
+            console.error(`Need "->"`)
+            return
+        }
 
-    if (!subscript.inputs) {
-        console.error(`Indices have incorrect format: ${subscripts}`)
-        return
-    }
+        if (!subscript.inputs) {
+            console.error(`Indices have incorrect format: ${subscripts}`)
+            return
+        }
 
-    if (operands.find(input => !(input instanceof tf.Tensor)) != undefined || operands.length == 0) {
-        console.error(`operands type is not tensor`)
-        return
-    }
+        if (operands.find(input => !(input instanceof tf.Tensor)) != undefined || operands.length == 0) {
+            console.error(`operands type is not tensor`)
+            return
+        }
 
-    subscript.inputs = subscript.inputs.split(",")
-    if (subscript.inputs.find(val => val == "") != undefined) {
-        console.error(`Indices have incorrect format: ${subscripts}`)
-        return
-    }
+        subscript.inputs = subscript.inputs.split(",")
+        if (subscript.inputs.find(val => val == "") != undefined) {
+            console.error(`Indices have incorrect format: ${subscripts}`)
+            return
+        }
 
-    if (subscript.inputs.length != operands.length) {
-        console.error(`Incorrect number of operands`)
-        return
-    }
+        if (subscript.inputs.length != operands.length) {
+            console.error(`Incorrect number of operands`)
+            return
+        }
 
-    if (subscript.output == null) {
-        subscript.output = ""
-    }
+        if (subscript.output == null) {
+            subscript.output = ""
+        }
 
-    if (subscript.inputs.length == 1) {
-        return einsumSingleInput(subscript, operands[0])
-    } else {
-        return einsumMultipleInput(subscript, operands)
-    }
+        if (subscript.inputs.length == 1) {
+            return einsumSingleInput(subscript, operands[0])
+        } else {
+            return einsumMultipleInput(subscript, operands)
+        }
+    })
 }
 
 function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = tf.tensor()) {
@@ -356,13 +362,17 @@ export function stack(tensors = [tf.tensor()], axis) {
             console.error(`All tensors passed to stack must match`)
             return
         }
-        shape.splice(axis, 0, tensors.length)
-        return tf.stack(
-            tensors.map(tensor => {
-                return tensor.reshape([-1, strides[axis]])
-            }),
-            1
-        ).reshape(shape)
+
+        return shape.length == 0 ? tf.stack(tensors) :
+            tf.tidy(() => {
+                shape.splice(axis, 0, tensors.length)
+                return tf.stack(
+                    tensors.map(tensor => {
+                        return tensor.reshape([-1, strides[axis]])
+                    }),
+                    1
+                ).reshape(shape)
+            })
     })
 }
 

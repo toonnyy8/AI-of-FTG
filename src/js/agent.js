@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL"
 import * as FLAGS from "../param/flags.json"
 
-// tf.setBackend("cpu")
+tf.setBackend("webgl")
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     return [
@@ -168,7 +168,7 @@ export class Agent {
             newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
             let mems = this.mergeMemory(playerName, 10)
             mems.push(newStatement)
-            let tensorMems = tf.unstack(tf.expandDims(tf.tensor(mems), 2), 0)
+            let tensorMems = tf.tidy(() => tf.unstack(tf.expandDims(tf.tensor(mems), 2), 0))
             // console.log(tensorMems)
             let output = transformerXL.modelFn(tensorMems,
                 tensorMems,
@@ -186,8 +186,11 @@ export class Agent {
                     stddev: FLAGS.initStd
                 })
             )
-
-            console.log(output)
+            tf.dispose(tensorMems)
+            output.forEach((t) => {
+                console.log(t)
+                t.dispose()
+            })
         })
     }
 

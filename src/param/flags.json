@@ -1,6 +1,6 @@
 {
     "nLayer": 4,
-    "dModel": 24,
+    "dModel": 4,
     "dEmbed": 8,
     "nHead": 8,
     "dHead": 4,
@@ -11,7 +11,7 @@
     "memLen": 4,
     "divVal": 1,
     "sameLength": true,
-    "clampLen": 100,
+    "clampLen": 10,
     "untieR": false,
     "projSameDim": true,
     "initStd": 0.02,
