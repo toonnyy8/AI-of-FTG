@@ -25,7 +25,7 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
                 console.error("axis ${at} is not at axises")
             }
 
-            axises.sort(function (a, b) { //由大到小排序
+            axises.sort(function(a, b) { //由大到小排序
                 if (a > b) return -1;
                 if (a < b) return 1;
                 return 0;
@@ -105,315 +105,299 @@ export function einsum(subscripts = "", ...operands) {
 
 function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = tf.tensor()) {
     return tf.tidy(() => {
-        let inputInfo = subscript.inputs[0]
-            .split("")
-            .map((tag, axis) => {
-                return { tag: tag, axis: axis, dim: operand.shape[axis] }
-            })
-            .sort((a, b) => { //由小到大排序
-                if (a.tag > b.tag) return 1;
-                if (a.tag < b.tag) return -1;
-                return 0;
-            })
+            let inputInfo = subscript.inputs[0]
+                .split("")
+                .map((tag, axis) => {
+                    return { tag: tag, axis: axis, dim: operand.shape[axis] }
+                })
+                .sort((a, b) => { //由小到大排序
+                    if (a.tag > b.tag) return 1;
+                    if (a.tag < b.tag) return -1;
+                    return 0;
+                })
 
-        let outputInfo = subscript.output == "" ? [] : subscript.output
-            .split("")
-            .map((tag, axis) => {
-                if (subscript.inputs[0].search(tag) == -1) {
-                    console.error(`Output Tag_${tag} does not exist`)
-                }
-                return { tag: tag, axis: axis }
-            })
-            .sort((a, b) => { //由小到大排序
-                if (a.tag > b.tag) return 1;
-                if (a.tag < b.tag) return -1;
-                return 0;
-            })
+            let outputInfo = subscript.output == "" ? [] : subscript.output
+                .split("")
+                .map((tag, axis) => {
+                    if (subscript.inputs[0].search(tag) == -1) {
+                        console.error(`Output Tag_${tag} does not exist`)
+                    }
+                    return { tag: tag, axis: axis }
+                })
+                .sort((a, b) => { //由小到大排序
+                    if (a.tag > b.tag) return 1;
+                    if (a.tag < b.tag) return -1;
+                    return 0;
+                })
 
-        let diadInfo = inputInfo.reduce((last, info) => {
-            if (last[info.tag]) {
-                if (last[info.tag][0] != info.dim) {
-                    console.error(`Dim of Tag_${info.tag} are inconsistent`)
+            let diadInfo = inputInfo.reduce((last, info) => {
+                if (last[info.tag]) {
+                    if (last[info.tag][0] != info.dim) {
+                        console.error(`Dim of Tag_${info.tag} are inconsistent`)
+                    } else {
+                        last[info.tag].push(info.dim)
+                    }
                 } else {
-                    last[info.tag].push(info.dim)
-                }
-            } else {
-                last[info.tag] = [info.dim]
-            }
-            return last
-        }, {})
-
-        let diagShape = Object.values(diadInfo)
-
-        let indices = diagIndices(diagShape)
-
-        let tagSum = Object.keys(diadInfo)
-            .reduce((last, tag, axis) => {
-                if (subscript.output.search(tag) == -1) {
-                    last.push(axis)
+                    last[info.tag] = [info.dim]
                 }
                 return last
-            }, [])
+            }, {})
 
-<<<<<<< HEAD
-        return transpose(
-            transpose(
-                operand,
-                inputInfo.map((info) => info.axis)
-            )
-            .reshape([-1])
-            .gather(indices)
-            .sum(tagSum),
-            outputInfo
-            .reduce((last, curr, index) => {
-                last[`${curr.axis}`] = index
-                return last
-            }, [])
-=======
-        return largeRankTranspose(
-            largeRankTranspose(
-                operand,
-                inputInfo.map((info) => info.axis)
-            )
+            let diagShape = Object.values(diadInfo)
+
+            let indices = diagIndices(diagShape)
+
+            let tagSum = Object.keys(diadInfo)
+                .reduce((last, tag, axis) => {
+                    if (subscript.output.search(tag) == -1) {
+                        last.push(axis)
+                    }
+                    return last
+                }, [])
+
+            <<
+            << << < HEAD
+            return transpose(
+                transpose(
+                    operand,
+                    inputInfo.map((info) => info.axis)
+                )
                 .reshape([-1])
                 .gather(indices)
                 .sum(tagSum),
-            outputInfo
+                outputInfo
                 .reduce((last, curr, index) => {
                     last[`${curr.axis}`] = index
                     return last
-                }, [])
->>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
-        )
-    })
-}
-
-function diagIndices(diagShape = [
-    []
-]) {
-    let diagShape_ = JSON.parse(JSON.stringify(diagShape))
-    let getDiagIndices = (dim, edgeNum) => {
-        let stop = dim ** edgeNum
-        let step = 1
-
-        for (let i = 1; i < edgeNum; i++) {
-            step = step * dim + 1
-        }
-        return [stop, step]
+                }, []) ===
+                === =
+                return largeRankTranspose(
+                    largeRankTranspose(
+                        operand,
+                        inputInfo.map((info) => info.axis)
+                    )
+                    .reshape([-1])
+                    .gather(indices)
+                    .sum(tagSum),
+                    outputInfo
+                    .reduce((last, curr, index) => {
+                        last[`${curr.axis}`] = index
+                        return last
+                    }, []) >>>
+                    >>> > 1 b88e4c7ad986f4baaa042e711679700182aa868
+                )
+            })
     }
-    return tf.tidy(() => {
-        let pre = 1
-        let indices = tf.range(0, diagShape_.flat().reduce((last, dim) => last * dim, 1), 1, "int32")
-        for (let i = 0; i < diagShape_.length; i++) {
-            if (diagShape_[i].length > 1) {
-                let [stop, step] = getDiagIndices(diagShape_[i][0], diagShape_[i].length)
-                indices = indices
-                    .reshape([pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1])
-                    .gather(tf.range(0, stop, step, "int32"), 1)
+
+    function diagIndices(diagShape = [
+        []
+    ]) {
+        let diagShape_ = JSON.parse(JSON.stringify(diagShape))
+        let getDiagIndices = (dim, edgeNum) => {
+            let stop = dim ** edgeNum
+            let step = 1
+
+            for (let i = 1; i < edgeNum; i++) {
+                step = step * dim + 1
             }
-            pre *= diagShape_[i][0]
+            return [stop, step]
         }
-        indices = indices.reshape(diagShape_.map((dim) => dim[0]))
-        return indices
-    })
-}
+        return tf.tidy(() => {
+            let pre = 1
+            let indices = tf.range(0, diagShape_.flat().reduce((last, dim) => last * dim, 1), 1, "int32")
+            for (let i = 0; i < diagShape_.length; i++) {
+                if (diagShape_[i].length > 1) {
+                    let [stop, step] = getDiagIndices(diagShape_[i][0], diagShape_[i].length)
+                    indices = indices
+                        .reshape([pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1])
+                        .gather(tf.range(0, stop, step, "int32"), 1)
+                }
+                pre *= diagShape_[i][0]
+            }
+            indices = indices.reshape(diagShape_.map((dim) => dim[0]))
+            return indices
+        })
+    }
 
-function einsumMultipleInput(subscript = { inputs: [""], output: null }, operands = [tf.tensor()]) {
-    return tf.tidy(() => {
-        let inputInfo = {
-            x: subscript.inputs
-                .shift()
-                .split("")
-                .map((tag, axis) => {
-                    return { tag: tag, axis: axis }
-                })
-                .sort((a, b) => { //由小到大排序
-                    if (a.tag > b.tag) return 1;
-                    if (a.tag < b.tag) return -1;
-                    return 0;
-                }),
-            y: subscript.inputs
-                .shift()
-                .split("")
-                .map((tag, axis) => {
-                    return { tag: tag, axis: axis }
-                })
-                .sort((a, b) => { //由小到大排序
-                    if (a.tag > b.tag) return 1;
-                    if (a.tag < b.tag) return -1;
-                    return 0;
-                })
-        }
+    function einsumMultipleInput(subscript = { inputs: [""], output: null }, operands = [tf.tensor()]) {
+        return tf.tidy(() => {
+            let inputInfo = {
+                x: subscript.inputs
+                    .shift()
+                    .split("")
+                    .map((tag, axis) => {
+                        return { tag: tag, axis: axis }
+                    })
+                    .sort((a, b) => { //由小到大排序
+                        if (a.tag > b.tag) return 1;
+                        if (a.tag < b.tag) return -1;
+                        return 0;
+                    }),
+                y: subscript.inputs
+                    .shift()
+                    .split("")
+                    .map((tag, axis) => {
+                        return { tag: tag, axis: axis }
+                    })
+                    .sort((a, b) => { //由小到大排序
+                        if (a.tag > b.tag) return 1;
+                        if (a.tag < b.tag) return -1;
+                        return 0;
+                    })
+            }
 
-        let [x, y] = [
-            operands.shift().transpose(inputInfo.x.map((info) => info.axis)),
-            operands.shift().transpose(inputInfo.y.map((info) => info.axis))
-        ]
+            let [x, y] = [
+                operands.shift().transpose(inputInfo.x.map((info) => info.axis)),
+                operands.shift().transpose(inputInfo.y.map((info) => info.axis))
+            ]
 
-        operands.unshift(
-            x
+            operands.unshift(
+                x
                 .reshape([-1, 1])
                 .dot(y.reshape([1, -1]))
                 .reshape(x.shape.concat(y.shape))
-        )
-        subscript.inputs.unshift(
-            inputInfo.x
+            )
+            subscript.inputs.unshift(
+                inputInfo.x
                 .reduce((last, info) => last + info.tag, "")
                 .concat(
                     inputInfo.y
-                        .reduce((last, info) => last + info.tag, "")
+                    .reduce((last, info) => last + info.tag, "")
                 )
-        )
-
-        if (subscript.inputs.length == 1) {
-            return einsumSingleInput(subscript, operands[0])
-        } else {
-            return einsumMultipleInput(subscript, operands)
-        }
-    })
-}
-
-export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) {
-    return tf.tidy(() => {
-        let [M, N] = [input.shape[input.shape.length - 2], input.shape[input.shape.length - 1]]
-        let output = input.reshape([-1, M, N])
-        let inBand = tf.tensor(new Array(M * N).fill(1).map((_, idx) => {
-            let n = idx % N
-            let m = (idx - n) / N
-            return (numLower < 0 || (m - n) <= numLower) && (numUpper < 0 || (n - m) <= numUpper)
-        }), [1, M, N])
-
-        return tf.mul(output, inBand).reshape(input.shape)
-    })
-}
-
-export let stopGradient = tf.customGrad((x, save) => {
-    // Save x to make sure it's available later for the gradient.
-    save([x])
-    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
-    return {
-        value: x.clone(),
-        // Note `saved.x` which points to the `x` we saved earlier.
-        gradFunc: (dy, saved) => [tf.zeros(saved[0].shape)]
-    }
-})
-
-export function l2Normalize(x, axis = null, epsilon = 1e-12) {
-    return tf.tidy(() => {
-        let norm = tf.sqrt(tf.sum(tf.square(x), axis, true))
-        let lower = tf.fill(norm.shape, epsilon)
-        let isGreater = tf.greater(norm, lower)
-        return tf.div(x, tf.where(isGreater, norm, lower))
-    })
-}
-
-export function clipByGlobalNorm(tList, clipNorm) {
-    return tf.tidy(() => {
-        let globalNorm = tf.sqrt(
-            tf.addN(
-                tList.map((t) => {
-                    return tf.sum(tf.square(t))
-                })
             )
-        )
-        return [
-            tList.map((t) => {
-                let lower = tf.fill(globalNorm.shape, clipNorm)
-                let isGreater = tf.greater(globalNorm, lower)
-                return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
-            }),
-            globalNorm
-        ]
-    })
-}
 
-<<<<<<< HEAD
-export function transpose(x, perm = null) {
-    return tf.tidy(() => {
-        let rankIndex = x.shape.map((_, index) => index)
-        perm = perm ? perm : rankIndex.slice().sort((a, b) => { //由大到小排序
-            if (a > b) return -1;
-            if (a < b) return 1;
-=======
-export function largeRankTranspose(x, perm = null) {
-    return tf.tidy(() => {
-        let rankIndex = x.shape.map((_, index) => index)
-        perm = perm ? perm : rankIndex.sort((a, b) => { //由大到小排序
-            if (a.tag > b.tag) return -1;
-            if (a.tag < b.tag) return 1;
->>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
-            return 0;
+            if (subscript.inputs.length == 1) {
+                return einsumSingleInput(subscript, operands[0])
+            } else {
+                return einsumMultipleInput(subscript, operands)
+            }
         })
-        if (perm.length != x.shape.length) {
-            console.error(`Error in transpose: rank of input ${x.shape.length} must match length of perm.`)
-        } else if (perm.find((dim) => dim < 0 || dim > x.shape.length - 1)) {
-            console.error(`All entries in 'perm' must be between 0 and ${x.shape.length - 1} but got ${perm}.`)
-        }
-        let _singleTranspose = (input, axis, perm, rankIndex) => {
-            return tf.tidy(() => {
-                let _rankIndex = rankIndex.slice()
-                let moveTo = perm.indexOf(axis)
-                let idx = _rankIndex.indexOf(axis)
-                _rankIndex.splice(idx, 1)
-                _rankIndex.splice(moveTo, 0, axis)
-<<<<<<< HEAD
+    }
 
-                let output = stack(
-                    unstack(input, idx),
-=======
-                let output = tf.stack(
-                    tf.unstack(input, idx),
->>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
-                    moveTo
+    export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) {
+        return tf.tidy(() => {
+            let [M, N] = [input.shape[input.shape.length - 2], input.shape[input.shape.length - 1]]
+            let output = input.reshape([-1, M, N])
+            let inBand = tf.tensor(new Array(M * N).fill(1).map((_, idx) => {
+                let n = idx % N
+                let m = (idx - n) / N
+                return (numLower < 0 || (m - n) <= numLower) && (numUpper < 0 || (n - m) <= numUpper)
+            }), [1, M, N])
+
+            return tf.mul(output, inBand).reshape(input.shape)
+        })
+    }
+
+    export let stopGradient = tf.customGrad((x, save) => {
+        // Save x to make sure it's available later for the gradient.
+        save([x])
+            // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+        return {
+            value: x.clone(),
+            // Note `saved.x` which points to the `x` we saved earlier.
+            gradFunc: (dy, saved) => [tf.zeros(saved[0].shape)]
+        }
+    })
+
+    export function l2Normalize(x, axis = null, epsilon = 1e-12) {
+        return tf.tidy(() => {
+            let norm = tf.sqrt(tf.sum(tf.square(x), axis, true))
+            let lower = tf.fill(norm.shape, epsilon)
+            let isGreater = tf.greater(norm, lower)
+            return tf.div(x, tf.where(isGreater, norm, lower))
+        })
+    }
+
+    export function clipByGlobalNorm(tList, clipNorm) {
+        return tf.tidy(() => {
+            let globalNorm = tf.sqrt(
+                tf.addN(
+                    tList.map((t) => {
+                        return tf.sum(tf.square(t))
+                    })
                 )
-                return [output, _rankIndex]
-            })
-        }
-        let output = x.clone()
-        for (let i = 0; i < x.shape.length; i++) {
-            [output, rankIndex] = _singleTranspose(output, i, perm, rankIndex)
-        }
-        return output
-    })
-<<<<<<< HEAD
-}
-
-export function stack(tensors = [tf.tensor()], axis) {
-    return tf.tidy(() => {
-        axis = axis != null ? axis : 0
-        let shape = tensors[0].shape.slice()
-        let strides = [shape[0] * (tensors[0].strides[0] || 1)].concat(tensors[0].strides).concat([1])
-        if (tensors.find(tensor => !(tensor instanceof tf.Tensor) || (tensor.shape.toString() != shape.toString())) != undefined) {
-            console.error(`All tensors passed to stack must match`)
-            return
-        }
-        shape.splice(axis, 0, tensors.length)
-        return tf.stack(
-            tensors.map(tensor => {
-                return tensor.reshape([-1, strides[axis]])
-            }),
-            axis
-        ).reshape(shape)
-    })
-}
-
-export function unstack(x = tf.tensor(), axis) {
-    return tf.tidy(() => {
-        axis = axis != null ? axis : 0
-        let shape = x.shape.slice()
-        let strides = [shape[0] * (x.strides[0] || 1)].concat(x.strides).concat([1])
-        if (!(x instanceof tf.Tensor)) {
-            console.error(`x must be tensor`)
-            return
-        }
-
-        return tf.unstack(
-            x.reshape([-1, shape.splice(axis, 1)[0], strides[axis + 1]]),
-            1
-        ).map(t => {
-            return t.reshape(shape)
+            )
+            return [
+                tList.map((t) => {
+                    let lower = tf.fill(globalNorm.shape, clipNorm)
+                    let isGreater = tf.greater(globalNorm, lower)
+                    return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
+                }),
+                globalNorm
+            ]
         })
-    })
-=======
->>>>>>> 1b88e4c7ad986f4baaa042e711679700182aa868
-}
+    }
+
+    export function transpose(x, perm = null) {
+        return tf.tidy(() => {
+            let rankIndex = x.shape.map((_, index) => index)
+            perm = perm ? perm : rankIndex.slice().sort((a, b) => { //由大到小排序
+                if (a > b) return -1;
+                if (a < b) return 1;
+                return 0;
+            })
+            if (perm.length != x.shape.length) {
+                console.error(`Error in transpose: rank of input ${x.shape.length} must match length of perm.`)
+            } else if (perm.find((dim) => dim < 0 || dim > x.shape.length - 1)) {
+                console.error(`All entries in 'perm' must be between 0 and ${x.shape.length - 1} but got ${perm}.`)
+            }
+            let _singleTranspose = (input, axis, perm, rankIndex) => {
+                return tf.tidy(() => {
+                    let _rankIndex = rankIndex.slice()
+                    let moveTo = perm.indexOf(axis)
+                    let idx = _rankIndex.indexOf(axis)
+                    _rankIndex.splice(idx, 1)
+                    _rankIndex.splice(moveTo, 0, axis)
+
+                    let output = stack(
+                        unstack(input, idx),
+                        moveTo
+                    )
+                    return [output, _rankIndex]
+                })
+            }
+            let output = x.clone()
+            for (let i = 0; i < x.shape.length; i++) {
+                [output, rankIndex] = _singleTranspose(output, i, perm, rankIndex)
+            }
+            return output
+        })
+    }
+
+    export function stack(tensors = [tf.tensor()], axis) {
+        return tf.tidy(() => {
+            axis = axis != null ? axis : 0
+            let shape = tensors[0].shape.slice()
+            let strides = [shape[0] * (tensors[0].strides[0] || 1)].concat(tensors[0].strides).concat([1])
+            if (tensors.find(tensor => !(tensor instanceof tf.Tensor) || (tensor.shape.toString() != shape.toString())) != undefined) {
+                console.error(`All tensors passed to stack must match`)
+                return
+            }
+            shape.splice(axis, 0, tensors.length)
+            return tf.stack(
+                tensors.map(tensor => {
+                    return tensor.reshape([-1, strides[axis]])
+                }),
+                axis
+            ).reshape(shape)
+        })
+    }
+
+    export function unstack(x = tf.tensor(), axis) {
+        return tf.tidy(() => {
+            axis = axis != null ? axis : 0
+            let shape = x.shape.slice()
+            let strides = [shape[0] * (x.strides[0] || 1)].concat(x.strides).concat([1])
+            if (!(x instanceof tf.Tensor)) {
+                console.error(`x must be tensor`)
+                return
+            }
+
+            return tf.unstack(
+                x.reshape([-1, shape.splice(axis, 1)[0], strides[axis + 1]]),
+                1
+            ).map(t => {
+                return t.reshape(shape)
+            })
+        })
+    }
