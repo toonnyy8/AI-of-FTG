@@ -31,3 +31,37 @@ class SequenceTidy {
 export function sequenceTidy(func = () => {}) {
     return new SequenceTidy(func)
 }
+
+class MemoryManagement {
+    constructor() {
+        this._mem = null
+    }
+    get ptr() {
+        return this._mem
+    }
+    set ptr(value) {
+        tf.dispose(this._mem)
+        this._mem = value
+    }
+}
+
+class MemoryBox {
+    constructor() {
+        this.box = {}
+    }
+
+    read(name) {
+        if (this.box[name] == undefined) {
+            this.box[name] = new MemoryManagement()
+        }
+        return this.box[name]
+    }
+
+    dispose() {
+        Object.values(this.box).forEach((v) => v = null)
+    }
+}
+
+export function memoryBox() {
+    return new MemoryBox()
+}

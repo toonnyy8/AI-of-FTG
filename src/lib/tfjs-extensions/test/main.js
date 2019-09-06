@@ -18,13 +18,17 @@ console.log(tf.memory())
 //     // tfex.unstack(a, 1).forEach(t => t.print())
 
 
-const time = tf.time(() => tfex.tool.sequenceTidy((x, y) => {
-    return x.mul(y)
-}).next((x) => {
-    console.log(x)
-    return x.unstack()
-}).run(tf.tensor([1, 2, 3]), tf.tensor([4, 5, 6])));
+// const time = tf.time(() => tfex.tool.sequenceTidy((x, y) => {
+//     return x.mul(y)
+// }).next((x) => {
+//     console.log(x)
+//     return x.unstack()
+// }).run(tf.tensor([1, 2, 3]), tf.tensor([4, 5, 6])));
 
-time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
+// time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
 
+let box = tfex.tool.memoryBox()
+box.read("a").ptr = [tf.tensor([1, 2, 3])]
+box.read("a").ptr = tf.tensor([1, 2, 3, 4, 5, 6])
+box.read("a").ptr.print()
 console.log(tf.memory())
