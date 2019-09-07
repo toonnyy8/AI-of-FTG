@@ -18,22 +18,40 @@ function myDense(
         outputShape.pop()
         outputShape.push(args.units)
 
-        let output = tf.dot(tf.reshape(args.x, [-1, kernelShape[0]]),
-            scope.getVariable(`${args.name}_kernel`, kernelShape, "float32", args.kernelInitializer, true)
-        )
-        output = tf.reshape(output, outputShape)
-        if (args.useBias) {
-            output = tf.add(output,
-                scope.getVariable(`${args.name}_bias`, [args.units], "float32", args.kernelInitializer, true)
+        return tfex.tool.tensorPtr(tf.reshape(args.x, [-1, kernelShape[0]]))
+            .sequence(
+                tptr => tptr.assign(
+                    tf.dot(
+                        tptr.read(),
+                        scope.getVariable(`${args.name}_kernel`, kernelShape, "float32", args.kernelInitializer, true)
+                    )
+                )
             )
-        }
-
-        if (args.activation != null) {
-            output = tf[args.activation](output)
-        }
-
-        return output
-
+            .sequence(
+                tptr => tptr.assign(
+                    tf.reshape(tptr.read(), outputShape)
+                )
+            )
+            .sequence(
+                tptr => {
+                    if (args.useBias) {
+                        tptr.assign(
+                            tf.add(
+                                tptr.read(),
+                                scope.getVariable(`${args.name}_bias`, [args.units], "float32", args.kernelInitializer, true)
+                            )
+                        )
+                    }
+                }
+            ).sequence(
+                tptr => {
+                    if (args.activation != null) {
+                        tptr.assign(
+                            tf[args.activation](tptr.read())
+                        )
+                    }
+                }
+            ).read()
     })
 }
 
@@ -454,60 +472,70 @@ export function transformer(args = {
 
         let attnMask = _createMask(qlen, mlen, args.sameLength)
 
-        let posSeq = tf.range(klen - 1, -1, -1.0)
-        if (args.clampLen > 0) {
-            posSeq = tf.minimum(posSeq, args.clampLen)
-        }
-        let invFreq = tf.div(1, tf.pow(10000, (tf.div(tf.range(0, args.dModel, 2.0), args.dModel))))
+        let posSeq = tfex.tool.tensorPtr(tf.range(klen - 1, -1, -1.0))
+            .sequence(tptr => {
+                if (args.clampLen > 0) {
+                    tptr.assign(tf.minimum(tptr.read(), args.clampLen))
+                }
+            })
 
-        let posEmb = positionalEmbedding({ posSeq: posSeq, invFreq: invFreq })
+        let invFreq = tfex.tool.tensorPtr(tf.range(0, args.dModel, 2.0))
+            .sequence(tptr => tptr.assign(tf.div(tptr.read(), args.dModel)))
+            .sequence(tptr => tptr.assign(tf.pow(10000, tptr.read())))
+            .sequence(tptr => tptr.assign(tf.div(1, tptr.read())))
 
-        let output = tf.dropout(embeddings, args.dropout)
-        posEmb = tf.dropout(posEmb, args.dropout)
+        let posEmb = tfex.tool.tensorPtr(positionalEmbedding({ posSeq: posSeq.read(), invFreq: invFreq.read() }))
+
+        let output = tfex.tool.tensorPtr(tf.dropout(embeddings, args.dropout))
+        posEmb.assign(tf.dropout(posEmb.read(), args.dropout))
 
         if (mems == null) {
             mems = new Array(args.nLayer).fill(null)
         }
 
         for (let i = 0; i < args.nLayer; i++) { //cache new mems
-            newMems.push(_cacheMem(output, mems[i], args.memLen))
-            output = tf.tidy(() => {
-                let layerScope = scope.variableScope(`layer_${i}`)
-                output = relMultiheadAttn({
-                    w: output,
-                    r: posEmb,
-                    rwBias: !args.untieR ? rwBias : rwBias[i],
-                    rrBias: !args.untieR ? rrBias : rrBias[i],
-                    attnMask: attnMask,
-                    mem: mems[i],
-                    dModel: args.dModel,
-                    nHead: args.nHead,
-                    dHead: args.dHead,
-                    dropout: args.dropout,
-                    dropatt: args.dropatt,
-                    isTraining: args.isTraining,
-                    kernelInitializer: args.initializer
-                },
-                    layerScope.variableScope("rel_attn")
+            newMems.push(_cacheMem(output.read(), mems[i], args.memLen))
+            let layerScope = scope.variableScope(`layer_${i}`)
+            output.sequence(tptr => {
+                tptr.assign(
+                    relMultiheadAttn({
+                        w: tptr.read(),
+                        r: posEmb.read(),
+                        rwBias: !args.untieR ? rwBias : rwBias[i],
+                        rrBias: !args.untieR ? rrBias : rrBias[i],
+                        attnMask: attnMask,
+                        mem: mems[i],
+                        dModel: args.dModel,
+                        nHead: args.nHead,
+                        dHead: args.dHead,
+                        dropout: args.dropout,
+                        dropatt: args.dropatt,
+                        isTraining: args.isTraining,
+                        kernelInitializer: args.initializer
+                    },
+                        layerScope.variableScope("rel_attn")
+                    )
                 )
-                output = positionwiseFF({
-                    inp: output,
-                    dModel: args.dModel,
-                    dInner: args.dInner,
-                    dropout: args.dropout,
-                    kernelInitializer: args.initializer,
-                    isTraining: args.isTraining
-                },
-                    layerScope.variableScope("ff")
+            }).sequence(tptr => {
+                tptr.assign(
+                    positionwiseFF({
+                        inp: tptr.read(),
+                        dModel: args.dModel,
+                        dInner: args.dInner,
+                        dropout: args.dropout,
+                        kernelInitializer: args.initializer,
+                        isTraining: args.isTraining
+                    },
+                        layerScope.variableScope("ff")
+                    )
                 )
-                return output
             })
         }
-        output = tf.dropout(output, args.dropout)
+        output.assign(tf.dropout(output.read(), args.dropout))
 
         let logsoftmax_fn = maskAdaptiveLogsoftmax
         let loss = logsoftmax_fn({
-            hidden: output,
+            hidden: output.read(),
             target: args.target,
             nToken: args.nToken,
             dEmbed: args.dEmbed,
@@ -524,6 +552,6 @@ export function transformer(args = {
         },
             scope.variableScope("adaptive_softmax")
         )
-        return [loss, tf.stack(newMems), output]
+        return [loss, tf.stack(newMems), output.read()]
     })
 }
