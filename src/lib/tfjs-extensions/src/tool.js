@@ -1,12 +1,12 @@
 import * as tf from "@tensorflow/tfjs"
 
 class SequenceTidy {
-    constructor(startFunc = () => {}) {
+    constructor(startFunc = () => { }) {
         this.funcs = []
         this.funcs.push(startFunc)
     }
 
-    next(func = () => {}) {
+    next(func = () => { }) {
         this.funcs.push(func)
         return this
     }
@@ -28,40 +28,32 @@ class SequenceTidy {
     }
 }
 
-export function sequenceTidy(func = () => {}) {
+export function sequenceTidy(func = () => { }) {
     return new SequenceTidy(func)
 }
 
-class MemoryManagement {
-    constructor() {
-        this._mem = null
-    }
-    get ptr() {
-        return this._mem
-    }
-    set ptr(value) {
-        tf.dispose(this._mem)
-        this._mem = value
-    }
-}
-
-class MemoryBox {
-    constructor() {
-        this.box = {}
-    }
-
-    read(name) {
-        if (this.box[name] == undefined) {
-            this.box[name] = new MemoryManagement()
+export class TensorPtr {
+    constructor(tensor = null) {
+        if ((tensor instanceof tf.Tensor) || tensor == null) {
+            this._ptr = tensor
+        } else {
+            console.error(`tensor must be an instance of tf.Tensor`)
         }
-        return this.box[name]
     }
-
-    dispose() {
-        Object.values(this.box).forEach((v) => v = null)
+    read() {
+        return this._ptr
+    }
+    assign(tensor) {
+        if ((tensor instanceof tf.Tensor) || tensor == null) {
+            tf.dispose(this._ptr)
+            this._ptr = tensor
+            return this._ptr
+        } else {
+            console.error(`tensor must be an instance of tf.Tensor`)
+        }
     }
 }
 
-export function memoryBox() {
-    return new MemoryBox()
+export function tensorPtr(tensor = null) {
+    return new TensorPtr(tensor)
 }

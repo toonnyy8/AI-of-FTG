@@ -27,8 +27,7 @@ console.log(tf.memory())
 
 // time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
 
-let box = tfex.tool.memoryBox()
-box.read("a").ptr = [tf.tensor([1, 2, 3])]
-box.read("a").ptr = tf.tensor([1, 2, 3, 4, 5, 6])
-box.read("a").ptr.print()
+let a = tfex.tool.tensorPtr(tf.tensor([1, 2, 3]))
+a.assign(tf.mul(a.read(), a.read()))
+a.assign(tf.variable(a.read()))
 console.log(tf.memory())

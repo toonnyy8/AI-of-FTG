@@ -1,25 +1,19 @@
 import * as tf from "@tensorflow/tfjs"
 
 declare class SequenceTidy {
-    funcs: [()=>{}]
-    constructor(func: ()=>{})
-    next(func: ()=>{}):SequenceTidy
-    run(input:any):tf.Tensor 
+    funcs: [() => {}]
+    constructor(func: () => {})
+    next(func: () => {}): SequenceTidy
+    run(input: any): tf.Tensor
 }
 
-export declare function sequenceTidy (func: ()=>{}):SequenceTidy
+export declare function sequenceTidy(func: () => {}): SequenceTidy
 
-declare class MemoryManagement {
-    _mem:tf.Tensor
-    ptr :tf.Tensor
-    constructor()
+export declare class TensorPtr {
+    _ptr: tf.Tensor
+    constructor(tensor: tf.Tensor)
+    read(): tf.Tensor
+    assign(tensor: tf.Tensor): tf.Tensor
 }
 
-declare class MemoryBox{
-    box:{name: MemoryManagement}
-    constructor()
-    read(name: String):MemoryManagement
-    dispose():void
-}
-
-export declare function memoryBox():MemoryBox
+export declare function tensorPtr(tensor: tf.Tensor): TensorPtr
