@@ -46,7 +46,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
             })
-            console.log(tf.memory())
+            // console.log(tf.memory())
         }
 
         tf.dispose(mems)

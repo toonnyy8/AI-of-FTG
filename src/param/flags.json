@@ -1,6 +1,6 @@
 {
-    "nLayer": 1,
-    "dModel": 4,
+    "nLayer": 4,
+    "dModel": 24,
     "dEmbed": 8,
     "nHead": 8,
     "dHead": 4,

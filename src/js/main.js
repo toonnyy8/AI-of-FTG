@@ -45,19 +45,19 @@ let main = () => {
     let ctrlLoop = new tool.Loop(() => {
         agent.fetchUpReward()
         agent.control("player1", 5)
-        console.log(tf.memory())
+        // console.log(tf.memory())
         agent.control("player2", 5)
-        console.log(tf.memory())
+        // console.log(tf.memory())
         agent.nextStep()
-    }, 60 * 5)
+    }, 6)
     let trainLoop = new tool.Loop(() => {
         agent.train()
     }, 3)
 
     let loop = () => {
+        requestAnimationFrame(loop)
         ctrlLoop.run()
         trainLoop.run()
-        requestAnimationFrame(loop)
     }
     loop()
 

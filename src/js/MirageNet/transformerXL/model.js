@@ -62,7 +62,7 @@ export function positionalEmbedding(
         invFreq
     }
 ) {
-    console.log("positionalEmbedding")
+    //console.log("positionalEmbedding")
     return tf.tidy(() => {
         let sinusoidInp = tfex.einsum('i,j->ij', args.posSeq, args.invFreq)
         let posEmb = tf.concat([tf.sin(sinusoidInp), tf.cos(sinusoidInp)], -1)
@@ -86,7 +86,7 @@ export function positionwiseFF(
     },
     scope = tfex.scope
 ) {
-    console.log("positionwiseFF")
+    //console.log("positionwiseFF")
     return tf.tidy(() => {
         let output = myDense({
             x: args.inp,
@@ -97,10 +97,7 @@ export function positionwiseFF(
             // kernelInitializer: args.kernelInitializer
         }, scope)
 
-        output = tf.layers.dropout({
-            rate: args.dropout,
-            trainable: args.isTraining
-        }).apply(output)
+        output = tf.dropout(output, args.dropout)
 
         output = myDense({
             x: output,
@@ -110,10 +107,7 @@ export function positionwiseFF(
             // kernelInitializer: args.kernelInitializer
         }, scope)
 
-        output = tf.layers.dropout({
-            rate: args.dropout,
-            trainable: args.isTraining
-        }).apply(output)
+        output = tf.dropout(output, args.dropout)
 
         output = tf.add(output, args.inp)
 
@@ -162,9 +156,9 @@ export function relMultiheadAttn(
     },
     scope = tfex.scope
 ) {
-    console.log("relMultiheadAttn")
+    //console.log("relMultiheadAttn")
     return tf.tidy(() => {
-        console.log(tf.memory())
+        //console.log(tf.memory())
         let scale = 1 / (args.dHead ** 0.5)
         let qlen = args.w.shape[0]
         let rlen = args.r.shape[0]
@@ -209,13 +203,13 @@ export function relMultiheadAttn(
         let rwHeadQ = tfex.tool.tensorPtr(tf.add(wHeadQ.read(), args.rwBias))
         let rrHeadQ = tfex.tool.tensorPtr(tf.add(wHeadQ.read(), args.rrBias))
         wHeadQ.assign(null)
-        console.log(tf.memory())
+        //console.log(tf.memory())
         let AC = tfex.tool.tensorPtr(tfex.einsum('ibnd,jbnd->ijbn', rwHeadQ.read(), wHeadK.read()))
         wHeadK.assign(null)
-        console.log(tf.memory())
+        //console.log(tf.memory())
         let BD = tfex.tool.tensorPtr(tfex.einsum('ibnd,jnd->ijbn', rrHeadQ.read(), rHeadK.read()))
         rHeadK.assign(null)
-        console.log(tf.memory())
+        //console.log(tf.memory())
         BD.assign(relShift({ x: BD.read() }))
         rwHeadQ.assign(null)
         rrHeadQ.assign(null)
@@ -246,10 +240,10 @@ export function relMultiheadAttn(
         }))
         // tf.softmax(attnScore, 1)
         attnProb.assign(tf.layers.dropout({ rate: args.dropatt, trainable: args.isTraining }).apply(attnProb.read()))
-        console.log(tf.memory())
+        //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadQ.assign(null)
-        console.log(tf.memory())
+        //console.log(tf.memory())
 
         let sizeT = attnVec.read().shape
         attnVec.assign(tf.reshape(attnVec.read(), [sizeT[0], sizeT[1], args.nHead * args.dHead]))
@@ -294,7 +288,7 @@ export function maskAdaptiveEmbeddingLookup(
     },
     scope = tfex.scope
 ) {
-    console.log("maskAdaptiveEmbeddingLookup")
+    //console.log("maskAdaptiveEmbeddingLookup")
     return tf.tidy(() => {
         let embScale = args.dProj ** 0.5
         // if (args.divVal == 1) {
@@ -335,7 +329,7 @@ export async function maskAdaptiveLogsoftmax(
     },
     scope = tfex.scope
 ) {
-    console.log("maskAdaptiveLogsoftmax")
+    //console.log("maskAdaptiveLogsoftmax")
     return tf.tidy(() => {
         let _logit = (x, W, b, proj) => {
             return tf.tidy(() => {

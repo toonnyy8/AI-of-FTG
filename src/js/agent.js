@@ -5,6 +5,7 @@ import * as transformerXL from "./MirageNet/transformerXL"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
+// tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     return [
@@ -166,7 +167,7 @@ export class Agent {
             let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
             newStatement = maskAction(newStatement)
             newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
-            let mems = this.mergeMemory(playerName, 10)
+            let mems = this.mergeMemory(playerName, 2)
             mems.push(newStatement)
             let tensorMems = tf.tidy(() => tf.unstack(tf.expandDims(tf.tensor(mems), 2), 0))
             // console.log(tensorMems)
@@ -187,10 +188,6 @@ export class Agent {
                 })
             )
             tf.dispose(tensorMems)
-            output.forEach((t) => {
-                console.log(t)
-                t.dispose()
-            })
         })
     }
 
