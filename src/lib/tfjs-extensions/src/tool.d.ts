@@ -11,9 +11,11 @@ export declare function sequenceTidy(func: () => {}): SequenceTidy
 
 export declare class TensorPtr {
     _ptr: tf.Tensor
+    ptr: tf.Tensor
     constructor(tensor: tf.Tensor)
     read(): tf.Tensor
-    assign(tensor: tf.Tensor): tf.Tensor
+    assign(tensor: tf.Tensor): TensorPtr
+    sequence(func: (tensorPrt: TensorPtr) => {}): TensorPtr
 }
 
 export declare function tensorPtr(tensor: tf.Tensor): TensorPtr

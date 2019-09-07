@@ -40,10 +40,10 @@ export class TensorPtr {
             console.error(`tensor must be an instance of tf.Tensor`)
         }
     }
-    read() {
+    get ptr() {
         return this._ptr
     }
-    assign(tensor) {
+    set ptr(tensor) {
         if ((tensor instanceof tf.Tensor) || tensor == null) {
             tf.dispose(this._ptr)
             this._ptr = tensor
@@ -51,6 +51,22 @@ export class TensorPtr {
         } else {
             console.error(`tensor must be an instance of tf.Tensor`)
         }
+    }
+    read() {
+        return this._ptr
+    }
+    assign(tensor) {
+        if ((tensor instanceof tf.Tensor) || tensor == null) {
+            tf.dispose(this._ptr)
+            this._ptr = tensor
+            return this
+        } else {
+            console.error(`tensor must be an instance of tf.Tensor`)
+        }
+    }
+    sequence(func = () => { }) {
+        func(this)
+        return this
     }
 }
 

@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
+import * as tool from "./tool"
 
 export function repeatElements(x, rep, axis) {
     return tf.tidy(() => {
@@ -29,7 +30,7 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
                 console.error("axis ${at} is not at axises")
             }
 
-            axises.sort(function(a, b) { //由大到小排序
+            axises.sort(function (a, b) { //由大到小排序
                 if (a > b) return -1;
                 if (a < b) return 1;
                 return 0;
@@ -151,7 +152,7 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
 
         let diagShape = Object.values(diadInfo)
 
-        let indices = diagIndices(diagShape)
+        let indices = tool.tensorPtr(diagIndices(diagShape))
 
         let tagSum = Object.keys(diadInfo)
             .reduce((last, tag, axis) => {
@@ -161,20 +162,30 @@ function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = t
                 return last
             }, [])
 
-        return transpose(
+        let output = tool.tensorPtr()
+        output.assign(
             transpose(
-                operand,
-                inputInfo.map((info) => info.axis)
+                output.assign(
+                    transpose(
+                        operand,
+                        inputInfo.map((info) => info.axis)
+                    )
+                ).assign(
+                    output.read().reshape([-1])
+                ).assign(
+                    output.read().gather(indices.read())
+                ).assign(
+                    output.read().sum(tagSum)
+                ).read(),
+                outputInfo
+                    .reduce((last, curr, index) => {
+                        last[`${curr.axis}`] = index
+                        return last
+                    }, [])
             )
-            .reshape([-1])
-            .gather(indices)
-            .sum(tagSum),
-            outputInfo
-            .reduce((last, curr, index) => {
-                last[`${curr.axis}`] = index
-                return last
-            }, [])
         )
+        return output.read()
+
     })
 }
 
@@ -193,18 +204,20 @@ function diagIndices(diagShape = [
     }
     return tf.tidy(() => {
         let pre = 1
-        let indices = tf.range(0, diagShape_.flat().reduce((last, dim) => last * dim, 1), 1, "int32")
+        let indices = tool.tensorPtr(tf.range(0, diagShape_.flat().reduce((last, dim) => last * dim, 1), 1, "int32"))
         for (let i = 0; i < diagShape_.length; i++) {
             if (diagShape_[i].length > 1) {
                 let [stop, step] = getDiagIndices(diagShape_[i][0], diagShape_[i].length)
-                indices = indices
-                    .reshape([pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1])
-                    .gather(tf.range(0, stop, step, "int32"), 1)
+                indices.sequence(
+                    tptr => tptr.assign(tf.reshape(tptr.read(), [pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1]))
+                ).sequence(
+                    tptr => tptr.assign(tf.gather(tptr.read(), tf.range(0, stop, step, "int32"), 1))
+                )
             }
             pre *= diagShape_[i][0]
         }
-        indices = indices.reshape(diagShape_.map((dim) => dim[0]))
-        return indices
+        indices.assign(indices.read().reshape(diagShape_.map((dim) => dim[0])))
+        return indices.read()
     })
 }
 
@@ -241,18 +254,22 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
         ]
 
         operands.unshift(
-            x
-            .reshape([-1, 1])
-            .dot(y.reshape([1, -1]))
-            .reshape(x.shape.concat(y.shape))
+            tool.tensorPtr(x)
+                .sequence(
+                    tptr => tptr.assign(tf.reshape(tptr.read(), [-1, 1]))
+                ).sequence(
+                    tptr => tptr.assign(tf.dot(tptr.read(), y.reshape([1, -1])))
+                ).sequence(
+                    tptr => tptr.assign(tf.reshape(tptr.read(), x.shape.concat(y.shape)))
+                ).read()
         )
         subscript.inputs.unshift(
             inputInfo.x
-            .reduce((last, info) => last + info.tag, "")
-            .concat(
-                inputInfo.y
                 .reduce((last, info) => last + info.tag, "")
-            )
+                .concat(
+                    inputInfo.y
+                        .reduce((last, info) => last + info.tag, "")
+                )
         )
 
         if (subscript.inputs.length == 1) {
@@ -280,7 +297,7 @@ export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) 
 export let stopGradient = tf.customGrad((x, save) => {
     // Save x to make sure it's available later for the gradient.
     save([x])
-        // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
     return {
         value: x.clone(),
         // Note `saved.x` which points to the `x` we saved earlier.
@@ -290,29 +307,41 @@ export let stopGradient = tf.customGrad((x, save) => {
 
 export function l2Normalize(x, axis = null, epsilon = 1e-12) {
     return tf.tidy(() => {
-        let norm = tf.sqrt(tf.sum(tf.square(x), axis, true))
-        let lower = tf.fill(norm.shape, epsilon)
-        let isGreater = tf.greater(norm, lower)
-        return tf.div(x, tf.where(isGreater, norm, lower))
+        let norm = tool.tensorPtr(tf.square(x))
+            .sequence((tptr) => {
+                tptr.assign(tf.sum(tptr.read(), axis, true))
+            })
+            .sequence((tptr) => {
+                tptr.assign(tf.sqrt(tptr.read()))
+            })
+
+        let lower = tool.tensorPtr(tf.fill(norm.read().shape, epsilon))
+        let isGreater = tool.tensorPtr(tf.greater(norm.read(), lower.read()))
+        let output = tool.tensorPtr(tf.where(isGreater.read(), norm.read(), lower.read()))
+        return output.assign(tf.div(x, output.read())).read()
     })
 }
 
 export function clipByGlobalNorm(tList, clipNorm) {
     return tf.tidy(() => {
-        let globalNorm = tf.sqrt(
+        let globalNorm = tool.tensorPtr()
+        globalNorm.assign(
             tf.addN(
                 tList.map((t) => {
-                    return tf.sum(tf.square(t))
+                    let tptr = tool.tensorPtr(tf.square(t))
+                    return tptr.assign(tf.sum(tptr.read())).read()
                 })
             )
-        )
+        ).assign(tf.sqrt(globalNorm.read()))
         return [
             tList.map((t) => {
-                let lower = tf.fill(globalNorm.shape, clipNorm)
-                let isGreater = tf.greater(globalNorm, lower)
-                return tf.div(tf.mul(t, clipNorm), tf.where(isGreater, globalNorm, lower))
+                let lower = tool.tensorPtr(tf.fill(globalNorm.read().shape, clipNorm))
+                let isGreater = tool.tensorPtr(tf.greater(globalNorm.read(), lower.read()))
+                let output = tool.tensorPtr(tf.mul(t, clipNorm))
+                output.assign(tf.div(output, tf.where(isGreater.read(), globalNorm.read(), lower.read())))
+                return output.read()
             }),
-            globalNorm
+            globalNorm.read()
         ]
     })
 }
@@ -345,11 +374,11 @@ export function transpose(x, perm = null) {
                 return [output, _rankIndex]
             })
         }
-        let output = x.clone()
+        let output = tool.tensorPtr(x.clone())
         for (let i = 0; i < x.shape.length; i++) {
-            [output, rankIndex] = _singleTranspose(output, i, perm, rankIndex)
+            [output.ptr, rankIndex] = _singleTranspose(output.read(), i, perm, rankIndex)
         }
-        return output
+        return output.read()
     })
 }
 
@@ -365,13 +394,18 @@ export function stack(tensors = [tf.tensor()], axis) {
 
         return shape.length == 0 ? tf.stack(tensors) :
             tf.tidy(() => {
+                let output = tool.tensorPtr()
                 shape.splice(axis, 0, tensors.length)
-                return tf.stack(
-                    tensors.map(tensor => {
-                        return tensor.reshape([-1, strides[axis]])
-                    }),
-                    1
-                ).reshape(shape)
+                return tool.tensorPtr(
+                    tf.stack(
+                        tensors.map(tensor => {
+                            return tensor.reshape([-1, strides[axis]])
+                        }),
+                        1
+                    )
+                ).sequence(tptr => {
+                    tptr.assign(tptr.read().reshape(shape))
+                }).read()
             })
     })
 }
@@ -390,7 +424,8 @@ export function unstack(x = tf.tensor(), axis) {
             x.reshape([-1, shape.splice(axis, 1)[0], strides[axis + 1]]),
             1
         ).map(t => {
-            return t.reshape(shape)
+            let tptr = tool.tensorPtr(t)
+            return tptr.assign(tptr.read().reshape(shape)).read()
         })
     })
 }
