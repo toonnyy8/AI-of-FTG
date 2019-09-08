@@ -34,6 +34,7 @@ function myDense(
             )
             .sequence(
                 tptr => {
+                    console.log(tptr.read().shape)
                     if (args.useBias) {
                         tptr.assign(
                             tf.add(
@@ -186,6 +187,7 @@ export function relMultiheadAttn(
             scope))
 
         let [whq, whk, whv] = tf.split(wHeads.read(), 3, -1)
+        console.log(wHeads.read().shape)
         wHeads.assign(null)
         let wHeadQ = tfex.tool.tensorPtr(whq)
         let wHeadK = tfex.tool.tensorPtr(whk)
@@ -239,7 +241,7 @@ export function relMultiheadAttn(
             return tf.div(tf.exp(attnScore.read()), tf.sum(tf.exp(attnScore.read()), 1, true))
         }))
         // tf.softmax(attnScore, 1)
-        attnProb.assign(tf.layers.dropout({ rate: args.dropatt, trainable: args.isTraining }).apply(attnProb.read()))
+        attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadV.assign(null)
