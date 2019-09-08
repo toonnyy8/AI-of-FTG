@@ -78,9 +78,11 @@ export function tensorPtr(tensor = null) {
 }
 
 export class TensorPtrList {
-    constructor(tensorList = {}) {
+    constructor(tensorList = null) {
         this._ptrList = {}
-        this.assign(tensorList)
+        if (tensorList !== null) {
+            this.assign(tensorList)
+        }
     }
 
     assign(tensorList = {}) {

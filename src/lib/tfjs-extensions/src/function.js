@@ -62,225 +62,6 @@ export function mergeShape(tensor = tf.tensor(), axises, at = null) {
     })
 }
 
-export function einsum(subscripts = "", ...operands) {
-    return tf.tidy(() => {
-        let subscript = {
-            inputs: null,
-            output: null
-        };
-        let _;
-
-        [, subscript.inputs, _, subscript.output] = subscripts.match("^([a-zA-Z,.]+)(->)?([a-zA-Z.]*)?$") || [null, null, null, null]
-
-        if (_ == null) {
-            console.error(`Need "->"`)
-            return
-        }
-
-        if (!subscript.inputs) {
-            console.error(`Indices have incorrect format: ${subscripts}`)
-            return
-        }
-
-        if (operands.find(input => !(input instanceof tf.Tensor)) != undefined || operands.length == 0) {
-            console.error(`operands type is not tensor`)
-            return
-        }
-
-        subscript.inputs = subscript.inputs.split(",")
-        if (subscript.inputs.find(val => val == "") != undefined) {
-            console.error(`Indices have incorrect format: ${subscripts}`)
-            return
-        }
-
-        if (subscript.inputs.length != operands.length) {
-            console.error(`Incorrect number of operands`)
-            return
-        }
-
-        if (subscript.output == null) {
-            subscript.output = ""
-        }
-
-        if (subscript.inputs.length == 1) {
-            return einsumSingleInput(subscript, operands[0])
-        } else {
-            return einsumMultipleInput(subscript, operands)
-        }
-    })
-}
-
-function einsumSingleInput(subscript = { inputs: [""], output: "" }, operand = tf.tensor()) {
-    return tf.tidy(() => {
-        let inputInfo = subscript.inputs[0]
-            .split("")
-            .map((tag, axis) => {
-                return { tag: tag, axis: axis, dim: operand.shape[axis] }
-            })
-            .sort((a, b) => { //由小到大排序
-                if (a.tag > b.tag) return 1;
-                if (a.tag < b.tag) return -1;
-                return 0;
-            })
-
-        let outputInfo = subscript.output == "" ? [] : subscript.output
-            .split("")
-            .map((tag, axis) => {
-                if (subscript.inputs[0].search(tag) == -1) {
-                    console.error(`Output Tag_${tag} does not exist`)
-                }
-                return { tag: tag, axis: axis }
-            })
-            .sort((a, b) => { //由小到大排序
-                if (a.tag > b.tag) return 1;
-                if (a.tag < b.tag) return -1;
-                return 0;
-            })
-
-        let diadInfo = inputInfo.reduce((last, info) => {
-            if (last[info.tag]) {
-                if (last[info.tag][0] != info.dim) {
-                    console.error(`Dim of Tag_${info.tag} are inconsistent`)
-                } else {
-                    last[info.tag].push(info.dim)
-                }
-            } else {
-                last[info.tag] = [info.dim]
-            }
-            return last
-        }, {})
-
-        let diagShape = Object.values(diadInfo)
-
-        let indices = tool.tensorPtr(diagIndices(diagShape))
-
-        let tagSum = Object.keys(diadInfo)
-            .reduce((last, tag, axis) => {
-                if (subscript.output.search(tag) == -1) {
-                    last.push(axis)
-                }
-                return last
-            }, [])
-
-        let output = tool.tensorPtr()
-        output.assign(
-            transpose(
-                output.assign(
-                    transpose(
-                        operand,
-                        inputInfo.map((info) => info.axis)
-                    )
-                ).assign(
-                    output.read().reshape([-1])
-                ).assign(
-                    output.read().gather(indices.read())
-                ).assign(
-                    output.read().sum(tagSum)
-                ).read(),
-                outputInfo
-                    .reduce((last, curr, index) => {
-                        last[`${curr.axis}`] = index
-                        return last
-                    }, [])
-            )
-        )
-        return output.read()
-
-    })
-}
-
-function diagIndices(diagShape = [
-    []
-]) {
-    let diagShape_ = JSON.parse(JSON.stringify(diagShape))
-    let getDiagIndices = (dim, edgeNum) => {
-        let stop = dim ** edgeNum
-        let step = 1
-
-        for (let i = 1; i < edgeNum; i++) {
-            step = step * dim + 1
-        }
-        return [stop, step]
-    }
-    return tf.tidy(() => {
-        let pre = 1
-        let indices = tool.tensorPtr(tf.range(0, diagShape_.flat().reduce((last, dim) => last * dim, 1), 1, "int32"))
-        for (let i = 0; i < diagShape_.length; i++) {
-            if (diagShape_[i].length > 1) {
-                let [stop, step] = getDiagIndices(diagShape_[i][0], diagShape_[i].length)
-                indices.sequence(
-                    tptr => {
-                        tptr.assign(tf.reshape(tptr.read(), [pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1]))
-                            .assign(tf.gather(tptr.read(), tf.range(0, stop, step, "int32"), 1))
-                    }
-                )
-            }
-            pre *= diagShape_[i][0]
-        }
-        indices.assign(indices.read().reshape(diagShape_.map((dim) => dim[0])))
-        return indices.read()
-    })
-}
-
-function einsumMultipleInput(subscript = { inputs: [""], output: null }, operands = [tf.tensor()]) {
-    return tf.tidy(() => {
-        let inputInfo = {
-            x: subscript.inputs
-                .shift()
-                .split("")
-                .map((tag, axis) => {
-                    return { tag: tag, axis: axis }
-                })
-                .sort((a, b) => { //由小到大排序
-                    if (a.tag > b.tag) return 1;
-                    if (a.tag < b.tag) return -1;
-                    return 0;
-                }),
-            y: subscript.inputs
-                .shift()
-                .split("")
-                .map((tag, axis) => {
-                    return { tag: tag, axis: axis }
-                })
-                .sort((a, b) => { //由小到大排序
-                    if (a.tag > b.tag) return 1;
-                    if (a.tag < b.tag) return -1;
-                    return 0;
-                })
-        }
-
-        let [x, y] = [
-            operands.shift().transpose(inputInfo.x.map((info) => info.axis)),
-            operands.shift().transpose(inputInfo.y.map((info) => info.axis))
-        ]
-
-        operands.unshift(
-            tool.tensorPtr(x)
-                .sequence(
-                    tptr => {
-                        tptr.assign(tf.reshape(tptr.read(), [-1, 1]))
-                            .assign(tf.dot(tptr.read(), y.reshape([1, -1])))
-                            .assign(tf.reshape(tptr.read(), x.shape.concat(y.shape)))
-                    }
-                ).read()
-        )
-        subscript.inputs.unshift(
-            inputInfo.x
-                .reduce((last, info) => last + info.tag, "")
-                .concat(
-                    inputInfo.y
-                        .reduce((last, info) => last + info.tag, "")
-                )
-        )
-
-        if (subscript.inputs.length == 1) {
-            return einsumSingleInput(subscript, operands[0])
-        } else {
-            return einsumMultipleInput(subscript, operands)
-        }
-    })
-}
-
 export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) {
     return tf.tidy(() => {
         let [M, N] = [input.shape[input.shape.length - 2], input.shape[input.shape.length - 1]]
@@ -426,5 +207,127 @@ export function unstack(x = tf.tensor(), axis) {
             let tptr = tool.tensorPtr(t)
             return tptr.assign(tptr.read().reshape(shape)).read()
         })
+    })
+}
+
+export function einsum(subscripts = "", ...operands) {
+    return tf.tidy(() => {
+        let subscript = {
+            inputs: null,
+            output: null
+        };
+        let _;
+
+        [, subscript.inputs, _, subscript.output] = subscripts.match("^([a-zA-Z,.]+)(->)?([a-zA-Z.]*)?$") || [null, null, null, null]
+
+        if (_ == null) {
+            console.error(`Need "->"`)
+            return
+        }
+
+        if (!subscript.inputs) {
+            console.error(`Indices have incorrect format: ${subscripts}`)
+            return
+        }
+
+        if (operands.find(input => !(input instanceof tf.Tensor)) != undefined || operands.length == 0) {
+            console.error(`operands type is not tensor`)
+            return
+        }
+
+        subscript.inputs = subscript.inputs.split(",")
+        if (subscript.inputs.find(val => val == "") != undefined) {
+            console.error(`Indices have incorrect format: ${subscripts}`)
+            return
+        }
+
+        if (subscript.inputs.length != operands.length) {
+            console.error(`Incorrect number of operands`)
+            return
+        }
+
+        if (subscript.output == null) {
+            subscript.output = ""
+        }
+
+        return _einsum(subscript, operands)
+    })
+}
+
+function _einsum(subscript = { inputs: [""], output: null }, operands = [tf.tensor()]) {
+    return tf.tidy(() => {
+        let inputAnalysis = operands.map((t, idx) => {
+            let axisTag = subscript.inputs[idx].split("")
+            return t.shape.map((dim, axis) => {
+                return { tag: axisTag[axis], axis: axis, dim: dim }
+            }).sort((a, b) => { //由小到大排序
+                if (a.tag > b.tag) return 1;
+                if (a.tag < b.tag) return -1;
+                return 0;
+            })
+        })
+
+        let flatten = inputAnalysis.flat()
+            .sort((a, b) => { //由小到大排序
+                if (a.tag > b.tag) return 1;
+                if (a.tag < b.tag) return -1;
+                return 0;
+            })
+            .reduce((last, curr, index) => {
+                if (last.length == 0) {
+                    last.push(curr)
+                    return last
+                } else if (last[last.length - 1].tag != curr.tag) {
+                    last.push(curr)
+                    return last
+                }
+                return last
+            }, [])
+
+        return tool.tensorPtrList()
+            .sequence(tptrL => {//transpose
+                tptrL.assign({ "output": tf.scalar(1) })
+                for (let i = 0; i < operands.length; i++) {
+                    tptrL.assign({ [`${i}`]: operands[i].transpose(inputAnalysis[i].map(e => e.axis)) })//transpose
+                    let [newShape, reps] = [[], []]
+                    for (let j = 0; j < flatten.length; j++) {
+                        if (inputAnalysis[i].find((val) => val.tag == flatten[j].tag) != undefined) {
+                            newShape.push(flatten[j].dim)
+                            reps.push(1)
+                        } else {
+                            newShape.push(1)
+                            reps.push(flatten[j].dim)
+                        }
+
+                    }
+                    tptrL.assign({ [`${i}`]: tptrL.read(`${i}`).reshape(newShape) })//expand dims
+                    tptrL.assign({ [`${i}`]: tptrL.read(`${i}`).tile(reps) })//repeat element
+                    tptrL.assign({ "output": tf.mul(tptrL.read("output"), tptrL.read(`${i}`)) })//mul
+                    tptrL.assign({ [`${i}`]: null })//dispose
+                }
+                tptrL.assign({
+                    "output": tptrL.read("output").sum(
+                        flatten
+                            .reduce((last, curr, idx) => {
+                                if (subscript.output.search(curr.tag) == -1) {
+                                    last.push(idx)
+                                }
+                                return last
+                            }, [])
+                    )
+                })//sum
+                tptrL.assign({
+                    "output": tptrL.read("output").transpose(
+                        subscript.output.split("")
+                            .map((tag, axis) => {
+                                return { tag: tag, axis: axis }
+                            }).sort((a, b) => { //由小到大排序
+                                if (a.tag > b.tag) return 1;
+                                if (a.tag < b.tag) return -1;
+                                return 0;
+                            }).map(info => info.axis)
+                    )
+                })//transpose
+            }).read("output")
     })
 }

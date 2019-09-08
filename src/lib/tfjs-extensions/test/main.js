@@ -27,18 +27,25 @@ console.log(tf.memory())
 
 // time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
 
-let a = tfex.tool.tensorPtr(tf.tensor([1, 2, 3]))
-a.assign(tf.mul(a.read(), a.read()))
-a.assign(tf.variable(a.read()))
+// let a = tfex.tool.tensorPtr(tf.tensor([1, 2, 3]))
+// a.assign(tf.mul(a.read(), a.read()))
+// a.assign(tf.variable(a.read()))
 
-let l = tfex.tool.tensorPtrList([tf.tensor([1, 2])])
-l.read(0).print()
-l.reName(0, "tB").read("tB").print()
-l.assign({ "tB": tf.tensor([5, 6, 7, 8, 9, 10, 50, 81, 7, 69]) }).read("tB").print()
+// let l = tfex.tool.tensorPtrList([tf.tensor([1, 2])])
+// l.read(0).print()
+// l.reName(0, "tB").read("tB").print()
+// l.assign({ "tB": tf.tensor([5, 6, 7, 8, 9, 10, 50, 81, 7, 69]) }).read("tB").print()
 
-l.sequence((tptrList) => {
-    tptrList.assign({ "tA": tf.tensor([6]) })
-}).sequence(tptrList => {
-    tptrList.assign({ "tB": tptrList.read("tB").mul(tptrList.read("tA")) })
-}).read("tB").print()
+// l.sequence((tptrList) => {
+//     tptrList.assign({ "tA": tf.tensor([6]) })
+// }).sequence(tptrList => {
+//     tptrList.assign({ "tB": tptrList.read("tB").mul(tptrList.read("tA")) })
+// }).read("tB").print()
+// l.assign({ tA: null })
+
+let a = tf.range(0, 24 * 24 * 8, 1).reshape([24, 24, 8])
+let b = tf.range(0, 24 * 24 * 8, 1).reshape([24, 8, 24])
+const time = tf.time(() => tfex.einsum("ijk,jkl->ikl", a, b).print())
+time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
+
 console.log(tf.memory())
