@@ -38,6 +38,7 @@ export class TensorPtr {
             this._ptr = tensor
         } else {
             console.error(`tensor must be an instance of tf.Tensor`)
+            return
         }
     }
     get ptr() {
@@ -50,6 +51,7 @@ export class TensorPtr {
             return this._ptr
         } else {
             console.error(`tensor must be an instance of tf.Tensor`)
+            return
         }
     }
     read() {
@@ -62,6 +64,7 @@ export class TensorPtr {
             return this
         } else {
             console.error(`tensor must be an instance of tf.Tensor`)
+            return
         }
     }
     sequence(func = () => { }) {
@@ -72,4 +75,42 @@ export class TensorPtr {
 
 export function tensorPtr(tensor = null) {
     return new TensorPtr(tensor)
+}
+
+export class TensorPtrList {
+    constructor(tensorList = {}) {
+        this._ptrList = {}
+        this.assign(tensorList)
+    }
+
+    assign(tensorList = {}) {
+        if (Object.values(tensorList).find(tensor => !(tensor instanceof tf.Tensor)) != undefined) {
+            console.error(`tensor must be of type tf.Tensor`)
+            return
+        }
+        Object.keys(tensorList).forEach(key => {
+            tf.dispose(this._ptrList[key])
+            this._ptrList[key] = tensorList[key]
+        })
+        return this
+    }
+
+    read(key) {
+        return this._ptrList[key]
+    }
+
+    reName(oldName, newName) {
+        this._ptrList[newName] = this._ptrList[oldName]
+        delete this._ptrList[oldName]
+        return this
+    }
+
+    sequence(func = () => { }) {
+        func(this)
+        return this
+    }
+}
+
+export function tensorPtrList(tensorList) {
+    return new TensorPtrList(tensorList)
 }

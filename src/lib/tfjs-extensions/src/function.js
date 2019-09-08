@@ -209,9 +209,10 @@ function diagIndices(diagShape = [
             if (diagShape_[i].length > 1) {
                 let [stop, step] = getDiagIndices(diagShape_[i][0], diagShape_[i].length)
                 indices.sequence(
-                    tptr => tptr.assign(tf.reshape(tptr.read(), [pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1]))
-                ).sequence(
-                    tptr => tptr.assign(tf.gather(tptr.read(), tf.range(0, stop, step, "int32"), 1))
+                    tptr => {
+                        tptr.assign(tf.reshape(tptr.read(), [pre, diagShape_[i].reduce((last, dim) => last * dim, 1), -1]))
+                            .assign(tf.gather(tptr.read(), tf.range(0, stop, step, "int32"), 1))
+                    }
                 )
             }
             pre *= diagShape_[i][0]
@@ -256,11 +257,11 @@ function einsumMultipleInput(subscript = { inputs: [""], output: null }, operand
         operands.unshift(
             tool.tensorPtr(x)
                 .sequence(
-                    tptr => tptr.assign(tf.reshape(tptr.read(), [-1, 1]))
-                ).sequence(
-                    tptr => tptr.assign(tf.dot(tptr.read(), y.reshape([1, -1])))
-                ).sequence(
-                    tptr => tptr.assign(tf.reshape(tptr.read(), x.shape.concat(y.shape)))
+                    tptr => {
+                        tptr.assign(tf.reshape(tptr.read(), [-1, 1]))
+                            .assign(tf.dot(tptr.read(), y.reshape([1, -1])))
+                            .assign(tf.reshape(tptr.read(), x.shape.concat(y.shape)))
+                    }
                 ).read()
         )
         subscript.inputs.unshift(
@@ -310,9 +311,7 @@ export function l2Normalize(x, axis = null, epsilon = 1e-12) {
         let norm = tool.tensorPtr(tf.square(x))
             .sequence((tptr) => {
                 tptr.assign(tf.sum(tptr.read(), axis, true))
-            })
-            .sequence((tptr) => {
-                tptr.assign(tf.sqrt(tptr.read()))
+                    .assign(tf.sqrt(tptr.read()))
             })
 
         let lower = tool.tensorPtr(tf.fill(norm.read().shape, epsilon))

@@ -19,3 +19,13 @@ export declare class TensorPtr {
 }
 
 export declare function tensorPtr(tensor: tf.Tensor): TensorPtr
+
+export declare class TensorPtrList {
+    _ptrList: { key: tf.Tensor }
+    constructor(tensorList: { key: tf.Tensor })
+    read(key: String): tf.Tensor
+    assign(tensorList: { key: tf.Tensor }): TensorPtrList
+    sequence(func: (tensorPrtList: TensorPtrList) => {}): TensorPtrList
+}
+
+export declare function tensorPtrList(tensorList: { key: tf.Tensor }): TensorPtrList
