@@ -45,7 +45,10 @@ console.log(tf.memory())
 
 let a = tf.range(0, 24 * 24 * 8, 1).reshape([24, 24, 8])
 let b = tf.range(0, 24 * 24 * 8, 1).reshape([24, 8, 24])
-const time = tf.time(() => tfex.einsum("ijk,jkl->ikl", a, b).print())
+const time = tf.time(() => console.log(tfex.einsum("ijk,jkl->il", a, b)))
 time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
+
+// const time = tf.time(() => tfex.tile(tf.tensor([1, 2, 3, 4], [2, 2]), [1, 2]).print())
+// time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
 
 console.log(tf.memory())
