@@ -305,7 +305,7 @@ export function maskAdaptiveEmbeddingLookup(
     })
 }
 
-export async function maskAdaptiveLogsoftmax(
+export function maskAdaptiveLogsoftmax(
     args = {
         hidden,
         target,

@@ -1,7 +1,7 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 // import "./test"
-import { Agent } from "./agent"
+import { Environment } from "./environment"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tool from "./tool"
 import * as tf from "@tensorflow/tfjs"
@@ -32,7 +32,7 @@ let keySets = [{
 let game = new Game(keySets)
 
 let main = () => {
-    let agent = new Agent([{
+    let env = new Environment([{
         name: "player1",
         actor: game.player1,
         keySet: keySets[0]
@@ -43,13 +43,13 @@ let main = () => {
     }])
 
     let ctrlLoop = new tool.Loop(() => {
-        agent.fetchUpReward()
-        agent.control(["player1", "player2"], 5)
+        env.fetchUpReward()
+        env.control(["player1", "player2"], 5)
         // console.log(tf.memory())
-        agent.nextStep()
+        env.nextStep()
     }, 10)
     let trainLoop = new tool.Loop(() => {
-        agent.train()
+        env.train()
     }, 5)
 
     let loop = () => {
