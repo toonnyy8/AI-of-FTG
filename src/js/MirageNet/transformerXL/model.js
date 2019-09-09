@@ -20,20 +20,16 @@ function myDense(
 
         return tfex.tool.tensorPtr(tf.reshape(args.x, [-1, kernelShape[0]]))
             .sequence(
-                tptr => tptr.assign(
-                    tf.dot(
-                        tptr.read(),
-                        scope.getVariable(`${args.name}_kernel`, kernelShape, "float32", args.kernelInitializer, true)
-                    )
-                )
-            )
-            .sequence(
-                tptr => tptr.assign(
-                    tf.reshape(tptr.read(), outputShape)
-                )
-            )
-            .sequence(
                 tptr => {
+                    tptr.assign(
+                        tf.dot(
+                            tptr.read(),
+                            scope.getVariable(`${args.name}_kernel`, kernelShape, "float32", args.kernelInitializer, true)
+                        )
+                    )
+                    tptr.assign(
+                        tf.reshape(tptr.read(), outputShape)
+                    )
                     if (args.useBias) {
                         tptr.assign(
                             tf.add(
@@ -42,16 +38,14 @@ function myDense(
                             )
                         )
                     }
-                }
-            ).sequence(
-                tptr => {
                     if (args.activation != null) {
                         tptr.assign(
                             tf[args.activation](tptr.read())
                         )
                     }
                 }
-            ).read()
+            )
+            .read()
     })
 }
 
@@ -239,10 +233,9 @@ export function relMultiheadAttn(
             return tf.div(tf.exp(attnScore.read()), tf.sum(tf.exp(attnScore.read()), 1, true))
         }))
         // tf.softmax(attnScore, 1)
-        attnProb.assign(tf.layers.dropout({ rate: args.dropatt, trainable: args.isTraining }).apply(attnProb.read()))
+        attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
-        console.log(wHeadV.read().shape)
         wHeadV.assign(null)
         //console.log(tf.memory())
 
@@ -528,6 +521,7 @@ export function transformer(args = {
         }
         output.assign(tf.dropout(output.read(), args.dropout))
 
+
         let logsoftmax_fn = maskAdaptiveLogsoftmax
         let loss = logsoftmax_fn({
             hidden: output.read(),
@@ -547,6 +541,7 @@ export function transformer(args = {
         },
             scope.variableScope("adaptive_softmax")
         )
+
         return [loss, tf.stack(newMems), output.read()]
     })
 }

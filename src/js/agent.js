@@ -162,16 +162,25 @@ export class Agent {
         })
     }
 
-    control(playerName, expectedReward = 0) {
+    control(playersName, expectedReward = 0) {
         tf.tidy(() => {
-            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-            newStatement = maskAction(newStatement)
-            newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
-            let mems = this.mergeMemory(playerName, 2)
-            mems.push(newStatement)
-            let tensorMems = tf.tidy(() => tf.unstack(tf.expandDims(tf.tensor(mems), 2), 0))
-            // console.log(tensorMems)
-            let output = transformerXL.modelFn(tensorMems,
+            let tensorMems = tf.tidy(() => {
+                return tf.unstack(
+                    tf.stack(
+                        playersName.map((playerName) => {
+                            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
+                            newStatement = maskAction(newStatement)
+                            newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
+
+                            let mems = this.mergeMemory(playerName, 5)
+                            mems.push(newStatement)
+                            return tf.tensor(mems)
+                        }), 2
+                    ), 0
+                )
+            })
+            let outputs = transformerXL.modelFn(
+                tensorMems,
                 tensorMems,
                 tokenSet.nToken,
                 FLAGS,
@@ -187,7 +196,11 @@ export class Agent {
                     stddev: FLAGS.initStd
                 })
             )
+            console.log(tf.util.now())
             tf.dispose(tensorMems)
+            console.log(outputs)
+            tf.dispose(outputs)
+            // output.forEach(t => t.data().then(data => console.log(data)))
         })
     }
 

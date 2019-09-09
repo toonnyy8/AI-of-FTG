@@ -284,6 +284,16 @@ function _einsum(subscript = { inputs: [""], output: null }, operands = [tf.tens
                 return last
             }, [])
 
+        let transposeTable = subscript.output.split("")
+            .sort((a, b) => { //由小到大排序
+                if (a > b) return 1;
+                if (a < b) return -1;
+                return 0;
+            }).reduce((last, tag, axis) => {
+                last[tag] = axis
+                return last
+            }, {})
+
         return tool.tensorPtrList()
             .sequence(tptrL => {//transpose
                 tptrL.assign({ "output": tf.scalar(1) })
@@ -316,16 +326,13 @@ function _einsum(subscript = { inputs: [""], output: null }, operands = [tf.tens
                             }, [])
                     )
                 })//sum
+
                 tptrL.assign({
                     "output": tptrL.read("output").transpose(
                         subscript.output.split("")
-                            .map((tag, axis) => {
-                                return { tag: tag, axis: axis }
-                            }).sort((a, b) => { //由小到大排序
-                                if (a.tag > b.tag) return 1;
-                                if (a.tag < b.tag) return -1;
-                                return 0;
-                            }).map(info => info.axis)
+                            .map((tag) => {
+                                return transposeTable[tag]
+                            })
                     )
                 })//transpose
             }).read("output")
@@ -348,7 +355,7 @@ export function tile(x, reps) {
 
         let output = tool.tensorPtr(x.clone())
         for (let i = 0; i < reps.length; i++) {
-            let strides = [output.read().shape[0] * output.read().strides[0]].concat(output.read().strides).concat([1])
+            let strides = [output.read().shape[0] * output.read().strides[0], ...output.read().strides, 1]
             let newShape = output.read().shape.slice()
             newShape[i] *= reps[i]
             output.assign(output.read().reshape([-1, output.read().shape[i], strides[i + 1]]))
