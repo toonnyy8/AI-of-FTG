@@ -242,7 +242,8 @@ export function relMultiheadAttn(
         attnProb.assign(tf.layers.dropout({ rate: args.dropatt, trainable: args.isTraining }).apply(attnProb.read()))
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
-        wHeadQ.assign(null)
+        console.log(wHeadV.read().shape)
+        wHeadV.assign(null)
         //console.log(tf.memory())
 
         let sizeT = attnVec.read().shape

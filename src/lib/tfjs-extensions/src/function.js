@@ -301,7 +301,7 @@ function _einsum(subscript = { inputs: [""], output: null }, operands = [tf.tens
 
                     }
                     tptrL.assign({ [`${i}`]: tptrL.read(`${i}`).reshape(newShape) })//expand dims
-                    tptrL.assign({ [`${i}`]: tptrL.read(`${i}`).tile(reps) })//repeat element
+                    tptrL.assign({ [`${i}`]: tile(tptrL.read(`${i}`), reps) })//repeat element
                     tptrL.assign({ "output": tf.mul(tptrL.read("output"), tptrL.read(`${i}`)) })//mul
                     tptrL.assign({ [`${i}`]: null })//dispose
                 }
@@ -329,5 +329,32 @@ function _einsum(subscript = { inputs: [""], output: null }, operands = [tf.tens
                     )
                 })//transpose
             }).read("output")
+    })
+}
+
+export function tile(x, reps) {
+    return tf.tidy(() => {
+        if (!(x instanceof tf.Tensor)) {
+            console.error(`x must be tensor`)
+            return
+        }
+        if (!(reps instanceof Array)) {
+            console.error(`reps must be Number Array`)
+            return
+        } else if (reps.find(rep => typeof (rep) != "number") != undefined) {
+            console.error(`reps must be Number Array`)
+            return
+        }
+
+        let output = tool.tensorPtr(x.clone())
+        for (let i = 0; i < reps.length; i++) {
+            let strides = [output.read().shape[0] * output.read().strides[0]].concat(output.read().strides).concat([1])
+            let newShape = output.read().shape.slice()
+            newShape[i] *= reps[i]
+            output.assign(output.read().reshape([-1, output.read().shape[i], strides[i + 1]]))
+                .assign(output.read().tile([1, reps[i], 1]))
+                .assign(output.read().reshape(newShape))
+        }
+        return output.read()
     })
 }
