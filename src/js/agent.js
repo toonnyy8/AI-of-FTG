@@ -1,5 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
-import * as transformerXL from "./MirageNet/transformerXL"
+import * as transformerXL from "./MirageNet/transformerXL_sp"
 
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');
@@ -25,7 +25,10 @@ tf.ready().then(() => {
                         })
                     )
                     console.log(outputs)
-                    tf.dispose(outputs)
+                    tf.stack(outputs).data().then((d) => {
+                        channel.postMessage(d)
+                        tf.dispose(outputs)
+                    })
                     break
                 }
                 case 'train': {

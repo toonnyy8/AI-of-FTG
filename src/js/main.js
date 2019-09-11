@@ -43,10 +43,13 @@ let main = () => {
     }])
 
     let ctrlLoop = new tool.Loop(() => {
-        env.fetchUpReward()
-        env.control(["player1", "player2"], 5)
-        // console.log(tf.memory())
-        env.nextStep()
+        if (env.isReturn) {
+            env.fetchUpReward()
+            env.control(["player1", "player2"], 5)
+            // console.log(tf.memory())
+            env.nextStep()
+            env.isReturn = false
+        }
     }, 10)
     let trainLoop = new tool.Loop(() => {
         env.train()

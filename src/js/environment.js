@@ -1,37 +1,71 @@
 import * as tokenSet from "../param/tokens.json"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
-import * as transformerXL from "./MirageNet/transformerXL"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
 // tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
+    let stateVector = []
+    stateVector[0] = actorName == "player1" ? 1 : 0
+    stateVector[1] = actorName == "player2" ? 1 : 0
+    stateVector[2] = actor.HP / 3000
+    stateVector[3] = actor._faceTo == "left" ? 1 : 0
+    stateVector[4] = actor._faceTo == "left" ? 1 : 0
+    stateVector[5] = (actor.mesh.position.x + 11) / 22
+    stateVector[6] = actor.mesh.position.y / 11
+    stateVector[7] = actor._state["chapter"] == "normal" ? 1 : 0
+    stateVector[8] = actor._state["chapter"] == "attack" ? 1 : 0
+    stateVector[9] = actor._state["chapter"] == "defense" ? 1 : 0
+    stateVector[10] = actor._state["chapter"] == "hitRecover" ? 1 : 0
+    stateVector[11] = actor._state["section"] == "stand" ? 1 : 0
+    stateVector[12] = actor._state["section"] == "jump" ? 1 : 0
+    stateVector[13] = actor._state["section"] == "squat" ? 1 : 0
+    stateVector[14] = actor._state["subsection"] == "main" ? 1 : 0
+    stateVector[15] = actor._state["subsection"] == "forward" ? 1 : 0
+    stateVector[16] = actor._state["subsection"] == "backward" ? 1 : 0
+    stateVector[17] = actor._state["subsection"] == "small" ? 1 : 0
+    stateVector[18] = actor._state["subsection"] == "medium" ? 1 : 0
+    stateVector[19] = actor._state["subsection"] == "large" ? 1 : 0
+    stateVector[20] = actor._state["subsection"] == "fall" ? 1 : 0
+    stateVector[21] = actor._state["subsubsection"] == "0" ? 1 : 0
+    stateVector[22] = actor._state["subsubsection"] == "1" ? 1 : 0
+    stateVector[23] = actor._state["subsubsection"] == "2" ? 1 : 0
+    stateVector[24] = actor._state["subsubsection"] == "3" ? 1 : 0
+    stateVector[25] = action["left"]
+    stateVector[26] = action["right"]
+    stateVector[27] = action["jump"]
+    stateVector[28] = action["squat"]
+    stateVector[29] = action["small"]
+    stateVector[30] = action["medium"]
+    stateVector[31] = action["large"]
+    stateVector[32] = 0//reward
+    return stateVector
     return [
         "<info>",
         actorName,
-        `hp_${Math.round(actor.HP / 150)}`,
-        `faceTo_${actor._faceTo}`,
-        `position_x_${Math.round(actor.mesh.position.x / 1.1)}`,
-        `position_y_${Math.round(actor.mesh.position.y / 1.1)}`,
-        `state_chapter_${actor._state["chapter"]}`,
-        `state_section_${actor._state["section"]}`,
-        `state_subsection_${actor._state["subsection"]}`,
-        `state_subsubsection_${actor._state["subsubsection"]}`,
-        "</info>",
-        "<op>",
-        `action_${action["left"] ? "left" : "none"}`, //none/left
-        `action_${action["right"] ? "right" : "none"}`, //none/right
-        `action_${action["jump"] ? "jump" : "none"}`, //none/jump
-        `action_${action["squat"] ? "squat" : "none"}`, //none/squat
-        `action_${action["small"] ? "small" : "none"}`, //none/small
-        `action_${action["medium"] ? "medium" : "none"}`, //none/medium
-        `action_${action["large"] ? "large" : "none"}`, //none/large
-        "</op>",
-        "=>",
-        "<reward>",
-        `mask`,
+        // `hp_${Math.round(actor.HP / 150)}`,
+        // `faceTo_${actor._faceTo}`,
+        // `position_x_${Math.round(actor.mesh.position.x / 1.1)}`,
+        // `position_y_${Math.round(actor.mesh.position.y / 1.1)}`,
+        // `state_chapter_${actor._state["chapter"]}`,
+        // `state_section_${actor._state["section"]}`,
+        // `state_subsection_${actor._state["subsection"]}`,
+        // `state_subsubsection_${actor._state["subsubsection"]}`,
+        // "</info>",
+        // "<op>",
+        // `action_${action["left"] ? "left" : "none"}`, //none/left
+        // `action_${action["right"] ? "right" : "none"}`, //none/right
+        // `action_${action["jump"] ? "jump" : "none"}`, //none/jump
+        // `action_${action["squat"] ? "squat" : "none"}`, //none/squat
+        // `action_${action["small"] ? "small" : "none"}`, //none/small
+        // `action_${action["medium"] ? "medium" : "none"}`, //none/medium
+        // `action_${action["large"] ? "large" : "none"}`, //none/large
+        // "</op>",
+        // "=>",
+        // "<reward>",
+        // `mask`,
         "</reward>"
     ].map((word) => {
         // console.log(word)
@@ -136,6 +170,11 @@ export class Environment {
         }, {})
 
         this.channel = new BroadcastChannel('agent');
+        this.isReturn = true
+        this.channel.onmessage = (e) => {
+            this.isReturn = true
+            console.log(this.isReturn)
+        }
     }
 
     fetchUpReward() {
@@ -173,8 +212,9 @@ export class Environment {
 
                 let inp = this.mergeMemory(playerName, 5)
                 inp.push(newStatement)
-                return inp
+                return [inp.flat()]
             })
+            console.log(inps)
             this.channel.postMessage({
                 instruction: "ctrl",
                 args: {
