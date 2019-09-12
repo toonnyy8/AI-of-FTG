@@ -4,79 +4,124 @@ import * as tf from "@tensorflow/tfjs"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
-// tf.enableProdMode()
+    // tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
-    let stateVector = []
-    stateVector[0] = actorName == "player1" ? 1 : 0
-    stateVector[1] = actorName == "player2" ? 1 : 0
-    stateVector[2] = actor.HP / 3000
-    stateVector[3] = actor._faceTo == "left" ? 1 : 0
-    stateVector[4] = actor._faceTo == "left" ? 1 : 0
-    stateVector[5] = (actor.mesh.position.x + 11) / 22
-    stateVector[6] = actor.mesh.position.y / 11
-    stateVector[7] = actor._state["chapter"] == "normal" ? 1 : 0
-    stateVector[8] = actor._state["chapter"] == "attack" ? 1 : 0
-    stateVector[9] = actor._state["chapter"] == "defense" ? 1 : 0
-    stateVector[10] = actor._state["chapter"] == "hitRecover" ? 1 : 0
-    stateVector[11] = actor._state["section"] == "stand" ? 1 : 0
-    stateVector[12] = actor._state["section"] == "jump" ? 1 : 0
-    stateVector[13] = actor._state["section"] == "squat" ? 1 : 0
-    stateVector[14] = actor._state["subsection"] == "main" ? 1 : 0
-    stateVector[15] = actor._state["subsection"] == "forward" ? 1 : 0
-    stateVector[16] = actor._state["subsection"] == "backward" ? 1 : 0
-    stateVector[17] = actor._state["subsection"] == "small" ? 1 : 0
-    stateVector[18] = actor._state["subsection"] == "medium" ? 1 : 0
-    stateVector[19] = actor._state["subsection"] == "large" ? 1 : 0
-    stateVector[20] = actor._state["subsection"] == "fall" ? 1 : 0
-    stateVector[21] = actor._state["subsubsection"] == "0" ? 1 : 0
-    stateVector[22] = actor._state["subsubsection"] == "1" ? 1 : 0
-    stateVector[23] = actor._state["subsubsection"] == "2" ? 1 : 0
-    stateVector[24] = actor._state["subsubsection"] == "3" ? 1 : 0
-    stateVector[25] = action["left"]
-    stateVector[26] = action["right"]
-    stateVector[27] = action["jump"]
-    stateVector[28] = action["squat"]
-    stateVector[29] = action["small"]
-    stateVector[30] = action["medium"]
-    stateVector[31] = action["large"]
-    stateVector[32] = 0//reward
-    return stateVector
-    return [
-        "<info>",
-        actorName,
-        // `hp_${Math.round(actor.HP / 150)}`,
-        // `faceTo_${actor._faceTo}`,
-        // `position_x_${Math.round(actor.mesh.position.x / 1.1)}`,
-        // `position_y_${Math.round(actor.mesh.position.y / 1.1)}`,
-        // `state_chapter_${actor._state["chapter"]}`,
-        // `state_section_${actor._state["section"]}`,
-        // `state_subsection_${actor._state["subsection"]}`,
-        // `state_subsubsection_${actor._state["subsubsection"]}`,
-        // "</info>",
-        // "<op>",
-        // `action_${action["left"] ? "left" : "none"}`, //none/left
-        // `action_${action["right"] ? "right" : "none"}`, //none/right
-        // `action_${action["jump"] ? "jump" : "none"}`, //none/jump
-        // `action_${action["squat"] ? "squat" : "none"}`, //none/squat
-        // `action_${action["small"] ? "small" : "none"}`, //none/small
-        // `action_${action["medium"] ? "medium" : "none"}`, //none/medium
-        // `action_${action["large"] ? "large" : "none"}`, //none/large
-        // "</op>",
-        // "=>",
-        // "<reward>",
-        // `mask`,
-        "</reward>"
-    ].map((word) => {
-        // console.log(word)
-        return word.split("_").reduce((set, key) => { return set[key] }, tokenSet.tokens)
-    })
+    //stateA
+    let player = actorName == "player1" ? 0 : 500
+
+    let faceTo = actor._faceTo == "left" ? 0 : 250
+
+    let x = Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x)
+    if (x < 1) {
+        x = 0
+    } else if (x < 2.5) {
+        x = 50
+    } else if (x < 4.5) {
+        x = 100
+    } else if (x < 7) {
+        x = 150
+    } else {
+        x = 200
+    }
+
+    let y = actor.mesh.position.y
+    if (y < 2) {
+        y = 0
+    } else if (y < 4) {
+        y = 10
+    } else if (y < 6) {
+        y = 20
+    } else if (y < 8) {
+        y = 30
+    } else {
+        y = 40
+    }
+
+    let hp = actor.HP
+    if (hp < 300) {
+        hp = 1
+    } else if (hp < 600) {
+        hp = 2
+    } else if (hp < 900) {
+        hp = 3
+    } else if (hp < 1200) {
+        hp = 4
+    } else if (hp < 1500) {
+        hp = 5
+    } else if (hp < 1800) {
+        hp = 6
+    } else if (hp < 2100) {
+        hp = 7
+    } else if (hp < 2400) {
+        hp = 8
+    } else if (hp < 2700) {
+        hp = 9
+    } else {
+        hp = 10
+    }
+
+    //stateB
+    let chapter = actor._state["chapter"]
+    if (chapter == "normal") {
+        chapter = 0
+    } else if (chapter == "attack") {
+        chapter = 84
+    } else if (chapter == "defense") {
+        chapter = 84 * 2
+    } else if (chapter == "hitRecover") {
+        chapter = 84 * 3
+    }
+
+    let section = actor._state["section"]
+    if (section == "stand") {
+        section = 0
+    } else if (section == "jump") {
+        section = 28
+    } else if (section == "squat") {
+        section = 28 * 2
+    }
+
+    let subsection = actor._state["subsection"]
+    if (subsection == "main") {
+        subsection = 0
+    } else if (subsection == "forward") {
+        subsection = 4
+    } else if (subsection == "backward") {
+        subsection = 8
+    } else if (subsection == "small") {
+        subsection = 12
+    } else if (subsection == "medium") {
+        subsection = 16
+    } else if (subsection == "large") {
+        subsection = 20
+    } else if (subsection == "fall") {
+        subsection = 24
+    }
+
+    let subsubsection = actor._state["subsubsection"]
+    if (subsubsection == "0") {
+        subsubsection = 1
+    } else if (subsubsection == "1") {
+        subsubsection = 2
+    } else if (subsubsection == "2") {
+        subsubsection = 3
+    } else if (subsubsection == "3") {
+        subsubsection = 4
+    }
+
+    //actions
+    let leftOrRight = action["left"] ? 0 : action["right"] ? 12 : 24
+    let jumpOrSquat = action["jump"] ? 0 : action["squat"] ? 4 : 8
+    let attack = action["small"] ? 1 : action["medium"] ? 2 : action["large"] ? 3 : 4
+
+    return [player + faceTo + x + y + hp, 1000 + chapter + section + subsection + subsubsection, 1336 + leftOrRight + jumpOrSquat + attack]
 }
 
 export function getReward(actor) {
     let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
     if (actor.isPD) {
-        reward += 10
+        reward += 5
     }
     if (actor.isHit) {
         reward += actor.opponent.beHitNum
@@ -88,7 +133,7 @@ export function getReward(actor) {
         reward -= actor.beHitNum
     }
 
-    reward = Math.min(Math.max(reward, -10), 10)
+    reward = Math.min(Math.max(reward, -5), 5)
 
     return reward
 }
@@ -126,6 +171,7 @@ export class Environment {
                 actor: player["actor"],
                 keySet: player["keySet"],
                 memory: [],
+                rewardMemory: [],
                 action: {
                     jump: false,
                     squat: false,
@@ -179,10 +225,9 @@ export class Environment {
 
     fetchUpReward() {
         Object.keys(this.players).forEach((playerName) => {
-            if (this.players[playerName]["memory"].length != 0) {
-                let lastStatement = this.players[playerName]["memory"].pop()
-                lastStatement[lastStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${getReward(this.players[playerName]["actor"])}`]
-                this.players[playerName]["memory"].push(lastStatement)
+            this.players[playerName]["rewardMemory"].push(getReward(this.players[playerName]["actor"]))
+            if (this.players[playerName]["rewardMemory"].length > this.memorySize) {
+                this.players[playerName]["rewardMemory"].shift()
             }
         })
     }
@@ -204,28 +249,26 @@ export class Environment {
     }
 
     control(playersName, expectedReward = 0) {
-        tf.tidy(() => {
-            let inps = playersName.map((playerName) => {
-                let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-                newStatement = maskAction(newStatement)
-                newStatement[newStatement.indexOf(tokenSet.tokens["<reward>"]) + 1] = tokenSet.tokens["reward"][`${expectedReward}`]
+        let inps = playersName.map((playerName) => {
+            let pReward = Math.min(Math.round(this.predictReward(playerName) + 1), 5)
+            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
+            newStatement[2] = 1372 + 6 + pReward
 
-                let inp = this.mergeMemory(playerName, 5)
-                inp.push(newStatement)
-                return [inp.flat()]
-            })
-            console.log(inps)
-            this.channel.postMessage({
-                instruction: "ctrl",
-                args: {
-                    inps: inps,
-                    tgts: inps,
-                    nToken: tokenSet.nToken,
-                    FLAGS: FLAGS
-                }
-            })
-            console.log("ctrl")
+            let inp = this.mergeMemory(playerName, 5)
+            inp.push(newStatement)
+            return [inp.flat()]
         })
+        console.log(inps)
+        this.channel.postMessage({
+            instruction: "ctrl",
+            args: {
+                inps: inps,
+                tgts: inps,
+                nToken: 1384,
+                FLAGS: FLAGS
+            }
+        })
+        console.log("ctrl")
     }
 
     mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {
@@ -243,11 +286,40 @@ export class Environment {
         return mergeMem
     }
 
-    setAction(playerName, action) {
-        this.players[playerName]["actor"] = action
+    predictReward(playerName) {
+        return this.players[playerName]["rewardMemory"].reduce((pReward, reward) => {
+            return (pReward + reward) * 0.5
+        }, 0)
     }
 
     train() {
-
+        let tgts = []
+        for (let i = 0; i < 10; i++) {
+            tgts.concat(
+                Object.keys(this.players).map((playerName) => {
+                    let end = Math.random() * (this.memorySize - 6) + 5
+                    let tgts = this.mergeMemory(playerName, 5, end)
+                    tgts.push(newStatement)
+                    return [tgts.flat()]
+                })
+            )
+        }
+        console.log(tgts)
+        let inps = tgts.map((tgt) => {
+            return tgt.map((words) => {
+                words[2] =
+            })
+        })
+        console.log(inps)
+        this.channel.postMessage({
+            instruction: "train",
+            args: {
+                inps: inps,
+                tgts: tgts,
+                nToken: 1384,
+                FLAGS: FLAGS
+            }
+        })
+        console.log("train")
     }
 }
