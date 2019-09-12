@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
-    // tf.enableProdMode()
+// tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     //stateA
@@ -254,7 +254,7 @@ export class Environment {
             let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
             newStatement[2] = 1372 + 6 + pReward
 
-            let inp = this.mergeMemory(playerName, 5)
+            let [inp, _] = this.mergeMemory(playerName, 5)
             inp.push(newStatement)
             return [inp.flat()]
         })
@@ -273,17 +273,20 @@ export class Environment {
 
     mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {
         let mergeMem = []
+        let mergeRewardMem = []
         end = end <= this.players[mainPlayerName]["memory"].length - 1 ? end : this.players[mainPlayerName]["memory"].length - 1
         mergeLength = end - mergeLength >= 0 ? mergeLength : end
         for (let i = end - mergeLength + 1; i <= end; i++) {
             mergeMem.push(this.players[mainPlayerName]["memory"][i].slice())
+            mergeRewardMem.push(this.players[mainPlayerName]["rewardMemory"][i])
             Object.keys(this.players).forEach((playerName) => {
                 if (playerName != mainPlayerName) {
                     mergeMem.push(this.players[playerName]["memory"][i])
+                    mergeRewardMem.push(this.players[playerName]["rewardMemory"][i])
                 }
             })
         }
-        return mergeMem
+        return [mergeMem, mergeRewardMem]
     }
 
     predictReward(playerName) {
@@ -294,21 +297,30 @@ export class Environment {
 
     train() {
         let tgts = []
+        let rewards = []
         for (let i = 0; i < 10; i++) {
-            tgts.concat(
+            tgts = tgts.concat(
                 Object.keys(this.players).map((playerName) => {
-                    let end = Math.random() * (this.memorySize - 6) + 5
-                    let tgts = this.mergeMemory(playerName, 5, end)
-                    tgts.push(newStatement)
-                    return [tgts.flat()]
+                    let end = Math.round(Math.random() * (this.memorySize - 6) + 5)
+                    let [tgt, reward] = this.mergeMemory(playerName, 5, end)
+                    rewards.push(reward)
+                    return [tgt.flat()]
                 })
             )
         }
         console.log(tgts)
-        let inps = tgts.map((tgt) => {
-            return tgt.map((words) => {
-                words[2]
-            })
+        let inps = tgts.map((tgt, tgtIdx) => {
+            return [tgt.map((words) => {
+                let inp = []
+                for (let i = 0; i < words.length; i++) {
+                    if (i % 3 == 2) {
+                        inp.push(rewards[tgtIdx][Math.floor(i / 3)])
+                    } else {
+                        inp.push(words[i])
+                    }
+                }
+                return inp
+            }).flat()]
         })
         console.log(inps)
         this.channel.postMessage({
