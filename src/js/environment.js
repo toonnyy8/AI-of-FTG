@@ -307,7 +307,7 @@ export class Environment {
         console.log(tgts)
         let inps = tgts.map((tgt) => {
             return tgt.map((words) => {
-                words[2] =
+                words[2]
             })
         })
         console.log(inps)
