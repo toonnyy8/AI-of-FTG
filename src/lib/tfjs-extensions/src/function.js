@@ -118,7 +118,7 @@ export function clipByGlobalNorm(tList, clipNorm) {
                 let lower = tool.tensorPtr(tf.fill(globalNorm.read().shape, clipNorm))
                 let isGreater = tool.tensorPtr(tf.greater(globalNorm.read(), lower.read()))
                 let output = tool.tensorPtr(tf.mul(t, clipNorm))
-                output.assign(tf.div(output, tf.where(isGreater.read(), globalNorm.read(), lower.read())))
+                output.assign(tf.div(output.read(), tf.where(isGreater.read(), globalNorm.read(), lower.read())))
                 return output.read()
             }),
             globalNorm.read()

@@ -17,5 +17,6 @@
     "initStd": 0.02,
     "projInitStd": 0.01,
     "initRange": 0.1,
-    "init": "normal"
+    "init": "normal",
+    "clip": 0.25
 }

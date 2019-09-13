@@ -216,10 +216,23 @@ export class Environment {
         }, {})
 
         this.channel = new BroadcastChannel('agent');
-        this.isReturn = true
+        this.isReturnCtrl = true
+        this.isReturnTrain = true
         this.channel.onmessage = (e) => {
-            this.isReturn = true
-            console.log(this.isReturn)
+            switch (e.data.instruction) {
+                case "ctrl": {
+                    this.isReturnCtrl = true
+                    console.log(e.data.output)
+                    break
+                }
+                case "train": {
+                    this.isReturnTrain = true
+                    break
+                }
+                default:
+                    break;
+            }
+
         }
     }
 
@@ -298,7 +311,7 @@ export class Environment {
     train() {
         let tgts = []
         let rewards = []
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 2; i++) {
             tgts = tgts.concat(
                 Object.keys(this.players).map((playerName) => {
                     let end = Math.round(Math.random() * (this.memorySize - 6) + 5)
@@ -308,13 +321,16 @@ export class Environment {
                 })
             )
         }
-        console.log(tgts)
         let inps = tgts.map((tgt, tgtIdx) => {
             return [tgt.map((words) => {
                 let inp = []
                 for (let i = 0; i < words.length; i++) {
                     if (i % 3 == 2) {
-                        inp.push(rewards[tgtIdx][Math.floor(i / 3)])
+                        if (Math.random() > 0.5) {
+                            inp.push(rewards[tgtIdx][Math.floor(i / 3)])
+                        } else {
+                            inp.push(words[i])
+                        }
                     } else {
                         inp.push(words[i])
                     }

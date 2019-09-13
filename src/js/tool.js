@@ -1,7 +1,7 @@
 export class Loop {
     constructor(func, period) {
         this.period = period
-        this.count = 1
+        this.count = 2
         this.func = func
     }
 

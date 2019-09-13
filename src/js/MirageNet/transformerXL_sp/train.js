@@ -121,7 +121,7 @@ function averageNamedGrads(towerNamedGrads) {
             last[name] = tf.tidy(() => {
                 return tf.div(
                     tf.addN(towerNamedGrads[name]),
-                    towerNamedGrads.length
+                    towerNamedGrads[name].length
                 )
             })
             return last
@@ -129,10 +129,10 @@ function averageNamedGrads(towerNamedGrads) {
     })
 }
 
-export function train() {
+export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
     return tf.tidy(() => {
 
-        let [outputs, towerNamedGrads] = gradModelFn()
+        let [outputs, towerNamedGrads] = gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true)
 
         let namedGrads = averageNamedGrads(towerNamedGrads)
         let [names, grads] = Object.keys(namedGrads).reduce((last, name) => {
@@ -144,9 +144,10 @@ export function train() {
             []
         ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
-        tf.train.adam().applyGradients(
+        tf.train.adam(1e-4).applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
+                return last
             }, {})
         )
 
@@ -154,6 +155,7 @@ export function train() {
         Object.keys(towerNamedGrads).forEach((name) => {
             tf.dispose(towerNamedGrads[name])
         })
+
     })
 
 }
