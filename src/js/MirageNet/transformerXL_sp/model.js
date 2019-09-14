@@ -127,7 +127,7 @@ export function positionwiseFF(
 
         output = tf.add(output, args.inp)
 
-        output = layerNorm({ x: output, axis: -1 })
+        output = layerNorm({ x: output, axis: -1 }, scope)
 
         return output
     })
@@ -281,7 +281,7 @@ export function relMultiheadAttn(
 
         attnOut.assign(tf.dropout(attnOut.read(), args.dropout))
 
-        let output = tfex.tool.tensorPtr(layerNorm({ x: tf.add(attnOut.read(), args.w), axis: -1 }))
+        let output = tfex.tool.tensorPtr(layerNorm({ x: tf.add(attnOut.read(), args.w), axis: -1 }, scope))
         return output.read()
     })
 }
