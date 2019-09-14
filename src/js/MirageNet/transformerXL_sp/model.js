@@ -349,7 +349,7 @@ export function maskAdaptiveLogsoftmax(
         if (args.return_mean) {
             nll = tf.mean(nll)
         }
-        return nll
+        return [nll, output]
     })
 }
 
@@ -523,7 +523,7 @@ export function transformer(args = {
 
 
         let logsoftmax_fn = maskAdaptiveLogsoftmax
-        let loss = logsoftmax_fn({
+        let [loss, output_] = logsoftmax_fn({
             hidden: output.read(),
             target: args.target,
             nToken: args.nToken,
@@ -541,7 +541,7 @@ export function transformer(args = {
         },
             scope.variableScope("adaptive_softmax")
         )
-
+        output.assign(output_)
         return [loss, tf.stack(newMems), output.read()]
     })
 }

@@ -24,7 +24,10 @@ tf.ready().then(() => {
                             stddev: e.data.args.FLAGS.initStd
                         })
                     )
-                    outputs.forEach((output) => { output.print() })
+                    outputs.forEach((output) => {
+                        console.log(output.shape)
+                        output.print()
+                    })
                     tf.stack(outputs).array().then((d) => {
                         channel.postMessage({ instruction: "ctrl", output: d })
                         tf.dispose(outputs)
