@@ -106,6 +106,8 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
 
             Object.keys(towerNamedGrads).forEach((name, idx) => {
                 towerNamedGrads[name].push(grads[idx])
+                console.log(name)
+                grads[idx].print()
             })
         }
 
@@ -132,7 +134,7 @@ function averageNamedGrads(towerNamedGrads) {
 export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
     return tf.tidy(() => {
 
-        let [outputs, towerNamedGrads] = gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true)
+        let [outputs, towerNamedGrads] = gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining)
 
         let namedGrads = averageNamedGrads(towerNamedGrads)
         let [names, grads] = Object.keys(namedGrads).reduce((last, name) => {

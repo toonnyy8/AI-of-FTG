@@ -489,8 +489,8 @@ export function transformer(args = {
                     relMultiheadAttn({
                         w: tptr.read(),
                         r: posEmb.read(),
-                        rwBias: !args.untieR ? rwBias : rwBias[i],
-                        rrBias: !args.untieR ? rrBias : rrBias[i],
+                        rwBias: !args.untieR ? rwBias : tf.gather(rwBias, i),
+                        rrBias: !args.untieR ? rrBias : tf.gather(rrBias, i),
                         attnMask: attnMask,
                         mem: mems[i],
                         dModel: args.dModel,
