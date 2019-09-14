@@ -25,8 +25,8 @@ tf.ready().then(() => {
                         })
                     )
                     outputs.forEach((output) => {
-                        console.log(output.shape)
-                        output.print()
+                        // console.log(output.shape)
+                        // output.print()
                     })
                     tf.stack(outputs).array().then((d) => {
                         channel.postMessage({ instruction: "ctrl", output: d })

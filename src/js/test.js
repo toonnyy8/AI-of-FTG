@@ -3,6 +3,11 @@ import * as tfex from "../lib/tfjs-extensions/src"
 
 console.log(tf.memory());
 
-tf.initializers.randomUniform({ maxval: 0.1, minval: 0.1 }).apply([1400, 8]).print()
+let g = tf.grad((x) => {
+    let a = tf.mul(x, 2)
+    a = tf.concat([x, tfex.stopGradient(x)])
+    return a
+})
 
+g(tf.tensor([1, 2, 3])).print()
 console.log(tf.memory())

@@ -49,6 +49,28 @@ function myDense(
     })
 }
 
+function layerNorm(
+    args = {
+        x,
+        axis
+    },
+    scope = tfex.scope
+) {
+    return tf.tidy(() => {
+        let epsilon = 1e-5
+        let x = args.x
+        let axis = args.axis == -1 ? x.shape.length - 1 : args.axis
+        let u = tf.mean(x, axis, true)
+        let xmu = tf.sub(x, u)
+        let s = tf.mean(tf.square(xmu), axis, true)
+        x = tf.mul(xmu, tf.rsqrt(tf.add(s, epsilon)))
+        let gval = tf.reshape(scope.getVariable("g", [x.shape[x.shape.length - 1]], "float32", tf.initializers.ones(), true), [1, 1, -1])
+        let bval = tf.reshape(scope.getVariable("b", [x.shape[x.shape.length - 1]], "float32", tf.initializers.zeros(), true), [1, 1, -1])
+        x = tf.add(tf.mul(x, gval), bval)
+        return x
+    })
+}
+
 export function positionalEmbedding(
     args = {
         bsz: null,
@@ -105,7 +127,7 @@ export function positionwiseFF(
 
         output = tf.add(output, args.inp)
 
-        output = tfex.layers.layerNormalization({ axis: -1 }).apply(output)
+        output = layerNorm({ x: output, axis: -1 })
 
         return output
     })
@@ -158,8 +180,12 @@ export function relMultiheadAttn(
         let rlen = args.r.shape[0]
         let bsz = args.w.shape[1]
 
-        let cat = tfex.tool.tensorPtr(args.mem != null && args.mem.shape.length > 1 ?
-            tf.concat([args.mem, args.w], 0) : args.w)
+        args.w = tf.add(args.w.clone(), scope.getVariable("test", [1]))
+        args.w.isNaN().any().print()
+        let cat = tfex.tool.tensorPtr(args.w)
+        if (args.mem != null && args.mem.shape.length > 1) {
+            cat.assign(tf.concat([args.mem, cat.read()], 0))
+        }
 
         let wHeads = tfex.tool.tensorPtr(myDense({
             x: cat.read(),
@@ -255,9 +281,7 @@ export function relMultiheadAttn(
 
         attnOut.assign(tf.dropout(attnOut.read(), args.dropout))
 
-        let output = tfex.tool.tensorPtr(tfex.layers.layerNormalization({ axis: -1 }).apply(
-            tf.add(attnOut.read(), args.w)
-        ))
+        let output = tfex.tool.tensorPtr(layerNorm({ x: tf.add(attnOut.read(), args.w), axis: -1 }))
         return output.read()
     })
 }
@@ -373,9 +397,9 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
     return tf.tidy(() => {
         let newMem
         if (memLen == null || prevMem == null) {
-            newMem = currOut
+            newMem = currOut.clone()
         } else if (memLen == 0) {
-            return prevMem
+            return prevMem.clone()
         } else {
             newMem = tf.concat([prevMem, currOut], 0)
             newMem = tf.slice(newMem, [newMem.shape[0] - memLen], [memLen])
@@ -482,12 +506,12 @@ export function transformer(args = {
         }
 
         for (let i = 0; i < args.nLayer; i++) { //cache new mems
-            newMems.push(_cacheMem(output.read(), mems[i], args.memLen))
+            newMems.push(_cacheMem(output.read().clone(), mems[i], args.memLen))
             let layerScope = scope.variableScope(`layer_${i}`)
             output.sequence(tptr => {
                 tptr.assign(
                     relMultiheadAttn({
-                        w: tptr.read(),
+                        w: tptr.read().clone(),
                         r: posEmb.read(),
                         rwBias: !args.untieR ? rwBias : tf.gather(rwBias, i),
                         rrBias: !args.untieR ? rrBias : tf.gather(rrBias, i),
@@ -504,10 +528,11 @@ export function transformer(args = {
                         layerScope.variableScope("rel_attn")
                     )
                 )
+                console.log(layerScope.scopeName)
             }).sequence(tptr => {
                 tptr.assign(
                     positionwiseFF({
-                        inp: tptr.read(),
+                        inp: tptr.read().clone(),
                         dModel: args.dModel,
                         dInner: args.dInner,
                         dropout: args.dropout,
