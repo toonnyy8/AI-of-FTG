@@ -12,19 +12,19 @@ tf.ready().then(() => {
                         tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
                         e.data.args.nToken,
                         e.data.args.FLAGS,
-                        e.data.args.FLAGS.initStd == "normal" ?
+                        e.data.args.FLAGS.init == "normal" ?
                             tf.initializers.randomNormal({
                                 stddev: e.data.args.FLAGS.initStd
                             }) :
                             tf.initializers.randomUniform({
-                                minval: e.data.args.FLAGS.initRange,
+                                minval: -1 * e.data.args.FLAGS.initRange,
                                 maxval: e.data.args.FLAGS.initRange
                             }),
                         tf.initializers.randomNormal({
                             stddev: e.data.args.FLAGS.initStd
                         })
                     )
-                    console.log(outputs)
+                    outputs.forEach((output) => { output.print() })
                     tf.stack(outputs).array().then((d) => {
                         channel.postMessage({ instruction: "ctrl", output: d })
                         tf.dispose(outputs)
@@ -37,12 +37,12 @@ tf.ready().then(() => {
                         tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
                         e.data.args.nToken,
                         e.data.args.FLAGS,
-                        e.data.args.FLAGS.initStd == "normal" ?
+                        e.data.args.FLAGS.init == "normal" ?
                             tf.initializers.randomNormal({
                                 stddev: e.data.args.FLAGS.initStd
                             }) :
                             tf.initializers.randomUniform({
-                                minval: e.data.args.FLAGS.initRange,
+                                minval: -1 * e.data.args.FLAGS.initRange,
                                 maxval: e.data.args.FLAGS.initRange
                             }),
                         tf.initializers.randomNormal({
