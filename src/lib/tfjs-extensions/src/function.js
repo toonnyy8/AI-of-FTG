@@ -384,3 +384,30 @@ export function tile(x, reps) {
         return output.read()
     })
 }
+
+export function softmax(logits, dim = -1) {
+    return tf.tidy(() => {
+        if (!(logits instanceof tf.Tensor)) {
+            console.error(`logits must be a tensor`)
+            return
+        }
+        dim = dim == -1 ? logits.shape.length - 1 : dim
+        return tf.div(tf.exp(logits), tf.sum(tf.exp(logits), dim, true))
+    })
+}
+
+export function softmaxCrossEntropyWithLogits(logits, labels, dim = -1) {
+    return tf.tidy(() => {
+        if (!(logits instanceof tf.Tensor)) {
+            console.error(`logits must be a tensor`)
+            return
+        } else if (!(labels instanceof tf.Tensor)) {
+            console.error(`labels must be a tensor`)
+            return
+        }
+        dim = dim == -1 ? logits.shape.length - 1 : dim
+        let y = softmax(logits, dim)
+        let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
+        return h
+    })
+}

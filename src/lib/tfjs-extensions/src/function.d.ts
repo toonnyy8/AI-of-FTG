@@ -17,3 +17,7 @@ declare function stack(tensors: tf.Tensor[], axis: Number): tf.Tensor
 declare function unstack(x: tf.Tensor, axis: Number): tf.Tensor[]
 
 declare function tile(x: tf.Tensor, reps: Number[]): tf.Tensor
+
+declare function softmax(logits: tf.Tensor, dim?: Number): tf.Tensor
+
+declare function softmaxCrossEntropyWithLogits(logits: tf.Tensor, labels: tf.Tensor, dim?: Number): tf.Tensor
