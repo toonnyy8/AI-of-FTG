@@ -109,8 +109,8 @@ export function positionwiseFF(
             units: args.dInner,
             activation: "relu",
             name: "layer_1",
-            scope: scope
-            // kernelInitializer: args.kernelInitializer
+            scope: scope,
+            kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.dropout(output, args.dropout)
@@ -119,8 +119,8 @@ export function positionwiseFF(
             x: output,
             units: args.dModel,
             activation: "relu",
-            name: "layer_2"
-            // kernelInitializer: args.kernelInitializer
+            name: "layer_2",
+            kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.dropout(output, args.dropout)
@@ -180,8 +180,6 @@ export function relMultiheadAttn(
         let rlen = args.r.shape[0]
         let bsz = args.w.shape[1]
 
-        args.w = tf.add(args.w.clone(), scope.getVariable("test", [1]))
-        args.w.isNaN().any().print()
         let cat = tfex.tool.tensorPtr(args.w)
         if (args.mem != null && args.mem.shape.length > 1) {
             cat.assign(tf.concat([args.mem, cat.read()], 0))
@@ -217,6 +215,8 @@ export function relMultiheadAttn(
         wHeadQ.assign(tf.reshape(wHeadQ.read(), [qlen, bsz, args.nHead, args.dHead]))
         wHeadK.assign(tf.reshape(wHeadK.read(), [klen, bsz, args.nHead, args.dHead]))
         wHeadV.assign(tf.reshape(wHeadV.read(), [klen, bsz, args.nHead, args.dHead]))
+        console.log("wHeadV")
+        wHeadV.read().isNaN().any().print()
 
         rHeadK.assign(tf.reshape(rHeadK.read(), [rlen, args.nHead, args.dHead]))
 
@@ -260,11 +260,14 @@ export function relMultiheadAttn(
         }))
         // tf.softmax(attnScore, 1)
         attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
+        console.log("attnProb")
+        attnProb.read().isNaN().any().print()
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadV.assign(null)
         //console.log(tf.memory())
-
+        console.log("attnVec")
+        attnVec.read().isNaN().any().print()
         let sizeT = attnVec.read().shape
         attnVec.assign(tf.reshape(attnVec.read(), [sizeT[0], sizeT[1], args.nHead * args.dHead]))
 
@@ -368,7 +371,6 @@ export function maskAdaptiveLogsoftmax(
 
         let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
         // }
-
 
         if (args.return_mean) {
             nll = tf.mean(nll)
@@ -528,7 +530,6 @@ export function transformer(args = {
                         layerScope.variableScope("rel_attn")
                     )
                 )
-                console.log(layerScope.scopeName)
             }).sequence(tptr => {
                 tptr.assign(
                     positionwiseFF({

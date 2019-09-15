@@ -56,7 +56,7 @@ let main = () => {
             env.train()
             env.isReturnTrain = false
         }
-    }, 9)
+    }, 7)
 
     let loop = () => {
         ctrlLoop.run()

@@ -12,11 +12,11 @@
     "divVal": 1,
     "sameLength": true,
     "clampLen": 10,
-    "untieR": false,
+    "untieR": true,
     "projSameDim": true,
     "initStd": 0.02,
     "projInitStd": 0.01,
     "initRange": 0.1,
-    "init": "normal",
+    "init": "uniform",
     "clip": 0.25
 }

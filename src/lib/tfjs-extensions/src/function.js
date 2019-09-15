@@ -78,7 +78,7 @@ export function matrixBandPart(input = tf.tensor(), numLower = 0, numUpper = 0) 
 
 export let stopGradient = tf.customGrad((x, save) => {
     // Save x to make sure it's available later for the gradient.
-    save([x.clone()])
+    save([x])
     // Override gradient of our custom x ^ 2 op to be dy * abs(x);
     return {
         value: x.clone(),
@@ -108,21 +108,36 @@ export function l2Normalize(x, axis = null, epsilon = 1e-12) {
 
 export function clipByGlobalNorm(tList, clipNorm) {
     return tf.tidy(() => {
+        let newTList = tList.map(t => {
+            return tf.tidy(() => {
+                return tf.where(
+                    t.isNaN(),
+                    tf.fill(t.shape, Infinity),
+                    t
+                )
+            })
+        })
         let globalNorm = tool.tensorPtr()
-        globalNorm.assign(
-            tf.addN(
-                tList.map((t) => {
-                    let tptr = tool.tensorPtr(tf.square(t))
-                    return tptr.assign(tf.sum(tptr.read())).read()
-                })
-            )
-        ).assign(tf.sqrt(globalNorm.read()))
+            .sequence(gNptr => {
+                gNptr.assign(
+                    tf.addN(
+                        newTList.map((t) => {
+                            return tool.tensorPtr(tf.square(t))
+                                .sequence(tptr => {
+                                    tptr.assign(tf.sum(tptr.read()))
+                                })
+                                .read()
+                        })
+                    )
+                )
+                gNptr.assign(tf.sqrt(gNptr.read()))
+            })
         return [
-            tList.map((t) => {
-                let lower = tool.tensorPtr(tf.fill(globalNorm.read().shape, clipNorm))
-                let isGreater = tool.tensorPtr(tf.greater(globalNorm.read(), lower.read()))
+            newTList.map((t) => {
+                let clip = tool.tensorPtr(tf.fill(globalNorm.read().shape, clipNorm))
+                let isGreater = tool.tensorPtr(tf.greater(globalNorm.read(), clip.read()))
                 let output = tool.tensorPtr(tf.mul(t, clipNorm))
-                output.assign(tf.div(output.read(), tf.where(isGreater.read(), globalNorm.read(), lower.read())))
+                output.assign(tf.div(output.read(), tf.where(isGreater.read(), globalNorm.read(), clip.read())))
                 return output.read()
             }),
             globalNorm.read()

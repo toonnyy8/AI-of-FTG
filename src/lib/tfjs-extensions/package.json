@@ -4,12 +4,12 @@
   "description": "tfjs的補充庫",
   "main": "index.js",
   "dependencies": {
-    "@babel/polyfill": "^7.4.4",
-    "@tensorflow/tfjs": "^1.2.7",
+    "@babel/polyfill": "^7.6.0",
+    "@tensorflow/tfjs": "^1.2.9",
     "parcel": "^1.12.3"
   },
   "devDependencies": {
-    "typescript": "^3.5.3"
+    "typescript": "^3.6.3"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
