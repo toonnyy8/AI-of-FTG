@@ -215,8 +215,6 @@ export function relMultiheadAttn(
         wHeadQ.assign(tf.reshape(wHeadQ.read(), [qlen, bsz, args.nHead, args.dHead]))
         wHeadK.assign(tf.reshape(wHeadK.read(), [klen, bsz, args.nHead, args.dHead]))
         wHeadV.assign(tf.reshape(wHeadV.read(), [klen, bsz, args.nHead, args.dHead]))
-        console.log("wHeadV")
-        wHeadV.read().isNaN().any().print()
 
         rHeadK.assign(tf.reshape(rHeadK.read(), [rlen, args.nHead, args.dHead]))
 
@@ -255,19 +253,13 @@ export function relMultiheadAttn(
             )
         )
 
-        let attnProb = tfex.tool.tensorPtr(tf.tidy(() => {
-            return tf.div(tf.exp(attnScore.read()), tf.sum(tf.exp(attnScore.read()), 1, true))
-        }))
+        let attnProb = tfex.tool.tensorPtr(tfex.softmax(attnScore.read(), 1))
         // tf.softmax(attnScore, 1)
         attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
-        console.log("attnProb")
-        attnProb.read().isNaN().any().print()
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadV.assign(null)
         //console.log(tf.memory())
-        console.log("attnVec")
-        attnVec.read().isNaN().any().print()
         let sizeT = attnVec.read().shape
         attnVec.assign(tf.reshape(attnVec.read(), [sizeT[0], sizeT[1], args.nHead * args.dHead]))
 
@@ -346,7 +338,7 @@ export function maskAdaptiveLogsoftmax(
         projInitializer: null,
         divVal: 1,
         projSameDim: true,
-        return_mean: true
+        returnMean: true
     },
     scope = tfex.scope
 ) {
@@ -369,12 +361,25 @@ export function maskAdaptiveLogsoftmax(
         let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
 
-        let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
+        //let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
         // }
+        let nll = ((logits, labels, dim) => {
+            return tf.tidy(() => {
+                let y = tfex.softmax(logits, dim)
+                // y = tf.clipByValue(y, 0.001, 1)
+                y = tfex.softmax(tf.div(tf.sub(y, y.min()), tf.sub(y.max(), y.min())), dim)
+                y.max().print()
+                y.min().print()
+                y.isNaN().any().print()
+                let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
+                return h
+            })
+        })(output, tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), 2)
 
-        if (args.return_mean) {
+        if (args.returnMean) {
             nll = tf.mean(nll)
         }
+        nll.print()
         return [nll, output]
     })
 }
@@ -563,7 +568,8 @@ export function transformer(args = {
             divVal: args.divVal,
             perms: args.targetPerms,
             headTarget: args.headTarget,
-            projSameDim: args.projSameDim
+            projSameDim: args.projSameDim,
+            returnMean: true
         },
             scope.variableScope("adaptive_softmax")
         )
