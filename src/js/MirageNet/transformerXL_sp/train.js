@@ -145,7 +145,7 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
             []
         ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
-        tf.train.adam(0).applyGradients(
+        tf.train.adam(5e-4).applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
                 // console.log(name)
