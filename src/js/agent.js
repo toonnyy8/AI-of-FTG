@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL_sp"
 
-tf.setBackend("cpu")
+tf.setBackend("webgl")
 
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');

@@ -100,17 +100,13 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                 tf.dispose(mems)
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
-                output.print()
+                console.log("output")
+                output.isNaN().any().print()
 
                 let loss = ((logits, labels, dim) => {
                     return tf.tidy(() => {
                         let y = tfex.softmax(logits, dim)
                         // y = tf.clipByValue(y, 0.001, 1)
-                        y.max().print()
-                        y.min().print()
-                        y.isNaN().any().print()
-                        console.log(labels.shape)
-                        console.log(y.shape)
                         let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
                         return tf.mean(h)
                     })
@@ -123,9 +119,14 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
             Object.keys(towerNamedGrads).forEach((name, idx) => {
                 towerNamedGrads[name].push(grads[idx])
                 console.log(name)
-                grads[idx].print()
+                grads[idx].isNaN().any().print()
             })
         }
+
+        // allVars.forEach(v => {
+        //     console.log(v.name)
+        //     v.isNaN().any().print()
+        // })
 
         tf.dispose(mems)
 
@@ -166,10 +167,7 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
                 // console.log(name)
-                // console.log("all is NaN")
-                // clipped[idx].isNaN().all().print()
-                // console.log("any is NaN")
-                // tf.logicalOr(clipped[idx].isNaN().any(), clipped[idx].isInf().any()).print()
+                // clipped[idx].isNaN().any().print()
                 return last
             }, {})
         )

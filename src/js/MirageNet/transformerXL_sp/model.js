@@ -357,29 +357,9 @@ export function maskAdaptiveLogsoftmax(
         let paramsW = args.params[0]
         let paramsProjs = args.params[1]
 
-        // if (len(cutoffs) == 0) {}
         let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
 
-        //let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
-        // }
-        // let nll = ((logits, labels, dim) => {
-        //     return tf.tidy(() => {
-        //         let y = tfex.softmax(logits, dim)
-        //         // y = tf.clipByValue(y, 0.001, 1)
-        //         // y = tfex.softmax(tf.div(tf.sub(y, y.min()), tf.sub(y.max(), y.min())), dim)
-        //         y.max().print()
-        //         y.min().print()
-        //         y.isNaN().any().print()
-        //         let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
-        //         return h
-        //     })
-        // })(output, tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), 2)
-
-        // if (args.returnMean) {
-        //     nll = tf.mean(nll)
-        // }
-        // nll.print()
         return output
     })
 }
