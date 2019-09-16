@@ -363,24 +363,24 @@ export function maskAdaptiveLogsoftmax(
 
         //let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
         // }
-        let nll = ((logits, labels, dim) => {
-            return tf.tidy(() => {
-                let y = tfex.softmax(logits, dim)
-                // y = tf.clipByValue(y, 0.001, 1)
-                y = tfex.softmax(tf.div(tf.sub(y, y.min()), tf.sub(y.max(), y.min())), dim)
-                y.max().print()
-                y.min().print()
-                y.isNaN().any().print()
-                let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
-                return h
-            })
-        })(output, tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), 2)
+        // let nll = ((logits, labels, dim) => {
+        //     return tf.tidy(() => {
+        //         let y = tfex.softmax(logits, dim)
+        //         // y = tf.clipByValue(y, 0.001, 1)
+        //         // y = tfex.softmax(tf.div(tf.sub(y, y.min()), tf.sub(y.max(), y.min())), dim)
+        //         y.max().print()
+        //         y.min().print()
+        //         y.isNaN().any().print()
+        //         let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
+        //         return h
+        //     })
+        // })(output, tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), 2)
 
-        if (args.returnMean) {
-            nll = tf.mean(nll)
-        }
-        nll.print()
-        return [nll, output]
+        // if (args.returnMean) {
+        //     nll = tf.mean(nll)
+        // }
+        // nll.print()
+        return output
     })
 }
 
@@ -472,9 +472,8 @@ export function transformer(args = {
         if (args.projInitializer == null) {
             args.projInitializer = args.initializer
         }
-        let lookupFn = maskAdaptiveEmbeddingLookup
 
-        let [embeddings, sharedParams] = lookupFn({
+        let [embeddings, sharedParams] = maskAdaptiveEmbeddingLookup({
             x: args.decInp,
             nToken: args.nToken,
             dEmbed: args.dEmbed,
@@ -552,28 +551,27 @@ export function transformer(args = {
         }
         output.assign(tf.dropout(output.read(), args.dropout))
 
-
-        let logsoftmax_fn = maskAdaptiveLogsoftmax
-        let [loss, output_] = logsoftmax_fn({
-            hidden: output.read(),
-            target: args.target,
-            nToken: args.nToken,
-            dEmbed: args.dEmbed,
-            dProj: args.dModel,
-            cutoffs: args.cutoffs,
-            params: sharedParams,
-            tieProjs: args.tieProjs,
-            initializer: args.initializer,
-            projInitializer: args.projInitializer,
-            divVal: args.divVal,
-            perms: args.targetPerms,
-            headTarget: args.headTarget,
-            projSameDim: args.projSameDim,
-            returnMean: true
-        },
-            scope.variableScope("adaptive_softmax")
+        output.assign(
+            maskAdaptiveLogsoftmax({
+                hidden: output.read(),
+                target: args.target,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                params: sharedParams,
+                tieProjs: args.tieProjs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.targetPerms,
+                headTarget: args.headTarget,
+                projSameDim: args.projSameDim,
+                returnMean: true
+            },
+                scope.variableScope("adaptive_softmax")
+            )
         )
-        output.assign(output_)
-        return [loss, tf.stack(newMems), output.read()]
+        return [output.read(), tf.stack(newMems)]
     })
 }

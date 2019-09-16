@@ -9,7 +9,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
 
         for (let i = 0; i < inp.length; i++) {
             tf.tidy(() => {
-                let [loss, newMems, output] = transformer({
+                let [output, newMems] = transformer({
                     decInp: inp[i],
                     target: tgt[i],
                     mems: mems,
@@ -41,7 +41,6 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
                     tfex.scope.variableScope("transformerXL")
                 )
 
-                tf.dispose(loss)
                 tf.dispose(mems)
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
@@ -67,7 +66,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
 
         for (let i = 0; i < inp.length; i++) {
             let grads = tf.grads(() => {
-                let [loss, newMems, output] = transformer({
+                let [output, newMems] = transformer({
                     decInp: inp[i],
                     target: tgt[i],
                     mems: mems,
@@ -101,12 +100,30 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                 tf.dispose(mems)
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
+                output.print()
+
+                let loss = ((logits, labels, dim) => {
+                    return tf.tidy(() => {
+                        let y = tfex.softmax(logits, dim)
+                        // y = tf.clipByValue(y, 0.001, 1)
+                        y.max().print()
+                        y.min().print()
+                        y.isNaN().any().print()
+                        console.log(labels.shape)
+                        console.log(y.shape)
+                        let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
+                        return tf.mean(h)
+                    })
+                })(output, tf.oneHot(tf.cast(tgt[i], "int32"), output.shape[2]), 2)
+
                 loss.print()
                 return loss
             })(allVars)
 
             Object.keys(towerNamedGrads).forEach((name, idx) => {
                 towerNamedGrads[name].push(grads[idx])
+                console.log(name)
+                grads[idx].print()
             })
         }
 
