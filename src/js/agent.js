@@ -31,7 +31,7 @@ tf.ready().then(() => {
                         // output.print()
                     })
                     tf.stack(outputs).array().then((d) => {
-                        channel.postMessage({ instruction: "ctrl", output: d })
+                        channel.postMessage({ instruction: "ctrl", output: d[d.length - 1] })
                         tf.dispose(outputs)
                     })
                     break

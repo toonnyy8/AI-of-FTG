@@ -222,7 +222,21 @@ export class Environment {
             switch (e.data.instruction) {
                 case "ctrl": {
                     this.isReturnCtrl = true
-                    console.log(e.data.output)
+                    let p1a = e.data.output[0].pop().slice(1336, 1336 + 36).reduce((ret, curr, idx) => {
+                        if (ret.val < curr) {
+                            ret.idx = idx
+                            ret.val = curr
+                        }
+                        return ret
+                    }, { val: 0, idx: 0 })
+                    let p2a = e.data.output[1].pop().slice(1336, 1336 + 36).reduce((ret, curr, idx) => {
+                        if (ret.val < curr) {
+                            ret.idx = idx
+                            ret.val = curr
+                        }
+                        return ret
+                    }, { val: 0, idx: 0 })
+                    console.log(p1a, p2a)
                     break
                 }
                 case "train": {

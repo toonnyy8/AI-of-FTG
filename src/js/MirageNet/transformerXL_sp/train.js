@@ -65,7 +65,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
         let mems = null
 
         for (let i = 0; i < inp.length; i++) {
-            let grads = tf.grads(() => {
+            let grads = tf.train.adam().computeGradients(() => {
                 let [output, newMems] = transformer({
                     decInp: inp[i],
                     target: tgt[i],
@@ -105,21 +105,20 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
 
                 let loss = ((logits, labels, dim) => {
                     return tf.tidy(() => {
-                        let y = tfex.softmax(logits, dim)
                         // y = tf.clipByValue(y, 0.001, 1)
-                        let h = tf.mul(-1, tf.mul(labels, tf.log(y)).sum(dim))
+                        let h = tf.mul(-1, tf.mul(labels, tf.log(logits)).sum(dim))
                         return tf.mean(h)
                     })
                 })(output, tf.oneHot(tf.cast(tgt[i], "int32"), output.shape[2]), 2)
 
                 loss.print()
                 return loss
-            })(allVars)
-
-            Object.keys(towerNamedGrads).forEach((name, idx) => {
-                towerNamedGrads[name].push(grads[idx])
+            }, allVars).grads
+            // Object.values(grads).forEach(g => g.print())
+            Object.keys(towerNamedGrads).forEach((name) => {
+                towerNamedGrads[name].push(grads[name])
                 console.log(name)
-                grads[idx].isNaN().any().print()
+                grads[name].isNaN().any().print()
             })
         }
 

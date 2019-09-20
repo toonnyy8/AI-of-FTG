@@ -180,7 +180,7 @@ export function relMultiheadAttn(
         let rlen = args.r.shape[0]
         let bsz = args.w.shape[1]
 
-        let cat = tfex.tool.tensorPtr(args.w)
+        let cat = tfex.tool.tensorPtr(args.w.clone())
         if (args.mem != null && args.mem.shape.length > 1) {
             cat.assign(tf.concat([args.mem, cat.read()], 0))
         }
@@ -359,6 +359,8 @@ export function maskAdaptiveLogsoftmax(
 
         let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
+
+        output = tfex.softmax(output, 2)
 
         return output
     })
