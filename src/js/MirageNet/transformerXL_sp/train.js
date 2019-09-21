@@ -65,7 +65,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
         let mems = null
 
         for (let i = 0; i < inp.length; i++) {
-            let grads = tf.train.adam().computeGradients(() => {
+            let grads = tf.train.adam(0.0005).computeGradients(() => {
                 let [output, newMems] = transformer({
                     decInp: inp[i],
                     target: tgt[i],
@@ -117,8 +117,8 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
             // Object.values(grads).forEach(g => g.print())
             Object.keys(towerNamedGrads).forEach((name) => {
                 towerNamedGrads[name].push(grads[name])
-                console.log(name)
-                grads[name].isNaN().any().print()
+                // console.log(name)
+                // grads[name].isNaN().any().print()
             })
         }
 
@@ -162,11 +162,11 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
             []
         ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
-        tf.train.adam(5e-4).applyGradients(
+        tf.train.adam(0.0005).applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
-                // console.log(name)
-                // clipped[idx].isNaN().any().print()
+                console.log(name)
+                clipped[idx].print()
                 return last
             }, {})
         )

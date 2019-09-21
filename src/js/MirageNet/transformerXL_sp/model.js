@@ -52,7 +52,9 @@ function myDense(
 function layerNorm(
     args = {
         x,
-        axis
+        axis,
+        activation,
+        kernelInitializer
     },
     scope = tfex.scope
 ) {
@@ -64,9 +66,12 @@ function layerNorm(
         let xmu = tf.sub(x, u)
         let s = tf.mean(tf.square(xmu), axis, true)
         x = tf.mul(xmu, tf.rsqrt(tf.add(s, epsilon)))
-        let gval = tf.reshape(scope.getVariable("g", [x.shape[x.shape.length - 1]], "float32", tf.initializers.ones(), true), [1, 1, -1])
-        let bval = tf.reshape(scope.getVariable("b", [x.shape[x.shape.length - 1]], "float32", tf.initializers.zeros(), true), [1, 1, -1])
+        let gval = tf.reshape(scope.getVariable("g", [x.shape[x.shape.length - 1]], "float32", args.kernelInitializer, true), [1, 1, -1])
+        let bval = tf.reshape(scope.getVariable("b", [x.shape[x.shape.length - 1]], "float32", args.kernelInitializer, true), [1, 1, -1])
         x = tf.add(tf.mul(x, gval), bval)
+        if (args.activation != null) {
+            x = tf[args.activation](x)
+        }
         return x
     })
 }
@@ -127,7 +132,12 @@ export function positionwiseFF(
 
         output = tf.add(output, args.inp)
 
-        output = layerNorm({ x: output, axis: -1 }, scope)
+        output = layerNorm({
+            x: output,
+            axis: -1,
+            activation: "relu",
+            kernelInitializer: args.kernelInitializer
+        }, scope)
 
         return output
     })
@@ -276,7 +286,12 @@ export function relMultiheadAttn(
 
         attnOut.assign(tf.dropout(attnOut.read(), args.dropout))
 
-        let output = tfex.tool.tensorPtr(layerNorm({ x: tf.add(attnOut.read(), args.w), axis: -1 }, scope))
+        let output = tfex.tool.tensorPtr(layerNorm({
+            x: tf.add(attnOut.read(), args.w),
+            axis: -1,
+            activation: "relu",
+            kernelInitializer: args.kernelInitializer
+        }, scope))
         return output.read()
     })
 }
