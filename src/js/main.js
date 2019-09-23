@@ -53,7 +53,7 @@ let main = () => {
     }, 6)
     let trainLoop = new tool.Loop(() => {
         if (env.isReturnCtrl && env.isReturnTrain) {
-            env.train()
+            env.train(8, 8)
             env.isReturnTrain = false
         }
     }, 7)

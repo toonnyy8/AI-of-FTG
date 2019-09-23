@@ -15,7 +15,7 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
                     decInp: inp[i],
                     target: tgt[i],
                     mems: mems,
-                    nToken: nToken, //113
+                    nToken: nToken, //1384
                     nLayer: FLAGS.nLayer,
                     dModel: FLAGS.dModel,
                     dEmbed: FLAGS.dEmbed,
@@ -47,7 +47,6 @@ export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, i
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
             })
-            // console.log(tf.memory())
         }
 
         tf.dispose(mems)
@@ -72,7 +71,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                     decInp: inp[i],
                     target: tgt[i],
                     mems: mems,
-                    nToken: nToken, //113
+                    nToken: nToken, //1384
                     nLayer: FLAGS.nLayer,
                     dModel: FLAGS.dModel,
                     dEmbed: FLAGS.dEmbed,
@@ -103,12 +102,9 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                 tf.dispose(mems)
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
-                // console.log("output")
-                // output.isNaN().any().print()
 
                 let loss = ((logits, labels, dim) => {
                     return tf.tidy(() => {
-                        // y = tf.clipByValue(y, 0.001, 1)
                         let h = tf.mul(-1, tf.mul(labels, tf.log(logits)).sum(dim))
                         return tf.mean(h)
                     })
@@ -117,18 +113,11 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                 loss.print()
                 return loss
             }, allVars).grads
-            // Object.values(grads).forEach(g => g.print())
+
             Object.keys(towerNamedGrads).forEach((name) => {
                 towerNamedGrads[name].push(grads[name])
-                // console.log(name)
-                // grads[name].isNaN().any().print()
             })
         }
-
-        // allVars.forEach(v => {
-        //     console.log(v.name)
-        //     v.isNaN().any().print()
-        // })
 
         tf.dispose(mems)
 
@@ -150,13 +139,30 @@ function averageNamedGrads(towerNamedGrads) {
     })
 }
 
-export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
+export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true, bsz = 1) {
     return tf.tidy(() => {
+        let batch = (ts) => {
+            let output = tf.stack(ts)
+            return output.split(output.shape[2] / bsz, 2).map((x) => {
+                return tf.unstack(x)
+            })
+        }
+        let inps = batch(inp)
+        let tgts = batch(tgt)
+        let batchNamedGrads = []
+        for (let i = 0; i < inps.length; i++) {
+            let [outputs, towerNamedGrads] = gradModelFn(inps[i], tgts[i], nToken, FLAGS, initializer, projInitializer, isTraining)
+            batchNamedGrads.push(averageNamedGrads(towerNamedGrads))
+            tf.dispose(outputs)
+        }
 
-        let [outputs, towerNamedGrads] = gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining)
-        tf.dispose(outputs)
+        let namedGrads = averageNamedGrads(
+            Object.keys(batchNamedGrads[0]).reduce((last, name) => {
+                last[name] = batchNamedGrads.map((bng) => bng[name])
+                return last
+            }, {})
+        )
 
-        let namedGrads = averageNamedGrads(towerNamedGrads)
         let [names, grads] = Object.keys(namedGrads).reduce((last, name) => {
             last[0].push(name)
             last[1].push(namedGrads[name])
@@ -169,16 +175,8 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
         optimizer.applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
-                // console.log(name)
-                // clipped[idx].print()
                 return last
             }, {})
         )
-
-        Object.keys(towerNamedGrads).forEach((name) => {
-            tf.dispose(towerNamedGrads[name])
-        })
-
     })
-
 }

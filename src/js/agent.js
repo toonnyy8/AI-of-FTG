@@ -52,7 +52,9 @@ tf.ready().then(() => {
                             }),
                         tf.initializers.randomNormal({
                             stddev: e.data.args.FLAGS.initStd
-                        })
+                        }),
+                        true,
+                        e.data.args.bsz
                     )
                     channel.postMessage({ instruction: "train" })
                     break

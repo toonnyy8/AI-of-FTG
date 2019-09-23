@@ -322,10 +322,10 @@ export class Environment {
         }, 0)
     }
 
-    train(bsz = 1) {
+    train(simulationBsz = 1, bsz = 1) {
         let tgts = []
         let rewards = []
-        for (let i = 0; i < bsz; i++) {
+        for (let i = 0; i < simulationBsz; i++) {
             tgts = tgts.concat(
                 Object.keys(this.players).map((playerName) => {
                     let end = Math.round(Math.random() * (this.memorySize - 6) + 5)
@@ -359,7 +359,8 @@ export class Environment {
                 inps: inps,
                 tgts: tgts,
                 nToken: 1384,
-                FLAGS: FLAGS
+                FLAGS: FLAGS,
+                bsz: bsz
             }
         })
         console.log("train")
