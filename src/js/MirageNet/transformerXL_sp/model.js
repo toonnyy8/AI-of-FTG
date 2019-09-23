@@ -372,7 +372,7 @@ export function maskAdaptiveLogsoftmax(
         let paramsW = args.params[0]
         let paramsProjs = args.params[1]
 
-        let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
+        let softmax_b = scope.getVariable('bias', [args.nToken], "float32", args.initializer, true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
 
         output = tfex.softmax(output, 2)

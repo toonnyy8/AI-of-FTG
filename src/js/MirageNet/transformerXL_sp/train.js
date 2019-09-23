@@ -2,6 +2,8 @@ import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../../lib/tfjs-extensions/src"
 import { transformer } from "./model"
 
+let optimizer = tf.train.adam(0.0005)
+
 export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
     return tf.tidy(() => {
         let outputs = []
@@ -65,7 +67,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
         let mems = null
 
         for (let i = 0; i < inp.length; i++) {
-            let grads = tf.train.adam(0.0005).computeGradients(() => {
+            let grads = optimizer.computeGradients(() => {
                 let [output, newMems] = transformer({
                     decInp: inp[i],
                     target: tgt[i],
@@ -97,11 +99,12 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                 },
                     tfex.scope.variableScope("transformerXL")
                 )
+
                 tf.dispose(mems)
                 mems = tf.keep(newMems)
                 outputs.push(tf.keep(output))
-                console.log("output")
-                output.isNaN().any().print()
+                // console.log("output")
+                // output.isNaN().any().print()
 
                 let loss = ((logits, labels, dim) => {
                     return tf.tidy(() => {
@@ -151,6 +154,7 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
     return tf.tidy(() => {
 
         let [outputs, towerNamedGrads] = gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining)
+        tf.dispose(outputs)
 
         let namedGrads = averageNamedGrads(towerNamedGrads)
         let [names, grads] = Object.keys(namedGrads).reduce((last, name) => {
@@ -162,16 +166,15 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
             []
         ])
         let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
-        tf.train.adam(0.0005).applyGradients(
+        optimizer.applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
-                console.log(name)
-                clipped[idx].print()
+                // console.log(name)
+                // clipped[idx].print()
                 return last
             }, {})
         )
 
-        tf.dispose(outputs)
         Object.keys(towerNamedGrads).forEach((name) => {
             tf.dispose(towerNamedGrads[name])
         })
