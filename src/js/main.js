@@ -40,23 +40,23 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }])
+    }], 1024, 10)
 
     let ctrlLoop = new tool.Loop(() => {
         env.fetchUpReward()
         if (env.isReturnCtrl && env.isReturnTrain) {
             env.control(["player1", "player2"], 5)
             env.isReturnCtrl = false
-            // console.log(tf.memory())
+                // console.log(tf.memory())
         }
         env.nextStep()
     }, 6)
     let trainLoop = new tool.Loop(() => {
         if (env.isReturnCtrl && env.isReturnTrain) {
-            env.train(8, 8)
+            env.train(8, 2)
             env.isReturnTrain = false
         }
-    }, 7)
+    }, 9)
 
     let loop = () => {
         ctrlLoop.run()
