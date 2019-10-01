@@ -498,11 +498,12 @@ export class Environment {
                 Object.keys(this.players).map((playerName) => {
                     let end = Math.round(Math.random() * (this.memorySize - this.ctrlLength - 1) + this.ctrlLength)
                     let [tgt, reward] = this.mergeMemory(playerName, this.ctrlLength, end)
-                    rewards.push(reward)
+                    rewards.push(reward.map(r => r + 6 + 1372))
                     return [tgt.flat()]
                 })
             )
         }
+        // console.log(rewards)
         let inps = tgts.map((tgt, tgtIdx) => {
             return [tgt.map((words) => {
                 let inp = []
