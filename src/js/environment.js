@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
-    // tf.enableProdMode()
+// tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     //stateA
@@ -177,7 +177,33 @@ export class Environment {
         this.players = players.reduce((last, player) => {
             last[player["name"]] = {
                 actor: player["actor"],
-                keySet: player["keySet"],
+                keySet: Object.keys(player["keySet"])
+                    .reduce((last, actionName) => {
+                        if (actionName == "attack") {
+                            last[actionName] = Object.keys(player["keySet"]["attack"])
+                                .reduce((last, attackName) => {
+                                    last[attackName] = {
+                                        keyup: new KeyboardEvent("keyup", {
+                                            key: player["keySet"]["attack"][attackName]
+                                        }),
+                                        keydown: new KeyboardEvent("keydown", {
+                                            key: player["keySet"]["attack"][attackName]
+                                        })
+                                    }
+                                    return last
+                                }, {})
+                        } else {
+                            last[actionName] = {
+                                keyup: new KeyboardEvent("keyup", {
+                                    key: player["keySet"][actionName]
+                                }),
+                                keydown: new KeyboardEvent("keydown", {
+                                    key: player["keySet"][actionName]
+                                })
+                            }
+                        }
+                        return last
+                    }, {}),
                 memory: [],
                 rewardMemory: [],
                 action: {
@@ -269,47 +295,35 @@ export class Environment {
         switch (decodeAction[0]) {
             case 0:
                 {
-                    console.log(this.players[actorName].keySet["left"])
+                    console.log(this.players[actorName].keySet["left"].keydown.key)
 
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["left"]
-                        })
+                        this.players[actorName].keySet["left"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet["left"]
-                        })
+                        this.players[actorName].keySet["left"].keydown
                     )
                     break;
                 }
             case 1:
                 {
-                    console.log(this.players[actorName].keySet["right"])
+                    console.log(this.players[actorName].keySet["right"].keydown.key)
 
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["right"]
-                        })
+                        this.players[actorName].keySet["right"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet["right"]
-                        })
+                        this.players[actorName].keySet["right"].keydown
                     )
                     break;
                 }
             default:
                 {
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["right"]
-                        })
+                        this.players[actorName].keySet["right"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["left"]
-                        })
+                        this.players[actorName].keySet["left"].keyup
                     )
                     break;
                 }
@@ -317,45 +331,33 @@ export class Environment {
         switch (decodeAction[1]) {
             case 0:
                 {
-                    console.log(this.players[actorName].keySet["jump"])
+                    console.log(this.players[actorName].keySet["jump"].keydown.key)
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["jump"]
-                        })
+                        this.players[actorName].keySet["jump"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet["jump"]
-                        })
+                        this.players[actorName].keySet["jump"].keydown
                     )
                     break;
                 }
             case 1:
                 {
-                    console.log(this.players[actorName].keySet["squat"])
+                    console.log(this.players[actorName].keySet["squat"].keydown.key)
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["squat"]
-                        })
+                        this.players[actorName].keySet["squat"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet["squat"]
-                        })
+                        this.players[actorName].keySet["squat"].keydown
                     )
                     break;
                 }
             default:
                 {
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["squat"]
-                        })
+                        this.players[actorName].keySet["squat"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet["jump"]
-                        })
+                        this.players[actorName].keySet["jump"].keyup
                     )
                     break;
                 }
@@ -363,65 +365,47 @@ export class Environment {
         switch (decodeAction[2]) {
             case 0:
                 {
-                    console.log(this.players[actorName].keySet.attack["small"])
+                    console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet.attack["small"]
-                        })
+                        this.players[actorName].keySet.attack["small"].keydown
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["small"]
-                        })
+                        this.players[actorName].keySet.attack["small"].keyup
                     )
                     break;
                 }
             case 1:
                 {
-                    console.log(this.players[actorName].keySet.attack["medium"])
+                    console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet.attack["medium"]
-                        })
+                        this.players[actorName].keySet.attack["medium"].keydown
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["medium"]
-                        })
+                        this.players[actorName].keySet.attack["medium"].keyup
                     )
                     break;
                 }
             case 2:
                 {
-                    console.log(this.players[actorName].keySet.attack["large"])
+                    console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: this.players[actorName].keySet.attack["large"]
-                        })
+                        this.players[actorName].keySet.attack["large"].keydown
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["large"]
-                        })
+                        this.players[actorName].keySet.attack["large"].keyup
                     )
                     break;
                 }
             default:
                 {
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["small"]
-                        })
+                        this.players[actorName].keySet.attack["small"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["medium"]
-                        })
+                        this.players[actorName].keySet.attack["medium"].keyup
                     )
                     document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: this.players[actorName].keySet.attack["large"]
-                        })
+                        this.players[actorName].keySet.attack["large"].keyup
                     )
                     break;
                 }
