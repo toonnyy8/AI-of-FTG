@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
-    // tf.enableProdMode()
+// tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     //stateA
@@ -263,11 +263,11 @@ export class Environment {
                             let outputTensor = tf.tensor([output[0].slice(1337, 1337 + 36), output[1].slice(1337, 1337 + 36)])
                             console.log(tf.argMax(outputTensor, 1))
                             tf.argMax(outputTensor, 1).add(1).array()
-                            .then((aEnb) => {
-                                this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
-                                this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                                console.log(aEnb)
-                            })
+                                .then((aEnb) => {
+                                    this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
+                                    this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
+                                    console.log(aEnb)
+                                })
 
 
                             // let p1a = output[0].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
