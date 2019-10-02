@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
-// tf.enableProdMode()
+    // tf.enableProdMode()
 
 export function getStatement(actor, actorName = "player1" || "player2", action) {
     //stateA
@@ -253,41 +253,51 @@ export class Environment {
         this.isReturnCtrl = true
         this.isReturnTrain = true
         this.channel.onmessage = (e) => {
-            switch (e.data.instruction) {
-                case "ctrl":
-                    {
-                        this.isReturnCtrl = true
-                        console.log(e.data.output)
-                        let output = e.data.output.pop()
+            tf.tidy(() => {
+                switch (e.data.instruction) {
+                    case "ctrl":
+                        {
+                            this.isReturnCtrl = true
+                            console.log(e.data.output)
+                            let output = e.data.output.pop()
+                            let outputTensor = tf.tensor([output[0].slice(1337, 1337 + 36), output[1].slice(1337, 1337 + 36)])
+                            console.log(tf.argMax(outputTensor, 1))
+                            tf.argMax(outputTensor, 1).add(1).array()
+                            .then((aEnb) => {
+                                this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
+                                this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
+                                console.log(aEnb)
+                            })
 
-                        let p1a = output[0].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
-                            if (ret.val < curr) {
-                                ret.idx = idx + 1
-                                ret.val = curr
-                            }
-                            return ret
-                        }, { val: 0, idx: 1 })
-                        let p2a = output[1].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
-                            if (ret.val < curr) {
-                                ret.idx = idx + 1
-                                ret.val = curr
-                            }
-                            return ret
-                        }, { val: 0, idx: 1 })
-                        this.trigger(Object.keys(this.players)[0], actionDecoder(p1a.idx))
-                        this.trigger(Object.keys(this.players)[1], actionDecoder(p2a.idx))
-                        console.log(p1a, p2a)
-                        break
-                    }
-                case "train":
-                    {
-                        this.isReturnTrain = true
-                        break
-                    }
-                default:
-                    break;
-            }
 
+                            // let p1a = output[0].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
+                            //     if (ret.val < curr) {
+                            //         ret.idx = idx + 1
+                            //         ret.val = curr
+                            //     }
+                            //     return ret
+                            // }, { val: 0, idx: 1 })
+                            // let p2a = output[1].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
+                            //     if (ret.val < curr) {
+                            //         ret.idx = idx + 1
+                            //         ret.val = curr
+                            //     }
+                            //     return ret
+                            // }, { val: 0, idx: 1 })
+                            // this.trigger(Object.keys(this.players)[0], actionDecoder(p1a.idx))
+                            // this.trigger(Object.keys(this.players)[1], actionDecoder(p2a.idx))
+                            // console.log(p1a, p2a)
+                            break
+                        }
+                    case "train":
+                        {
+                            this.isReturnTrain = true
+                            break
+                        }
+                    default:
+                        break;
+                }
+            })
         }
     }
 
