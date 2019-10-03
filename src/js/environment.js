@@ -1,6 +1,7 @@
 import * as tokenSet from "../param/tokens.json"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
+import * as tfex from "../lib/tfjs-extensions/src"
 import * as FLAGS from "../param/flags.json"
 
 tf.setBackend("webgl")
@@ -258,16 +259,31 @@ export class Environment {
                     case "ctrl":
                         {
                             this.isReturnCtrl = true
-                            console.log(e.data.output)
+                            // console.log(e.data.output)
                             let output = e.data.output.pop()
-                            let outputTensor = tf.tensor([output[0].slice(1337, 1337 + 36), output[1].slice(1337, 1337 + 36)])
-                            console.log(tf.argMax(outputTensor, 1))
-                            tf.argMax(outputTensor, 1).add(1).array()
+                            let outputTensor = tfex.softmax(
+                                tf.tensor([
+                                    output[0].slice(1337, 1337 + 36),
+                                    output[1].slice(1337, 1337 + 36)
+                                ]),
+                                1
+                            )
+                            tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1)).print()
+                            tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1)).array()
                                 .then((aEnb) => {
                                     this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
                                     this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
                                     console.log(aEnb)
+                                    tf.dispose(outputTensor)
                                 })
+
+                            // tf.argMax(outputTensor, 1).add(1).print()
+                            // tf.argMax(outputTensor, 1).add(1).array()
+                            //     .then((aEnb) => {
+                            //         this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
+                            //         this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
+                            //         console.log(aEnb)
+                            //     })
 
 
                             // let p1a = output[0].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {

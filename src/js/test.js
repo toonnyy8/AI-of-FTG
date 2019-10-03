@@ -1,13 +1,10 @@
+import "core-js/stable"
+import "regenerator-runtime/runtime"
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../lib/tfjs-extensions/src"
 
 console.log(tf.memory());
 
-let g = tf.grad((x) => {
-    let a = tf.mul(x, 2)
-    a = tf.concat([x, tfex.stopGradient(x)])
-    return a
-})
+tfex.softmax(tf.tensor([[1, 1, 10, 2], [3, 3, 6, 9]]), 0).print()
 
-g(tf.tensor([1, 2, 3])).print()
 console.log(tf.memory())

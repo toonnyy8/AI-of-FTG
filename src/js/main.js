@@ -47,16 +47,16 @@ let main = () => {
         if (env.isReturnCtrl && env.isReturnTrain) {
             env.control(["player1", "player2"], 5)
             env.isReturnCtrl = false
-                // console.log(tf.memory())
+            // console.log(tf.memory())
         }
         env.nextStep()
     }, 6)
     let trainLoop = new tool.Loop(() => {
         if (env.isReturnCtrl && env.isReturnTrain) {
-            env.train(8, 2)
+            env.train(2, 2)
             env.isReturnTrain = false
         }
-    }, 9)
+    }, 8)
 
     let loop = () => {
         ctrlLoop.run()
