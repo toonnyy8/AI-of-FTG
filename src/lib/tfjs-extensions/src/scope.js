@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
+import * as sl from "./sl"
 
 export class VariableScope {
     constructor(name, path) {
@@ -48,37 +49,29 @@ export class VariableScope {
 
     save() {
         return tf.tidy(() => {
-            return {
-                variables: Object.keys(this._variables).reduce((variables, key) => {
-                    variables[key] = {
-                        dtype: this._variables[key].dtype,
-                        shape: this._variables[key].shape,
-                        trainable: this._variables[key].trainable,
-                        values: this._variables[key].arraySync()
-                    }
-                    return variables
-                }, {}),
-                scopes: Object.keys(this._scopes).reduce((scopes, key) => {
-                    scopes[key] = this._scopes[key].save()
-                    return scopes
-                }, {})
-            }
+            return sl.save(this.allVariables().reduce((last, variable) => {
+                console.log(variable.name.slice(this.scopeName.length))
+                last[variable.name.slice(this.scopeName.length)] = variable
+                return last
+            }, {}))
         })
     }
 
     load(saveData) {
         return tf.tidy(() => {
-            Object.keys(saveData.variables).forEach((key) => {
-                tf.tidy(() => {
-                    let v = this.getVariable(key, saveData.variables[key].shape, saveData.variables[key].dtype, undefined, saveData.variables[key].trainable)
-                    v.assign(tf.tensor(saveData.variables[key].values, saveData.variables[key].shape, saveData.variables[key].dtype))
-                })
-            })
-            Object.keys(saveData.scopes).forEach((key) => {
-                tf.tidy(() => {
-                    this.variableScope(key).load(saveData.scopes[key])
-                })
-            })
+            let tList = sl.load(saveData)
+            return Object.keys(tList).reduce((last, scopeName) => {
+                let scopeNames = scopeName.split("/")
+                let variableName = scopeNames.pop()
+                let scope = this
+                for (let i = 1; i < scopeNames.length; i++) {
+                    scope = scope.variableScope(scopeNames[i])
+                }
+                let v = scope.getVariable(variableName, tList[scopeName].shape, tList[scopeName].dtype)
+                v.assign(tList[scopeName])
+                last[v.name] = v
+                return last
+            }, {})
         })
     }
 

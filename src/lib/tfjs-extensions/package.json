@@ -6,6 +6,8 @@
   "dependencies": {
     "@babel/polyfill": "^7.6.0",
     "@tensorflow/tfjs": "^1.2.9",
+    "core-js": "^3.2.1",
+    "js-binary": "^1.2.0",
     "parcel": "^1.12.3"
   },
   "devDependencies": {
@@ -13,7 +15,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "parcel test/index.html -p 8080 --open",
+    "dev:test": "parcel test/index.html -p 8080 --open",
     "build": "parcel build --no-content-hash src/index.ts --out-dir build --public-url=./ "
   },
   "repository": {

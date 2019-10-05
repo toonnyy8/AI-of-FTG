@@ -1,4 +1,5 @@
-import "@babel/polyfill"
+import "core-js/stable"
+import "regenerator-runtime/runtime"
 
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../src"
@@ -50,9 +51,22 @@ console.log(tf.memory())
 
 // const time = tf.time(() => tfex.tile(tf.tensor([1, 2, 3, 4], [2, 2]), [1, 2]).print())
 // time.then((time) => { console.log(`tfex.transpose  kernelMs: ${time.kernelMs}, wallTimeMs: ${time.wallMs}`); })
-let x = tf.tensor([0, 0, 17])
-let y = tf.tensor([0, 0, 1])
-tfex.softmax(x).print()
-tf.softmax(x).print()
-tfex.softmaxCrossEntropyWithLogits(x, y).print()
+// let x = tf.tensor([0, 0, 17])
+// let y = tf.tensor([0, 0, 1])
+// tfex.softmax(x).print()
+// tf.softmax(x).print()
+// tfex.softmaxCrossEntropyWithLogits(x, y).print()
+
+
+tfex.scope.variableScope("1").variableScope("2").variableScope("3").variableScope("4").getVariable("a", [1])
+let scopeSave = tfex.scope.save()
+
+console.log(tfex.scope.variableScope("test").load(scopeSave))
+// let save = tfex.scope.save()
+// tfex.scope.variableScope("testA").load(save)
+// console.log(tfex.scope.save())
+
+let save = tfex.sl.save({ 1: tf.tensor(["1.2", 0], null, "string") })
+console.log(save)
+console.log(tfex.sl.load(save)[1])
 console.log(tf.memory())

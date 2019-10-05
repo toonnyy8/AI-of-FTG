@@ -5,6 +5,9 @@ import * as tfex from "../lib/tfjs-extensions/src"
 
 console.log(tf.memory());
 
-tfex.softmax(tf.tensor([[1, 1, 10, 2], [3, 3, 6, 9]]), 0).print()
+let a = tfex.scope.variableScope("a")
+a.getVariable("test", [2, 2])
+a.variableScope("b").getVariable("test", [20, 10])
+console.log(a.save())
 
 console.log(tf.memory())
