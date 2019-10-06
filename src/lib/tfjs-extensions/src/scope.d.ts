@@ -10,7 +10,7 @@ export declare class VariableScope {
         name: String, shape?: Number[], dtype?: "float32" | "int32" | "bool" | "complex64" | "string", initializer?: tf.serialization.Serializable, trainable?: Boolean
     ): tf.Variable
     dispose(name?: String): void
-    save(): Uint8Array
+    save(): { [key: string]: tf.Tensor }
     load(saveData: Uint8Array): { [key: string]: tf.Variable }
     trainableVariables(): tf.Variable[]
     allVariables(): tf.Variable[]

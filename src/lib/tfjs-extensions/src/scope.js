@@ -49,17 +49,15 @@ export class VariableScope {
 
     save() {
         return tf.tidy(() => {
-            return sl.save(this.allVariables().reduce((last, variable) => {
-                console.log(variable.name.slice(this.scopeName.length))
-                last[variable.name.slice(this.scopeName.length)] = variable
+            return this.allVariables().reduce((last, variable) => {
+                last[variable.name.slice(this.scopeName.length)] = variable.bufferSync().toTensor()
                 return last
-            }, {}))
+            }, {})
         })
     }
 
-    load(saveData) {
+    load(tList) {
         return tf.tidy(() => {
-            let tList = sl.load(saveData)
             return Object.keys(tList).reduce((last, scopeName) => {
                 let scopeNames = scopeName.split("/")
                 let variableName = scopeNames.pop()

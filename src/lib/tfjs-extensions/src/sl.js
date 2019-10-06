@@ -29,7 +29,6 @@ export function save(tList) {
                 if (t.dtype == "bool") {
                     values = values.map(v => v ? true : false)
                 }
-                console.log(values)
                 return tensorCoder.encode({
                     shape: t.shape,
                     dtype: t.dtype,

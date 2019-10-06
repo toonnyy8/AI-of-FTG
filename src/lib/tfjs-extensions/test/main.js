@@ -57,16 +57,13 @@ console.log(tf.memory())
 // tf.softmax(x).print()
 // tfex.softmaxCrossEntropyWithLogits(x, y).print()
 
-
 tfex.scope.variableScope("1").variableScope("2").variableScope("3").variableScope("4").getVariable("a", [1])
 let scopeSave = tfex.scope.save()
-
-console.log(tfex.scope.variableScope("test").load(scopeSave))
-// let save = tfex.scope.save()
-// tfex.scope.variableScope("testA").load(save)
-// console.log(tfex.scope.save())
-
-let save = tfex.sl.save({ 1: tf.tensor(["1.2", 0], null, "string") })
+console.log(scopeSave)
+let save = tfex.sl.save(scopeSave)
 console.log(save)
-console.log(tfex.sl.load(save)[1])
+let load = tfex.sl.load(save)
+console.log(load)
+console.log(tfex.scope.variableScope("test").load(load))
+
 console.log(tf.memory())
