@@ -44,23 +44,31 @@ let main = () => {
 
     let ctrlLoop = new tool.Loop(() => {
         env.fetchUpReward()
-        if (env.isReturnCtrl && env.isReturnTrain) {
-            env.control(["player1", "player2"], 5)
-            env.isReturnCtrl = false
-            // console.log(tf.memory())
+        if (game.restart) {
+            if (env.isReturnCtrl && env.isReturnTrain) {
+                env.train(2, 2)
+                env.isReturnTrain = false
+                game.restart = false
+            }
+        } else {
+            if (env.isReturnCtrl && env.isReturnTrain) {
+                env.control(["player1", "player2"], 5)
+                env.isReturnCtrl = false
+                // console.log(tf.memory())
+            }
         }
         env.nextStep()
     }, 6)
-    let trainLoop = new tool.Loop(() => {
-        if (env.isReturnCtrl && env.isReturnTrain) {
-            env.train(2, 2)
-            env.isReturnTrain = false
-        }
-    }, 8)
-
+    // let trainLoop = new tool.Loop(() => {
+    //     if (env.isReturnCtrl && env.isReturnTrain) {
+    //         env.train(2, 2)
+    //         env.isReturnTrain = false
+    //     }
+    // }, 8)
+    game.restart = false
     let loop = () => {
         ctrlLoop.run()
-        trainLoop.run()
+        // trainLoop.run()
         requestAnimationFrame(loop)
     }
     loop()

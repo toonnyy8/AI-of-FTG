@@ -1360,8 +1360,11 @@ export class Actor {
         }
 
         this.stopAnimation()
-        this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/)
-
+        try {
+            this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/)
+        } catch{
+            console.error(`${this._state.chapter}:${this._state.section}:${this._state.subsection}:${this._state.subsubsection}`)
+        }
         // if (`${this._state["chapter"]}:${this._state["section"]}:${this._state["subsection"]}` == "normal:stand:main") {
         //     this.vector.x = 0
         // }
