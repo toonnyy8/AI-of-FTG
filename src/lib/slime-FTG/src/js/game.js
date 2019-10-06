@@ -19,6 +19,7 @@ export class Game {
 
         this.player1
         this.player2
+        this.restart = true
 
         let createScene = () => {
 
@@ -128,6 +129,7 @@ export class Game {
                         if (this.player1.HP <= 0 || this.player2.HP <= 0) {
                             this.player1.restart()
                             this.player2.restart()
+                            this.restart = true
                         }
                     })
 
@@ -148,14 +150,6 @@ export class Game {
         //     scene.render()
         // })
         // the canvas/window resize event handler
-
-        let options = new BABYLON.SceneOptimizerOptions(1);
-        options.addOptimization(new BABYLON.HardwareScalingOptimization(0, 1));
-
-        // Optimizer
-        let optimizer = new BABYLON.SceneOptimizer(scene, options);
-        optimizer.targetFrameRate = 1
-        optimizer.start()
         window.addEventListener('resize', () => {
             engine.resize()
         })
