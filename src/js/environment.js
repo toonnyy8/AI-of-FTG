@@ -369,7 +369,7 @@ export class Environment {
                 }
         }
         switch (decodeAction[2]) {
-            case 0:
+            case 1:
                 {
                     console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
@@ -380,7 +380,7 @@ export class Environment {
                     )
                     break;
                 }
-            case 1:
+            case 2:
                 {
                     console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
@@ -391,7 +391,7 @@ export class Environment {
                     )
                     break;
                 }
-            case 2:
+            case 3:
                 {
                     console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
