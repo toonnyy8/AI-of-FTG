@@ -42,14 +42,21 @@ let main = () => {
         keySet: keySets[1]
     }], 1024, 10)
 
+    let epoch = 32
+    let epochCount = epoch
+
     let ctrlLoop = new tool.Loop(() => {
         if (game.restart) {
             if (env.isReturnCtrl && env.isReturnTrain) {
-                env.train(100, 2)
+                env.train(8, 8)
                 env.isReturnTrain = false
-                game.restart = false
+                epochCount -= 1
+                if (epochCount == 0) {
+                    game.restart = false
+                }
             }
         } else {
+            epochCount = epoch
             if (env.isReturnTrain) {
                 env.fetchUpReward()
                 if (env.isReturnCtrl) {
