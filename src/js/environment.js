@@ -261,15 +261,14 @@ export class Environment {
                             this.isReturnCtrl = true
                             // console.log(e.data.output)
                             let output = e.data.output.pop()
-                            let outputTensor = tfex.softmax(
-                                tf.tensor([
-                                    output[0].slice(1337, 1337 + 36),
-                                    output[1].slice(1337, 1337 + 36)
-                                ]),
-                                1
-                            )
-                            tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1)).print()
-                            tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1)).array()
+                            let outputTensor = tf.tensor([
+                                output[0].slice(1337, 1337 + 36),
+                                output[1].slice(1337, 1337 + 36)
+                            ])
+                            outputTensor = tf.div(outputTensor, outputTensor.sum(1, true))
+                            let action = tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1))
+                            action.print()
+                            action.array()
                                 .then((aEnb) => {
                                     this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
                                     this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
@@ -284,25 +283,6 @@ export class Environment {
                             //         this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
                             //         console.log(aEnb)
                             //     })
-
-
-                            // let p1a = output[0].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
-                            //     if (ret.val < curr) {
-                            //         ret.idx = idx + 1
-                            //         ret.val = curr
-                            //     }
-                            //     return ret
-                            // }, { val: 0, idx: 1 })
-                            // let p2a = output[1].slice(1337, 1337 + 36).reduce((ret, curr, idx) => {
-                            //     if (ret.val < curr) {
-                            //         ret.idx = idx + 1
-                            //         ret.val = curr
-                            //     }
-                            //     return ret
-                            // }, { val: 0, idx: 1 })
-                            // this.trigger(Object.keys(this.players)[0], actionDecoder(p1a.idx))
-                            // this.trigger(Object.keys(this.players)[1], actionDecoder(p2a.idx))
-                            // console.log(p1a, p2a)
                             break
                         }
                     case "train":

@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL_sp"
+import * as tfex from "../lib/tfjs-extensions/src"
 
 tf.setBackend("webgl")
 
@@ -63,3 +64,16 @@ tf.ready().then(() => {
         })
     }
 })
+
+document.getElementById("save").onclick = () => {
+    tf.tidy(() => {
+        let blob = new Blob([tfex.sl.save(tfex.scope.variableScope("transformerXL").save())]);
+        let a = document.createElement("a");
+        let url = window.URL.createObjectURL(blob);
+        let filename = "w.bin";
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    })
+}
