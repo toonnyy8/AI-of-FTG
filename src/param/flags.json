@@ -1,9 +1,9 @@
 {
     "nLayer": 4,
-    "dModel": 24,
-    "dEmbed": 8,
-    "nHead": 8,
-    "dHead": 8,
+    "dModel": 32,
+    "dEmbed": 32,
+    "nHead": 16,
+    "dHead": 16,
     "dInner": 8,
     "dropout": 0,
     "dropatt": 0,

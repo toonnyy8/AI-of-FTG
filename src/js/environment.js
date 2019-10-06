@@ -275,7 +275,7 @@ export class Environment {
                                     console.log(aEnb)
                                     tf.dispose(outputTensor)
                                 })
-
+                            tf.max(outputTensor, 1).print()
                             // tf.argMax(outputTensor, 1).add(1).print()
                             // tf.argMax(outputTensor, 1).add(1).array()
                             //     .then((aEnb) => {
