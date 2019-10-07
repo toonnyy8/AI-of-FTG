@@ -450,7 +450,7 @@ export class Environment {
         let inps = playersName.map((playerName) => {
             let pReward = Math.min(Math.round(this.predictReward(playerName) + 1), 5)
             let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-            newStatement[2] = 1372 + 6 + pReward
+            newStatement[2] = 1484 + 6 + pReward
 
             let [inp, _] = this.mergeMemory(playerName, this.ctrlLength)
             inp.push(newStatement)
