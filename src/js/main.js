@@ -42,7 +42,7 @@ let main = () => {
         keySet: keySets[1]
     }], 5000, 10)
 
-    let epoch = 64
+    let epoch = 100
     let epochCount = epoch
 
     let ctrlLoop = new tool.Loop(() => {
@@ -60,7 +60,7 @@ let main = () => {
             if (env.isReturnTrain) {
                 env.fetchUpReward()
                 if (env.isReturnCtrl) {
-                    env.control(["player1", "player2"], 5)
+                    env.control(["player1", "player2"])
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
                 }

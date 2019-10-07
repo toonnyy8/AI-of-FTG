@@ -67,11 +67,11 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
     if (chapter == "normal") {
         chapter = 0
     } else if (chapter == "attack") {
-        chapter = 84
+        chapter = 112
     } else if (chapter == "defense") {
-        chapter = 84 * 2
+        chapter = 112 * 2
     } else if (chapter == "hitRecover") {
-        chapter = 84 * 3
+        chapter = 112 * 3
     }
 
     let section = actor._state["section"]
@@ -81,6 +81,8 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
         section = 28
     } else if (section == "squat") {
         section = 28 * 2
+    } else if (section == "reStand") {
+        section = 28 * 3
     }
 
     let subsection = actor._state["subsection"]
@@ -116,7 +118,7 @@ export function getStatement(actor, actorName = "player1" || "player2", action) 
     let jumpOrSquat = action["jump"] ? 0 : action["squat"] ? 4 : 8
     let attack = action["small"] ? 1 : action["medium"] ? 2 : action["large"] ? 3 : 4
 
-    return [player + faceTo + x + y + hp, 1000 + chapter + section + subsection + subsubsection, 1336 + leftOrRight + jumpOrSquat + attack]
+    return [player + faceTo + x + y + hp, 1000 + chapter + section + subsection + subsubsection, 1448 + leftOrRight + jumpOrSquat + attack]
 }
 
 export function actionDecoder(encodeAction) {
@@ -262,9 +264,10 @@ export class Environment {
                             // console.log(e.data.output)
                             let output = e.data.output.pop()
                             let outputTensor = tf.tensor([
-                                output[0].slice(1337, 1337 + 36),
-                                output[1].slice(1337, 1337 + 36)
+                                output[0].slice(1449, 1449 + 36),
+                                output[1].slice(1449, 1449 + 36)
                             ])
+                            outputTensor.sum(1, true).print()
                             outputTensor = tf.div(outputTensor, outputTensor.sum(1, true))
                             let action = tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1))
                             action.print()
@@ -272,9 +275,9 @@ export class Environment {
                                 .then((aEnb) => {
                                     this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
                                     this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                                    console.log(aEnb)
                                     tf.dispose(outputTensor)
                                 })
+                            tf.argMax(outputTensor, 1).add(1).print()
                             tf.max(outputTensor, 1).print()
                             // tf.argMax(outputTensor, 1).add(1).print()
                             // tf.argMax(outputTensor, 1).add(1).array()
@@ -373,10 +376,10 @@ export class Environment {
                 {
                     console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
+                        this.players[actorName].keySet.attack["small"].keyup
                     )
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
+                        this.players[actorName].keySet.attack["small"].keydown
                     )
                     break;
                 }
@@ -384,10 +387,10 @@ export class Environment {
                 {
                     console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
+                        this.players[actorName].keySet.attack["medium"].keyup
                     )
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
+                        this.players[actorName].keySet.attack["medium"].keydown
                     )
                     break;
                 }
@@ -395,10 +398,10 @@ export class Environment {
                 {
                     console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keydown
+                        this.players[actorName].keySet.attack["large"].keyup
                     )
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
+                        this.players[actorName].keySet.attack["large"].keydown
                     )
                     break;
                 }
@@ -465,7 +468,7 @@ export class Environment {
             args: {
                 inps: inps,
                 tgts: inps,
-                nToken: 1384,
+                nToken: 1496,
                 FLAGS: FLAGS
             }
         })
@@ -497,43 +500,51 @@ export class Environment {
     }
 
     train(simulationBsz = 1, bsz = 1) {
-        let tgts = []
         let rewards = []
+        let origins = []
         for (let i = 0; i < simulationBsz; i++) {
-            tgts = tgts.concat(
+            origins = origins.concat(
                 Object.keys(this.players).map((playerName) => {
                     let end = Math.round(Math.random() * (this.memorySize - this.ctrlLength - 1) + this.ctrlLength)
-                    let [tgt, reward] = this.mergeMemory(playerName, this.ctrlLength, end)
-                    rewards.push(reward.map(r => r + 6 + 1372))
-                    return [tgt.flat()]
+                    let [origin, reward] = this.mergeMemory(playerName, this.ctrlLength + 1, end)
+                    origin = origin.slice(1, origin.length - 1)
+                    reward = reward.slice(1, origin.length - 1)
+                    rewards.push(reward.map(r => r + 6 + 1484))
+                    return [origin.flat()]
                 })
             )
         }
-        // console.log(rewards)
-        let inps = tgts.map((tgt, tgtIdx) => {
-            return [tgt.map((words) => {
+        // console.log(origins)
+        let inps = origins.map((origin, originIdx) => {
+            return [origin.map((words) => {
                 let inp = []
                 for (let i = 0; i < words.length; i++) {
-                    if (i % 3 == 2) {
-                        if (Math.random() > 0.5) {
-                            inp.push(rewards[tgtIdx][Math.floor(i / 3)])
-                        } else {
-                            inp.push(words[i])
-                        }
-                    } else {
-                        inp.push(words[i])
-                    }
+                    inp.push(words[i])
                 }
+                inp.pop()
+                inp.push(rewards[originIdx][rewards[originIdx].length - 1])
                 return inp
             }).flat()]
         })
-        console.log(inps)
+        // console.log(inps)
+        let tgts = origins.map((origin, originIdx) => {
+            return [origin.map((words) => {
+                let tgt = []
+                for (let i = 0; i < words.length; i++) {
+                    tgt.push(0)
+                }
+                tgt.pop()
+                tgt.push(words[words.length - 1])
+                return tgt
+            }).flat()]
+        })
+        // console.log(tgts)
         this.channel.postMessage({
             instruction: "train",
             args: {
                 inps: inps,
                 tgts: tgts,
-                nToken: 1384,
+                nToken: 1496,
                 FLAGS: FLAGS,
                 bsz: bsz
             }

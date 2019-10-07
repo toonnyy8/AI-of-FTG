@@ -71,7 +71,7 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
                     decInp: inp[i],
                     target: tgt[i],
                     mems: mems,
-                    nToken: nToken, //1384
+                    nToken: nToken, //1496
                     nLayer: FLAGS.nLayer,
                     dModel: FLAGS.dModel,
                     dEmbed: FLAGS.dEmbed,

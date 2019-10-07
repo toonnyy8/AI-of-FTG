@@ -2,6 +2,12 @@ import * as tf from "@tensorflow/tfjs"
 import * as transformerXL from "./MirageNet/transformerXL_sp"
 import * as tfex from "../lib/tfjs-extensions/src"
 
+// //載入權重
+// import * as fs from "fs"
+// let weight = fs.readFileSync(__dirname + "/../param/w.bin")
+// tfex.scope.variableScope("transformerXL").load(tfex.sl.load(weight))
+// console.log(tfex.scope.variableScope("transformerXL"))
+
 tf.setBackend("webgl")
 
 tf.ready().then(() => {
