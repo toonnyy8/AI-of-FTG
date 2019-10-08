@@ -40,7 +40,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 10)
+    }], 5000, 1)
 
     let epoch = 100
     let epochCount = epoch
@@ -53,18 +53,22 @@ let main = () => {
                 epochCount -= 1
                 if (epochCount == 0) {
                     game.restart = false
+                    Object.values(env.players).forEach((player) => {
+                        player.memory = []
+                        player.rewardMemory = []
+                    })
                 }
             }
         } else {
             epochCount = epoch
             if (env.isReturnTrain) {
-                env.fetchUpReward()
                 if (env.isReturnCtrl) {
+                    env.fetchUpReward()
                     env.control(["player1", "player2"])
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
+                    env.nextStep()
                 }
-                env.nextStep()
             }
         }
     }, 1)

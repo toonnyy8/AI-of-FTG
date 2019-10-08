@@ -277,8 +277,11 @@ export class Environment {
                                     this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
                                     tf.dispose(outputTensor)
                                 })
-                            tf.argMax(outputTensor, 1).add(1).print()
-                            tf.max(outputTensor, 1).print()
+                            // tf.argMax(outputTensor, 1).add(1).print()
+                            // tf.max(outputTensor, 1).print()
+                            let { values, indices } = tf.topk(outputTensor, 36);
+                            values.print();
+                            indices.print();
                             // tf.argMax(outputTensor, 1).add(1).print()
                             // tf.argMax(outputTensor, 1).add(1).array()
                             //     .then((aEnb) => {
@@ -531,7 +534,7 @@ export class Environment {
             return [origin.map((words) => {
                 let tgt = []
                 for (let i = 0; i < words.length; i++) {
-                    tgt.push(0)
+                    tgt.push(words[i])
                 }
                 tgt.pop()
                 tgt.push(words[words.length - 1])
