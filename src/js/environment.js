@@ -270,6 +270,7 @@ export class Environment {
                             outputTensor.sum(1, true).print()
                             outputTensor = tf.div(outputTensor, outputTensor.sum(1, true))
                             let action = tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1))
+                            // let action = tf.tidy(() => tf.argMax(outputTensor, 1).add(1))
                             action.print()
                             action.array()
                                 .then((aEnb) => {
@@ -281,7 +282,7 @@ export class Environment {
                             // tf.max(outputTensor, 1).print()
                             let { values, indices } = tf.topk(outputTensor, 36);
                             values.print();
-                            indices.print();
+                            indices.add(1).print();
                             // tf.argMax(outputTensor, 1).add(1).print()
                             // tf.argMax(outputTensor, 1).add(1).array()
                             //     .then((aEnb) => {

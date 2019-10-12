@@ -49,6 +49,33 @@ function myDense(
     })
 }
 
+function layerNorm(
+    args = {
+        x,
+        axis,
+        activation,
+        kernelInitializer
+    },
+    scope = tfex.scope
+) {
+    return tf.tidy(() => {
+        let epsilon = 1e-5
+        let x = args.x
+        let axis = args.axis == -1 ? x.shape.length - 1 : args.axis
+        let u = tf.mean(x, axis, true)
+        let xmu = tf.sub(x, u)
+        let s = tf.mean(tf.square(xmu), axis, true)
+        x = tf.mul(xmu, tf.rsqrt(tf.add(s, epsilon)))
+        let gval = tf.reshape(scope.getVariable("g", [x.shape[x.shape.length - 1]], "float32", args.kernelInitializer, true), [1, 1, -1])
+        let bval = tf.reshape(scope.getVariable("b", [x.shape[x.shape.length - 1]], "float32", args.kernelInitializer, true), [1, 1, -1])
+        x = tf.add(tf.mul(x, gval), bval)
+        if (args.activation != null) {
+            x = tf[args.activation](x)
+        }
+        return x
+    })
+}
+
 export function positionalEmbedding(
     args = {
         bsz: null,
@@ -87,8 +114,8 @@ export function positionwiseFF(
             units: args.dInner,
             activation: "relu",
             name: "layer_1",
-            scope: scope
-            // kernelInitializer: args.kernelInitializer
+            scope: scope,
+            kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.dropout(output, args.dropout)
@@ -97,15 +124,20 @@ export function positionwiseFF(
             x: output,
             units: args.dModel,
             activation: "relu",
-            name: "layer_2"
-            // kernelInitializer: args.kernelInitializer
+            name: "layer_2",
+            kernelInitializer: args.kernelInitializer
         }, scope)
 
         output = tf.dropout(output, args.dropout)
 
         output = tf.add(output, args.inp)
 
-        output = tfex.layers.layerNormalization({ axis: -1 }).apply(output)
+        output = layerNorm({
+            x: output,
+            axis: -1,
+            activation: "relu",
+            kernelInitializer: args.kernelInitializer
+        }, scope)
 
         return output
     })
@@ -158,8 +190,10 @@ export function relMultiheadAttn(
         let rlen = args.r.shape[0]
         let bsz = args.w.shape[1]
 
-        let cat = tfex.tool.tensorPtr(args.mem != null && args.mem.shape.length > 1 ?
-            tf.concat([args.mem, args.w], 0) : args.w)
+        let cat = tfex.tool.tensorPtr(args.w.clone())
+        if (args.mem != null && args.mem.shape.length > 1) {
+            cat.assign(tf.concat([args.mem, cat.read()], 0))
+        }
 
         let wHeads = tfex.tool.tensorPtr(myDense({
             x: cat.read(),
@@ -229,16 +263,13 @@ export function relMultiheadAttn(
             )
         )
 
-        let attnProb = tfex.tool.tensorPtr(tf.tidy(() => {
-            return tf.div(tf.exp(attnScore.read()), tf.sum(tf.exp(attnScore.read()), 1, true))
-        }))
+        let attnProb = tfex.tool.tensorPtr(tfex.softmax(attnScore.read(), 1))
         // tf.softmax(attnScore, 1)
         attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
         //console.log(tf.memory())
         let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadV.assign(null)
         //console.log(tf.memory())
-
         let sizeT = attnVec.read().shape
         attnVec.assign(tf.reshape(attnVec.read(), [sizeT[0], sizeT[1], args.nHead * args.dHead]))
 
@@ -255,9 +286,12 @@ export function relMultiheadAttn(
 
         attnOut.assign(tf.dropout(attnOut.read(), args.dropout))
 
-        let output = tfex.tool.tensorPtr(tfex.layers.layerNormalization({ axis: -1 }).apply(
-            tf.add(attnOut.read(), args.w)
-        ))
+        let output = tfex.tool.tensorPtr(layerNorm({
+            x: tf.add(attnOut.read(), args.w),
+            axis: -1,
+            activation: "relu",
+            kernelInitializer: args.kernelInitializer
+        }, scope))
         return output.read()
     })
 }
@@ -319,7 +353,7 @@ export function maskAdaptiveLogsoftmax(
         projInitializer: null,
         divVal: 1,
         projSameDim: true,
-        return_mean: true
+        returnMean: true
     },
     scope = tfex.scope
 ) {
@@ -338,18 +372,12 @@ export function maskAdaptiveLogsoftmax(
         let paramsW = args.params[0]
         let paramsProjs = args.params[1]
 
-        // if (len(cutoffs) == 0) {}
-        let softmax_b = scope.getVariable('bias', [args.nToken], "float32", tf.initializers.zeros(), true)
+        let softmax_b = scope.getVariable('bias', [args.nToken], "float32", args.initializer, true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
 
-        let nll = tf.losses.softmaxCrossEntropy(tf.oneHot(tf.cast(args.target, "int32"), output.shape[2]), output)
-        // }
+        output = tfex.softmax(output, 2)
 
-
-        if (args.return_mean) {
-            nll = tf.mean(nll)
-        }
-        return nll
+        return output
     })
 }
 
@@ -373,9 +401,9 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
     return tf.tidy(() => {
         let newMem
         if (memLen == null || prevMem == null) {
-            newMem = currOut
+            newMem = currOut.clone()
         } else if (memLen == 0) {
-            return prevMem
+            return prevMem.clone()
         } else {
             newMem = tf.concat([prevMem, currOut], 0)
             newMem = tf.slice(newMem, [newMem.shape[0] - memLen], [memLen])
@@ -441,9 +469,8 @@ export function transformer(args = {
         if (args.projInitializer == null) {
             args.projInitializer = args.initializer
         }
-        let lookupFn = maskAdaptiveEmbeddingLookup
 
-        let [embeddings, sharedParams] = lookupFn({
+        let [embeddings, sharedParams] = maskAdaptiveEmbeddingLookup({
             x: args.decInp,
             nToken: args.nToken,
             dEmbed: args.dEmbed,
@@ -482,15 +509,15 @@ export function transformer(args = {
         }
 
         for (let i = 0; i < args.nLayer; i++) { //cache new mems
-            newMems.push(_cacheMem(output.read(), mems[i], args.memLen))
+            newMems.push(_cacheMem(output.read().clone(), mems[i], args.memLen))
             let layerScope = scope.variableScope(`layer_${i}`)
             output.sequence(tptr => {
                 tptr.assign(
                     relMultiheadAttn({
-                        w: tptr.read(),
+                        w: tptr.read().clone(),
                         r: posEmb.read(),
-                        rwBias: !args.untieR ? rwBias : rwBias[i],
-                        rrBias: !args.untieR ? rrBias : rrBias[i],
+                        rwBias: !args.untieR ? rwBias : tf.gather(rwBias, i),
+                        rrBias: !args.untieR ? rrBias : tf.gather(rrBias, i),
                         attnMask: attnMask,
                         mem: mems[i],
                         dModel: args.dModel,
@@ -507,7 +534,7 @@ export function transformer(args = {
             }).sequence(tptr => {
                 tptr.assign(
                     positionwiseFF({
-                        inp: tptr.read(),
+                        inp: tptr.read().clone(),
                         dModel: args.dModel,
                         dInner: args.dInner,
                         dropout: args.dropout,
@@ -521,27 +548,27 @@ export function transformer(args = {
         }
         output.assign(tf.dropout(output.read(), args.dropout))
 
-
-        let logsoftmax_fn = maskAdaptiveLogsoftmax
-        let loss = logsoftmax_fn({
-            hidden: output.read(),
-            target: args.target,
-            nToken: args.nToken,
-            dEmbed: args.dEmbed,
-            dProj: args.dModel,
-            cutoffs: args.cutoffs,
-            params: sharedParams,
-            tieProjs: args.tieProjs,
-            initializer: args.initializer,
-            projInitializer: args.projInitializer,
-            divVal: args.divVal,
-            perms: args.targetPerms,
-            headTarget: args.headTarget,
-            projSameDim: args.projSameDim
-        },
-            scope.variableScope("adaptive_softmax")
+        output.assign(
+            maskAdaptiveLogsoftmax({
+                hidden: output.read(),
+                target: args.target,
+                nToken: args.nToken,
+                dEmbed: args.dEmbed,
+                dProj: args.dModel,
+                cutoffs: args.cutoffs,
+                params: sharedParams,
+                tieProjs: args.tieProjs,
+                initializer: args.initializer,
+                projInitializer: args.projInitializer,
+                divVal: args.divVal,
+                perms: args.targetPerms,
+                headTarget: args.headTarget,
+                projSameDim: args.projSameDim,
+                returnMean: true
+            },
+                scope.variableScope("adaptive_softmax")
+            )
         )
-
-        return [loss, tf.stack(newMems), output.read()]
+        return [output.read(), tf.stack(newMems)]
     })
 }

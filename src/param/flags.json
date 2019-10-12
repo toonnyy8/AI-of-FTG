@@ -1,7 +1,7 @@
 {
-    "nLayer": 4,
-    "dModel": 16,
-    "dEmbed": 16,
+    "nLayer": 8,
+    "dModel": 512,
+    "dEmbed": 512,
     "nHead": 8,
     "dHead": 64,
     "dInner": 8,
