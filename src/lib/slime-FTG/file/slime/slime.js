@@ -3,7 +3,7 @@ import fs from 'fs'
 import * as BABYLON from "babylonjs"
 
 export class Actor {
-    constructor({ mesh, materialMesh, animationGroup, skeleton, startPosition, startRotationQuaternion, scene, keySet = { jump: "w", squat: "s", left: "a", right: "d", attack: { small: "j", medium: "k", large: "l" } }, fps = 60 }) {
+    constructor({ mesh, materialMesh, animationGroup, skeleton, startPosition, startRotationQuaternion, scene, keySet = { jump: "w", squat: "s", left: "a", right: "d", attack: { small: "j", medium: "k", large: "l" } }, fps = 60, maxHP = 3000 }) {
         this._faceTo = "left"
         this._fps = fps && !Number.isNaN(fps - 0) ? fps : this.fps
         this._actions = Actor.actionSet()
@@ -31,7 +31,8 @@ export class Actor {
         this.isHit = false
         this.jumpTimes = 0
 
-        this.HP = 3000
+        this.maxHP = maxHP
+        this.HP = this.maxHP
         this.beHitNum = 0
 
         this.vector = BABYLON.Vector3.Zero()
@@ -1700,7 +1701,7 @@ export class Actor {
         this.vector = new BABYLON.Vector3.Zero()
         this.isPD = false
         this.perfectDefenseTime = -1
-        this.HP = 3000
+        this.HP = this.maxHP
         this.beHitNum = 0
         this.beInjuredObj = { atk: null, scale: null, beHitVector: BABYLON.Vector3.Zero() }
         this.cumulativeDamage = 0

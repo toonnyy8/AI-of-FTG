@@ -18,9 +18,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "parcel ./index.html ./agent.html -p 8080 --open",
-    "build": "parcel build ./index.html ./agent.html --out-dir build --public-url=./",
-    "dev:test": "parcel ./test.html -p 8080 --open"
+    "dev": "parcel ./main/index.html ./main/agent.html -p 8080 --open",
+    "build": "parcel build ./main/index.html ./main/agent.html --out-dir build --public-url=./",
+    "dev:cnnNLP": "parcel ./cnnNLP/index.html ./cnnNLP/agent.html -p 8080 --open",
+    "dev:test": "parcel ./test/test.html -p 8080 --open"
   },
   "keywords": [],
   "author": "",

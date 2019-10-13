@@ -82,7 +82,8 @@ export class Game {
                     keySet: keySets[0],
                     scene: scene,
                     startPosition: new BABYLON.Vector3(5, 0, 0),
-                    startRotationQuaternion: new BABYLON.Vector3(0, Math.PI, 0).toQuaternion()
+                    startRotationQuaternion: new BABYLON.Vector3(0, Math.PI, 0).toQuaternion(),
+                    maxHP: 3000
                 })
 
                 // var skeletonViewer = new BABYLON.Debug.SkeletonViewer(skeletons[0], meshes[0], scene);// Create a skeleton viewer for the mesh
@@ -109,7 +110,8 @@ export class Game {
                         keySet: keySets[1],
                         // keySet: { jump: "ArrowUp", squat: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", attack: { small: "1", medium: "2", large: "3" } },
                         startPosition: new BABYLON.Vector3(-5, 0, 0),
-                        startRotationQuaternion: new BABYLON.Vector3(0, 0, 0).toQuaternion()
+                        startRotationQuaternion: new BABYLON.Vector3(0, 0, 0).toQuaternion(),
+                        maxHP: 3000
                     })
 
                     this.player1.setOpponent(this.player2)
@@ -124,8 +126,8 @@ export class Game {
                         } else {
                             camera.setTarget(new BABYLON.Vector3(0, 4, 0));
                         }
-                        HPBar.p1.scaling.x = this.player1.HP / 3000
-                        HPBar.p2.scaling.x = this.player2.HP / 3000
+                        HPBar.p1.scaling.x = this.player1.HP / this.player1.maxHP
+                        HPBar.p2.scaling.x = this.player2.HP / this.player1.maxHP
                         if (this.player1.HP <= 0 || this.player2.HP <= 0) {
                             this.player1.restart()
                             this.player2.restart()
