@@ -48,7 +48,7 @@ let main = () => {
     let ctrlLoop = new tool.Loop(() => {
         if (game.restart) {
             if (env.isReturnCtrl && env.isReturnTrain) {
-                env.train(5, 2)
+                env.train(1, 2)
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {

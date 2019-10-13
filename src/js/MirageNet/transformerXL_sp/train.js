@@ -115,6 +115,11 @@ export function gradModelFn(inp, tgt, nToken, FLAGS, initializer, projInitialize
             }, allVars).grads
 
             Object.keys(towerNamedGrads).forEach((name) => {
+                grads[name].isNaN().any().array().then(a => {
+                    if (a) {
+                        console.log(name)
+                    }
+                })
                 towerNamedGrads[name].push(grads[name])
             })
         }
