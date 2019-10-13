@@ -1,5 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
-import * as cnnNLP from "../../src/js/MirageNet/CNNNLP"
+import { dddqn } from "../../src/js/MirageNet/dddqn"
 import * as tfex from "../../src/lib/tfjs-extensions/src"
 
 // //載入權重
@@ -9,7 +9,7 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 // console.log(tfex.scope.variableScope("transformerXL"))
 
 tf.setBackend("webgl")
-let model = cnnNLP.buildModel({
+let model = dddqn({
     sequenceLen: 60,
     inputNum: 10,
     embInner: [64, 64, 64],

@@ -23,6 +23,7 @@ let model = cnnNLP.buildModel({
     outputInner: [512, 512, 512],
     outputNum: 36
 })
+
 let loop = () => {
     tf.tidy(() => {
         tf.argMax(model.predict(tf.randomNormal([1, 60, 10])), 1).print()
