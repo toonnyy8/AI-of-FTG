@@ -99,12 +99,12 @@ export class DDDQN {
         let outputLayer = tf.layers.dense({ units: outputNum, activation: 'linear' }).apply(outputLayer)
 
         let value = tf.layers.dense({
-            units: actionNum,
+            units: outputNum,
             activation: "linear"
         }).apply(outputLayer)
 
         let A = tf.layers.dense({
-            units: actionNum,
+            units: outputNum,
             activation: "linear"
         }).apply(outputLayer)
 
