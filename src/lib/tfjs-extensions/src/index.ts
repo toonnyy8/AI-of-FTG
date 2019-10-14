@@ -1,8 +1,7 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 
-import * as layers from "./layers"
-export { layers }
+export { layers } from "./layers"
 
 export * from "./function"
 

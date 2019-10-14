@@ -113,34 +113,10 @@ export class Environment {
                         {
                             this.isReturnCtrl = true
                             // console.log(e.data.output)
-                            let output = e.data.output.pop()
-                            let outputTensor = tf.tensor([
-                                output[0].slice(1449, 1449 + 36),
-                                output[1].slice(1449, 1449 + 36)
-                            ])
-                            outputTensor.sum(1, true).print()
-                            outputTensor = tf.div(outputTensor, outputTensor.sum(1, true))
-                            let action = tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1))
-                            // let action = tf.tidy(() => tf.argMax(outputTensor, 1).add(1))
-                            action.print()
-                            action.array()
-                                .then((aEnb) => {
-                                    this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
-                                    this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                                    tf.dispose(outputTensor)
-                                })
-                            // tf.argMax(outputTensor, 1).add(1).print()
-                            // tf.max(outputTensor, 1).print()
-                            let { values, indices } = tf.topk(outputTensor, 36);
-                            values.print();
-                            indices.add(1).print();
-                            // tf.argMax(outputTensor, 1).add(1).print()
-                            // tf.argMax(outputTensor, 1).add(1).array()
-                            //     .then((aEnb) => {
-                            //         this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
-                            //         this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                            //         console.log(aEnb)
-                            //     })
+                            let output = e.data.output
+                            this.trigger(Object.keys(this.players)[0], Environment.actionDecoder(output[0]))
+                            this.trigger(Object.keys(this.players)[1], Environment.actionDecoder(output[1]))
+
                             break
                         }
                     case "train":
@@ -227,7 +203,7 @@ export class Environment {
                 }
         }
         switch (decodeAction[2]) {
-            case 1:
+            case 0:
                 {
                     console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
@@ -238,7 +214,7 @@ export class Environment {
                     )
                     break;
                 }
-            case 2:
+            case 1:
                 {
                     console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
@@ -249,7 +225,7 @@ export class Environment {
                     )
                     break;
                 }
-            case 3:
+            case 2:
                 {
                     console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
@@ -286,6 +262,8 @@ export class Environment {
             }
 
             this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"])
+            this.players[playerName]["reward"] *= 0.5
+            console.log(this.players[playerName]["reward"])
         })
     }
 
@@ -320,24 +298,24 @@ export class Environment {
     static getState(actorA, actorB) {
         //actorA state
         let getS = (actor) => {
-            let HP = actor.HP
-            let x = actor.mesh.position.x
-            let y = actor.mesh.position.y
-            let faceTo = actor._faceTo == "left" ? 0 : 1
+            let HP = actor.HP / actor.maxHP
+            let x = (actor.mesh.position.x + 11) / 22
+            let y = actor.mesh.position.y / 11
+            let faceTo = actor._faceTo == "left" ? 0.1 : 1
 
             let chapter
             switch (actor._state["chapter"]) {
                 case "normal": {
-                    chapter = 0
+                    chapter = 0.1
                     break
                 } case "attack": {
-                    chapter = 1
+                    chapter = 0.25
                     break
                 } case "defense": {
-                    chapter = 2
+                    chapter = 0.5
                     break
                 } case "hitRecover": {
-                    chapter = 3
+                    chapter = 0.72
                     break
                 }
             }
@@ -345,16 +323,16 @@ export class Environment {
             let section
             switch (actor._state["section"]) {
                 case "stand": {
-                    section = 0
+                    section = 0.1
                     break
                 } case "jump": {
-                    section = 1
+                    section = 0.25
                     break
                 } case "squat": {
-                    section = 2
+                    section = 0.5
                     break
                 } case "reStand": {
-                    section = 3
+                    section = 0.75
                     break
                 }
             }
@@ -362,45 +340,30 @@ export class Environment {
             let subsection
             switch (actor._state["subsection"]) {
                 case "main": {
-                    subsection = 0
+                    subsection = 0.1
                     break
                 } case "forward": {
-                    subsection = 1
+                    subsection = 0.25
                     break
                 } case "backward": {
-                    subsection = 2
+                    subsection = 0.5
                     break
                 } case "small": {
-                    subsection = 10
+                    subsection = 1
                     break
                 } case "medium": {
-                    subsection = 20
+                    subsection = 1.25
                     break
                 } case "large": {
-                    subsection = 30
+                    subsection = 1.5
                     break
                 } case "fall": {
-                    subsection = 40
+                    subsection = 2
                     break
                 }
             }
 
-            let subsubsection
-            switch (actor._state["subsubsection"]) {
-                case "0": {
-                    subsubsection = 0
-                    break
-                } case "1": {
-                    subsubsection = 1
-                    break
-                } case "2": {
-                    subsubsection = 2
-                    break
-                } case "3": {
-                    subsubsection = 3
-                    break
-                }
-            }
+            let subsubsection = 0.1 + actor._state["subsubsection"] / 4
 
             return [HP, x, y, faceTo, chapter, section, subsection, subsubsection]
         }
@@ -417,7 +380,8 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+        let reward = -0.2
+        reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
         if (actor.isPD) {
             reward += 0.5
         }

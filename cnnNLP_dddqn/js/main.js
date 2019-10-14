@@ -40,9 +40,9 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 1)
+    }], 5000, 30)
 
-    let epoch = 100
+    let epoch = 10
     let epochCount = epoch
 
     let ctrlLoop = new tool.Loop(() => {
@@ -53,10 +53,6 @@ let main = () => {
                 epochCount -= 1
                 if (epochCount == 0) {
                     game.restart = false
-                    Object.values(env.players).forEach((player) => {
-                        player.memory = []
-                        player.rewardMemory = []
-                    })
                 }
             }
         } else {
@@ -70,7 +66,7 @@ let main = () => {
                 }
             }
         }
-    }, 1)
+    }, 6)
     // let trainLoop = new tool.Loop(() => {
     //     if (env.isReturnCtrl && env.isReturnTrain) {
     //         env.train(2, 2)

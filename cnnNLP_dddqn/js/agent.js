@@ -11,7 +11,7 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
     sequenceLen: 30,
-    actionNum: 16,
+    inputNum: 16,
     embInner: [64, 64, 64],
     filters: 64,
     outputInner: [512, 512, 512],
@@ -25,17 +25,21 @@ tf.ready().then(() => {
         tf.tidy(() => {
             switch (e.data.instruction) {
                 case 'ctrl': {
-                    dddqnModel
+                    let outputs = dddqnModel
                         .model
-                        .predict(e.data.args.states)
-                        .argMax(1)
+                        .predict(tf.tensor(e.data.args.states))
+                    outputs.array().then(a => console.log(a))
+                    tf.multinomial(outputs, 1, null, true)
                         .array()
                         .then((actions) => {
-                            preStates.forEach((s, idx) => {
-                                dddqnModel.store(e.data.args.states[idx], preActions[idx], e.data.args.rewards[idx], preStates[idx])
-                            })
-
-                            preStates = e.data.args.state
+                            if (preStates != null) {
+                                preStates.forEach((s, idx) => {
+                                    dddqnModel.store(e.data.args.states[idx], preActions[idx][0], e.data.args.rewards[idx], preStates[idx])
+                                })
+                                // dddqnModel.train(1)
+                            }
+                            console.log(preActions)
+                            preStates = e.data.args.states
                             preActions = actions
                             channel.postMessage({ instruction: "ctrl", output: actions })
                         })
@@ -43,7 +47,7 @@ tf.ready().then(() => {
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(100)
+                    dddqnModel.train(10)
                     channel.postMessage({ instruction: "train" })
                     break
                 }
