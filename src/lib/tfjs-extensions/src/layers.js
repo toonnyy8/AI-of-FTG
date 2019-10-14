@@ -79,9 +79,10 @@ tf.serialization.registerClass(LayerNormalization)
 
 
 export class Lambda extends tf.layers.Layer {
-    constructor({ func = () => { } }) {
+    constructor({ func = () => { }, outputShape = null }) {
         super({})
         this.func = func
+        this.customOutputShape = outputShape
     }
 
     apply(inputs, kwargs) {
@@ -95,30 +96,15 @@ export class Lambda extends tf.layers.Layer {
     }
 
     computeOutputShape(inputShape) {
-        return tf.tidy(() => {
-            let tempInput
-            let tempOutput
-            if (inputShape[0] != null) {
-                tempInput = inputShape.map((shape) => {
-                    shape.shift()
-                    return tf.ones(shape)
-                })
-                tempOutput = this.func(...tempInput)
+        if (this.customOutputShape == null) {
+            if (inputShape[0] instanceof Array) {
+                return inputShape[0]
             } else {
-                inputShape.shift()
-                tempInput = tf.ones(inputShape)
-                tempOutput = this.func(tempInput)
+                return inputShape
             }
-
-            if (tempOutput instanceof tf.Tensor) {
-                return [null].concat(tempOutput.shape)
-            } else {
-                return tempOutput.map((t) => {
-                    return [null].concat(t.shape)
-                })
-            }
-
-        })
+        } else {
+            return [null].concat(this.customOutputShape)
+        }
     }
 
     /*
@@ -130,8 +116,8 @@ export class Lambda extends tf.layers.Layer {
     }
 }
 
-export function lambda({ func = () => { } }) {
-    return new Lambda({ func })
+export function lambda({ func = () => { }, outputShape = null }) {
+    return new Lambda({ func, outputShape })
 }
 
 // registerClass

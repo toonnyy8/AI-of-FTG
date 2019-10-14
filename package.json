@@ -20,7 +20,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "parcel ./main/index.html ./main/agent.html -p 8080 --open",
     "build": "parcel build ./main/index.html ./main/agent.html --out-dir build --public-url=./",
-    "dev:cnnNLP": "parcel ./cnnNLP/index.html ./cnnNLP/agent.html -p 8080 --open",
+    "dev:cnnNLP_dddqn": "parcel ./cnnNLP_dddqn/index.html ./cnnNLP_dddqn/agent.html -p 8080 --open",
     "dev:test": "parcel ./test/test.html -p 8080 --open"
   },
   "keywords": [],

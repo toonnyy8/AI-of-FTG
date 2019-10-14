@@ -63,11 +63,10 @@ let main = () => {
             epochCount = epoch
             if (env.isReturnTrain) {
                 if (env.isReturnCtrl) {
-                    env.fetchUpReward()
+                    env.nextStep()
                     env.control(["player1", "player2"])
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
-                    env.nextStep()
                 }
             }
         }

@@ -1,6 +1,12 @@
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../../lib/tfjs-extensions/src"
 
+tfex.layers.lambda({
+    func: (x) => {
+        return tf.mean(x, 1, true)
+    }
+}).apply([tf.tensor([[1, 1], [2, 2]])]).print()
+
 export class DDDQN {
     constructor({
         sequenceLen = 60,
@@ -8,8 +14,7 @@ export class DDDQN {
         embInner = [64, 64, 64],
         filters = 64,
         outputInner = [512, 512, 512],
-        outputNum = 36,
-        dueling = true,
+        actionNum = 36,
         memorySize = 100,
         updateTargetStep = 20
     }) {
@@ -20,10 +25,6 @@ export class DDDQN {
             this.count = 0
 
             this.actionNum = actionNum
-
-            this.inputShape = inputShape
-
-            this.conv = conv
         }
 
         {
@@ -33,7 +34,7 @@ export class DDDQN {
                 embInner: embInner,
                 filters: filters,
                 outputInner: outputInner,
-                outputNum: outputNum
+                actionNum: actionNum
             })
 
             this.targetModel = this.buildModel({
@@ -42,7 +43,7 @@ export class DDDQN {
                 embInner: embInner,
                 filters: filters,
                 outputInner: outputInner,
-                outputNum: outputNum
+                actionNum: actionNum
             })
 
             this.targetModel.setWeights(this.model.getWeights())
@@ -66,7 +67,7 @@ export class DDDQN {
             embInner = [64, 64, 64],
             filters,
             outputInner = [512, 512, 512],
-            outputNum = 36
+            actionNum = 36
         }
     ) {
         let input = tf.input({ shape: [sequenceLen, inputNum] })
@@ -95,33 +96,35 @@ export class DDDQN {
         for (let i = 1; i < outputInner.length; i++) {
             outputLayer = tf.layers.dense({ units: outputInner[i], activation: 'linear' }).apply(outputLayer)
         }
-        let outputLayer = tf.layers.dense({ units: outputNum, activation: 'linear' }).apply(outputLayer)
+        outputLayer = tf.layers.dense({ units: actionNum, activation: 'linear' }).apply(outputLayer)
 
         let value = tf.layers.dense({
-            units: outputNum,
+            units: actionNum,
             activation: "linear"
         }).apply(outputLayer)
 
         let A = tf.layers.dense({
-            units: outputNum,
+            units: actionNum,
             activation: "linear"
         }).apply(outputLayer)
-
+        console.log(A)
         let mean = tfex.layers.lambda({
             func: (x) => {
                 return tf.mean(x, 1, true)
-            }
-        }).apply(A)
+            },
+            outputShape: [1]
+        }).apply([A])
 
         let advantage = tfex.layers.lambda({
             func: (x, y) => {
                 return tf.sub(x, y)
             }
         }).apply([A, mean])
+        console.log(advantage)
 
-        Q = tf.layers.add().apply([value, advantage])
+        let Q = tf.layers.add().apply([value, advantage])
 
-        output = tf.layers.softmax().apply(Q)
+        let output = tf.layers.softmax().apply(Q)
 
         return tf.model({ inputs: [input], outputs: output })
     }
@@ -208,23 +211,90 @@ export class DDDQN {
 }
 
 export function dddqn({
-    actionNum = 2,
-    inputShape = [5, 10],
-    hiddenLayers = [64, 64],
-    activation = "softmax",
-    conv = false,
-    dueling = true,
+    sequenceLen = 60,
+    inputNum = 10,
+    embInner = [64, 64, 64],
+    filters = 64,
+    outputInner = [512, 512, 512],
+    actionNum = 36,
     memorySize = 100,
     updateTargetStep = 20
 }) {
     return new DDDQN({
+        sequenceLen,
+        inputNum,
+        embInner,
+        filters,
+        outputInner,
         actionNum,
-        inputShape,
-        hiddenLayers,
-        activation,
-        conv,
-        dueling,
         memorySize,
         updateTargetStep
     })
+}
+
+class SquaredSumLayer extends tf.layers.Layer {
+    constructor() {
+        super({});
+    }
+    // In this case, the output is a scalar.
+    computeOutputShape(inputShape) { return []; }
+
+    // call() is where we do the computation.
+    call(input, kwargs) { return input.square().sum(); }
+
+    // Every layer needs a unique name.
+    getClassName() { return 'SquaredSum'; }
+}
+
+class Lambda extends tf.layers.Layer {
+    constructor({ func = () => { } }) {
+        super({})
+        this.func = func
+    }
+
+    computeOutputShape(inputShape) {
+        return tf.tidy(() => {
+            let tempInput
+            let tempOutput
+            if (inputShape[0] != null) {
+                tempInput = inputShape.map((shape) => {
+                    shape.shift()
+                    return tf.ones(shape)
+                })
+                tempOutput = this.func(...tempInput)
+            } else {
+                inputShape.shift()
+                tempInput = tf.ones(inputShape)
+                tempOutput = this.func(tempInput)
+            }
+
+            if (tempOutput instanceof tf.Tensor) {
+                return [null].concat(tempOutput.shape)
+            } else {
+                return tempOutput.map((t) => {
+                    return [null].concat(t.shape)
+                })
+            }
+
+        })
+    }
+
+    call(inputs, kwargs) {
+        return this.func(...inputs)
+    }
+
+    // apply(inputs, kwargs) {
+    //     return tf.tidy(() => {
+    //         return super.apply(inputs, kwargs)
+    //     })
+    // }
+
+
+    /*
+    * If a custom layer class is to support serialization, it must implement
+    * the `className` static getter.
+    */
+    static get className() {
+        return "Lambda"
+    }
 }

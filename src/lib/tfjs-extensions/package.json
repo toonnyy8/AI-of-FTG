@@ -5,13 +5,14 @@
   "main": "index.js",
   "dependencies": {
     "@babel/polyfill": "^7.6.0",
-    "@tensorflow/tfjs": "^1.2.9",
-    "core-js": "^3.2.1",
+    "@tensorflow/tfjs": "^1.2.11",
+    "core-js": "^3.3.2",
     "js-binary": "^1.2.0",
-    "parcel": "^1.12.3"
+    "parcel": "^1.12.4",
+    "regenerator-runtime": "^0.13.3"
   },
   "devDependencies": {
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.4"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

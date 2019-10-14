@@ -10,15 +10,15 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
-    sequenceLen: 60,
-    inputNum: 10,
+    sequenceLen: 30,
+    actionNum: 16,
     embInner: [64, 64, 64],
     filters: 64,
     outputInner: [512, 512, 512],
-    outputNum: 36
+    actionNum: 36
 })
-let preState
-let preAction
+let preStates
+let preActions
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');
     channel.onmessage = (e) => {
@@ -27,15 +27,19 @@ tf.ready().then(() => {
                 case 'ctrl': {
                     dddqnModel
                         .model
-                        .predict(e.data.args.state)
+                        .predict(e.data.args.states)
                         .argMax(1)
                         .array()
-                        .then((action) => {
-                            dddqnModel.store(e.data.args.state, preAction, e.data.args.reward, preState)
-                            preState = e.data.args.state
-                            preAction = action
-                            channel.postMessage({ instruction: "ctrl", output: a })
+                        .then((actions) => {
+                            preStates.forEach((s, idx) => {
+                                dddqnModel.store(e.data.args.states[idx], preActions[idx], e.data.args.rewards[idx], preStates[idx])
+                            })
+
+                            preStates = e.data.args.state
+                            preActions = actions
+                            channel.postMessage({ instruction: "ctrl", output: actions })
                         })
+                    console.log("ctrl")
                     break
                 }
                 case 'train': {

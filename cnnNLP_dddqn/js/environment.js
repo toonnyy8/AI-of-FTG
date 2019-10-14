@@ -58,8 +58,8 @@ export class Environment {
                         }
                         return last
                     }, {}),
-                memory: new Array(this.memorySize).fill(Environment.getMask()),
-                rewardMemory: new Array(this.memorySize).fill(0),
+                memory: new Array(this.memorySize).fill(Environment.getState(player["actor"], player["actor"].opponent)),
+                reward: 0,
                 action: {
                     jump: false,
                     squat: false,
@@ -276,15 +276,6 @@ export class Environment {
         }
     }
 
-    fetchUpReward() {
-        Object.keys(this.players).forEach((playerName) => {
-            this.players[playerName]["rewardMemory"].push(getReward(this.players[playerName]["actor"]))
-            if (this.players[playerName]["rewardMemory"].length > this.memorySize) {
-                this.players[playerName]["rewardMemory"].shift()
-            }
-        })
-    }
-
     nextStep() {
         Object.keys(this.players).forEach((playerName) => {
             this.players[playerName]["memory"].unshift(
@@ -293,95 +284,33 @@ export class Environment {
             if (this.players[playerName]["memory"].length > this.memorySize) {
                 this.players[playerName]["memory"].pop()
             }
+
+            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"])
         })
     }
 
     control(playersName) {
-        let inps = playersName.map((playerName) => {
-            return [this.players[playerName]["memory"].slice(0, ctrlLength)]
+        let states = playersName.map((playerName) => {
+            return this.players[playerName]["memory"].slice(0, this.ctrlLength)
         })
-        console.log(inps)
+        let rewards = playersName.map((playerName) => {
+            return this.players[playerName]["reward"]
+        })
+        console.log(states)
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
-                state: inps,
-                reward: inps,
+                states: states,
+                rewards: rewards,
             }
         })
         console.log("ctrl")
     }
 
-    mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {
-        let mergeMem = []
-        let mergeRewardMem = []
-        end = end <= this.players[mainPlayerName]["memory"].length - 1 ? end : this.players[mainPlayerName]["memory"].length - 1
-        mergeLength = end - mergeLength >= 0 ? mergeLength : end
-        for (let i = end - mergeLength + 1; i <= end; i++) {
-            mergeMem.push(this.players[mainPlayerName]["memory"][i].slice())
-            mergeRewardMem.push(this.players[mainPlayerName]["rewardMemory"][i])
-            Object.keys(this.players).forEach((playerName) => {
-                if (playerName != mainPlayerName) {
-                    mergeMem.push(this.players[playerName]["memory"][i])
-                    mergeRewardMem.push(this.players[playerName]["rewardMemory"][i])
-                }
-            })
-        }
-        return [mergeMem, mergeRewardMem]
-    }
-
-    predictReward(playerName) {
-        return this.players[playerName]["rewardMemory"].reduce((pReward, reward) => {
-            return (pReward + reward) * 0.5
-        }, 0)
-    }
-
     train(simulationBsz = 1, bsz = 1) {
-        let rewards = []
-        let origins = []
-        for (let i = 0; i < simulationBsz; i++) {
-            origins = origins.concat(
-                Object.keys(this.players).map((playerName) => {
-                    let end = Math.round(Math.random() * (this.memorySize - this.ctrlLength - 1) + this.ctrlLength)
-                    let [origin, reward] = this.mergeMemory(playerName, this.ctrlLength + 1, end)
-                    origin = origin.slice(1, origin.length - 1)
-                    reward = reward.slice(1, origin.length - 1)
-                    rewards.push(reward.map(r => r + 6 + 1484))
-                    return [origin.flat()]
-                })
-            )
-        }
-        // console.log(origins)
-        let inps = origins.map((origin, originIdx) => {
-            return [origin.map((words) => {
-                let inp = []
-                for (let i = 0; i < words.length; i++) {
-                    inp.push(words[i])
-                }
-                inp.pop()
-                inp.push(rewards[originIdx][rewards[originIdx].length - 1])
-                return inp
-            }).flat()]
-        })
-        // console.log(inps)
-        let tgts = origins.map((origin, originIdx) => {
-            return [origin.map((words) => {
-                let tgt = []
-                for (let i = 0; i < words.length; i++) {
-                    tgt.push(words[i])
-                }
-                tgt.pop()
-                tgt.push(words[words.length - 1])
-                return tgt
-            }).flat()]
-        })
-        // console.log(tgts)
         this.channel.postMessage({
             instruction: "train",
             args: {
-                inps: inps,
-                tgts: tgts,
-                nToken: 1496,
-                FLAGS: FLAGS,
                 bsz: bsz
             }
         })
@@ -488,21 +417,23 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
+        let reward = (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
         if (actor.isPD) {
-            reward += 5
+            reward += 0.5
         }
-        if (actor.isHit) {
-            reward += actor.opponent.beHitNum
+        if (actor._state["chapter"] == "attack") {
+            if (actor.isHit) {
+                reward += (actor.opponent.beHitNum * 0.1)
+            } else {
+                reward -= 0.05
+            }
         }
         if (actor._state.chapter == "defense") {
-            reward += 3
+            reward += 0.1
         }
         if (actor.beHitNum != 0) {
-            reward -= actor.beHitNum
+            reward -= actor.beHitNum * 0.1
         }
-
-        reward = Math.min(Math.max(reward, -5), 5)
 
         return reward
     }
