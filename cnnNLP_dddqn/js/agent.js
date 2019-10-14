@@ -9,7 +9,7 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 // console.log(tfex.scope.variableScope("transformerXL"))
 
 tf.setBackend("webgl")
-let model = dddqn({
+let dddqnModel = dddqn({
     sequenceLen: 60,
     inputNum: 10,
     embInner: [64, 64, 64],
@@ -17,21 +17,29 @@ let model = dddqn({
     outputInner: [512, 512, 512],
     outputNum: 36
 })
+let preState
+let preAction
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');
     channel.onmessage = (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {
                 case 'ctrl': {
-                    let output = model.predict(e.data.x)
-                    output.array().then((a) => {
-                        channel.postMessage({ instruction: "ctrl", output: a })
-                        tf.dispose(output)
-                    })
+                    dddqnModel
+                        .model
+                        .predict(e.data.args.state)
+                        .argMax(1)
+                        .array()
+                        .then((action) => {
+                            dddqnModel.store(e.data.args.state, preAction, e.data.args.reward, preState)
+                            preState = e.data.args.state
+                            preAction = action
+                            channel.postMessage({ instruction: "ctrl", output: a })
+                        })
                     break
                 }
                 case 'train': {
-
+                    dddqnModel.train(100)
                     channel.postMessage({ instruction: "train" })
                     break
                 }

@@ -1,6 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../../lib/tfjs-extensions/src"
-import * as cnnNLP from "../cnnNLP"
 
 export class DDDQN {
     constructor({
@@ -35,7 +34,7 @@ export class DDDQN {
                 filters: filters,
                 outputInner: outputInner,
                 outputNum: outputNum
-            }).model
+            })
 
             this.targetModel = this.buildModel({
                 sequenceLen: sequenceLen,
@@ -44,7 +43,7 @@ export class DDDQN {
                 filters: filters,
                 outputInner: outputInner,
                 outputNum: outputNum
-            }).model
+            })
 
             this.targetModel.setWeights(this.model.getWeights())
         }

@@ -6,159 +6,6 @@ import * as FLAGS from "../../src/param/flags.json"
 tf.setBackend("webgl")
 // tf.enableProdMode()
 
-export function getStatement(actorA, actorB, action) {
-    //stateA
-    // let HP=actor
-    let player = actorName == "player1" ? 0 : 500
-
-    let faceTo = actor._faceTo == "left" ? 0 : 250
-
-    let x = Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x)
-    if (x < 1) {
-        x = 0
-    } else if (x < 2.5) {
-        x = 50
-    } else if (x < 4.5) {
-        x = 100
-    } else if (x < 7) {
-        x = 150
-    } else {
-        x = 200
-    }
-
-    let y = actor.mesh.position.y
-    if (y < 2) {
-        y = 0
-    } else if (y < 4) {
-        y = 10
-    } else if (y < 6) {
-        y = 20
-    } else if (y < 8) {
-        y = 30
-    } else {
-        y = 40
-    }
-
-    let hp = actor.HP
-    if (hp < 300) {
-        hp = 1
-    } else if (hp < 600) {
-        hp = 2
-    } else if (hp < 900) {
-        hp = 3
-    } else if (hp < 1200) {
-        hp = 4
-    } else if (hp < 1500) {
-        hp = 5
-    } else if (hp < 1800) {
-        hp = 6
-    } else if (hp < 2100) {
-        hp = 7
-    } else if (hp < 2400) {
-        hp = 8
-    } else if (hp < 2700) {
-        hp = 9
-    } else {
-        hp = 10
-    }
-
-    //stateB
-    let chapter = actor._state["chapter"]
-    if (chapter == "normal") {
-        chapter = 0
-    } else if (chapter == "attack") {
-        chapter = 112
-    } else if (chapter == "defense") {
-        chapter = 112 * 2
-    } else if (chapter == "hitRecover") {
-        chapter = 112 * 3
-    }
-
-    let section = actor._state["section"]
-    if (section == "stand") {
-        section = 0
-    } else if (section == "jump") {
-        section = 28
-    } else if (section == "squat") {
-        section = 28 * 2
-    } else if (section == "reStand") {
-        section = 28 * 3
-    }
-
-    let subsection = actor._state["subsection"]
-    if (subsection == "main") {
-        subsection = 0
-    } else if (subsection == "forward") {
-        subsection = 4
-    } else if (subsection == "backward") {
-        subsection = 8
-    } else if (subsection == "small") {
-        subsection = 12
-    } else if (subsection == "medium") {
-        subsection = 16
-    } else if (subsection == "large") {
-        subsection = 20
-    } else if (subsection == "fall") {
-        subsection = 24
-    }
-
-    let subsubsection = actor._state["subsubsection"]
-    if (subsubsection == "0") {
-        subsubsection = 1
-    } else if (subsubsection == "1") {
-        subsubsection = 2
-    } else if (subsubsection == "2") {
-        subsubsection = 3
-    } else if (subsubsection == "3") {
-        subsubsection = 4
-    }
-
-    //actions
-    let leftOrRight = action["left"] ? 0 : action["right"] ? 12 : 24
-    let jumpOrSquat = action["jump"] ? 0 : action["squat"] ? 4 : 8
-    let attack = action["small"] ? 1 : action["medium"] ? 2 : action["large"] ? 3 : 4
-
-    return [player + faceTo + x + y + hp, 1000 + chapter + section + subsection + subsubsection, 1448 + leftOrRight + jumpOrSquat + attack]
-}
-
-export function actionDecoder(encodeAction) {
-    let lr = Math.ceil(encodeAction / 12) - 1
-    let js = Math.ceil((encodeAction - (12 * lr)) / 4) - 1
-    let atk = encodeAction - lr * 12 - js * 4
-    return [lr, js, atk]
-}
-
-export function getReward(actor) {
-    let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
-    if (actor.isPD) {
-        reward += 5
-    }
-    if (actor.isHit) {
-        reward += actor.opponent.beHitNum
-    }
-    if (actor._state.chapter == "defense") {
-        reward += 3
-    }
-    if (actor.beHitNum != 0) {
-        reward -= actor.beHitNum
-    }
-
-    reward = Math.min(Math.max(reward, -5), 5)
-
-    return reward
-}
-
-export function maskAction(statement) {
-    let cloneS = statement.slice()
-    let opStart = cloneS.indexOf(tokenSet.tokens["<op>"])
-    let opEnd = cloneS.indexOf(tokenSet.tokens["</op>"])
-    for (let i = opStart + 1; i < opEnd; i++) {
-        cloneS[i] = tokenSet.tokens["mask"]
-    }
-    return cloneS
-}
-
-
 export class Environment {
     constructor(
         players = [{
@@ -211,8 +58,8 @@ export class Environment {
                         }
                         return last
                     }, {}),
-                memory: [],
-                rewardMemory: [],
+                memory: new Array(this.memorySize).fill(Environment.getMask()),
+                rewardMemory: new Array(this.memorySize).fill(0),
                 action: {
                     jump: false,
                     squat: false,
@@ -440,44 +287,25 @@ export class Environment {
 
     nextStep() {
         Object.keys(this.players).forEach((playerName) => {
-            this.players[playerName]["memory"].push(
-                getStatement(
-                    this.players[playerName]["actor"],
-                    playerName,
-                    this.players[playerName]["action"]
-                )
+            this.players[playerName]["memory"].unshift(
+                Environment.getState(this.players[playerName]["actor"], this.players[playerName]["actor"].opponent)
             )
             if (this.players[playerName]["memory"].length > this.memorySize) {
-                this.players[playerName]["memory"].shift()
+                this.players[playerName]["memory"].pop()
             }
-
         })
     }
 
     control(playersName) {
         let inps = playersName.map((playerName) => {
-            let pReward = Math.min(Math.round(this.predictReward(playerName) + 1), 5)
-            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-            newStatement[2] = 1484 + 6 + pReward
-
-            let [inp, _] = this.mergeMemory(playerName, this.ctrlLength)
-            inp.push(newStatement)
-            inp = inp.flat()
-            if (inp.length > 3) {
-                inp.shift()
-                inp.shift()
-                inp.shift()
-            }
-            return [inp]
+            return [this.players[playerName]["memory"].slice(0, ctrlLength)]
         })
         console.log(inps)
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
-                inps: inps,
-                tgts: inps,
-                nToken: 1496,
-                FLAGS: FLAGS
+                state: inps,
+                reward: inps,
             }
         })
         console.log("ctrl")
@@ -560,7 +388,7 @@ export class Environment {
         console.log("train")
     }
 
-    getState(actorA, actorB) {
+    static getState(actorA, actorB) {
         //actorA state
         let getS = (actor) => {
             let HP = actor.HP
@@ -649,6 +477,48 @@ export class Environment {
         }
 
         return getS(actorA).concat(getS(actorB))
+    }
+
+    static getMask() {
+        let getM = () => {
+            return [-1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30]
+        }
+
+        return getM().concat(getM())
+    }
+
+    static getReward(actor) {
+        let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
+        if (actor.isPD) {
+            reward += 5
+        }
+        if (actor.isHit) {
+            reward += actor.opponent.beHitNum
+        }
+        if (actor._state.chapter == "defense") {
+            reward += 3
+        }
+        if (actor.beHitNum != 0) {
+            reward -= actor.beHitNum
+        }
+
+        reward = Math.min(Math.max(reward, -5), 5)
+
+        return reward
+    }
+
+    static actionDecoder(encodeAction) {
+        let lr = Math.floor(encodeAction / 12)
+        let js = Math.floor((encodeAction - (12 * lr)) / 4)
+        let atk = encodeAction - lr * 12 - js * 4
+        return [lr, js, atk]
+    }
+
+    static getAction(actor) {
+        let leftOrRight = action["left"] ? 0 : action["right"] ? 1 : 2
+        let jumpOrSquat = action["jump"] ? 0 : action["squat"] ? 1 : 2
+        let attack = action["small"] ? 0 : action["medium"] ? 1 : action["large"] ? 2 : 3
+        return (leftOrRight * 3 + jumpOrSquat) * 4 + attack
     }
 
 }
