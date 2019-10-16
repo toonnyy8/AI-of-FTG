@@ -50,7 +50,7 @@ export class DDDQN {
         }
 
         {
-            this.optimizer = tf.train.adam()
+            this.optimizer = tf.train.adam(5e-4)
         }
 
     }
@@ -71,6 +71,7 @@ export class DDDQN {
             embLayer = tf.layers.dense({ units: embInner[i], activation: 'selu' }).apply(embLayer)
         }
         embLayer = tf.layers.reshape({ targetShape: [sequenceLen, embInner[embInner.length - 1], 1] }).apply(embLayer)
+        embLayer = tf.layers.dropout({ rate: 0.1 }).apply(embLayer)
 
         let cnnLayers = new Array(sequenceLen).fill(0).map((val, idx) => {
             return tf.layers.flatten().apply(
@@ -86,12 +87,16 @@ export class DDDQN {
                 )
             )
         })
+
         let concatLayer = tf.layers.concatenate().apply(cnnLayers)
+        concatLayer = tf.layers.dropout({ rate: 0.1 }).apply(concatLayer)
+
         let outputLayer = tf.layers.dense({ units: outputInner[0], activation: 'selu' }).apply(concatLayer)
         for (let i = 1; i < outputInner.length; i++) {
             outputLayer = tf.layers.dense({ units: outputInner[i], activation: 'selu' }).apply(outputLayer)
         }
         outputLayer = tf.layers.dense({ units: actionNum, activation: 'selu' }).apply(outputLayer)
+        outputLayer = tf.layers.dropout({ rate: 0.1 }).apply(outputLayer)
 
         let value = tf.layers.dense({
             units: actionNum,
@@ -160,6 +165,7 @@ export class DDDQN {
 
         for (let i = 0; i < replayNum; i++) {
             let data = this.load()
+            console.log(data)
             arrayPrevS.push(data[0])
             arrayA.push(data[1])
             arrayR.push(data[2])

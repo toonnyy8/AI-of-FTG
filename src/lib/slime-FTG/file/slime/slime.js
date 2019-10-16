@@ -7,7 +7,7 @@ export class Actor {
         this._faceTo = "left"
         this._fps = fps && !Number.isNaN(fps - 0) ? fps : this.fps
         this._actions = Actor.actionSet()
-        this._state = { chapter: "normal", section: "stand", subsection: "main", subsubsection: 0 }
+        this._state = { chapter: "normal", section: "stand", subsection: "main", subsubsection: 0, frame: 0 }
         this._animationGroup = animationGroup
         this._mesh = mesh
         this._materialMesh = materialMesh
@@ -1363,6 +1363,8 @@ export class Actor {
         this.stopAnimation()
         try {
             this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/)
+            this._state.frame = this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].animatables[0].getAnimations()[0].currentFrame
+
         } catch{
             console.error(`${this._state.chapter}:${this._state.section}:${this._state.subsection}:${this._state.subsubsection}`)
         }

@@ -40,9 +40,9 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 30)
+    }], 5000, 60)
 
-    let epoch = 10
+    let epoch = 100
     let epochCount = epoch
 
     let ctrlLoop = new tool.Loop(() => {
@@ -58,8 +58,8 @@ let main = () => {
         } else {
             epochCount = epoch
             if (env.isReturnTrain) {
+                env.nextStep()
                 if (env.isReturnCtrl) {
-                    env.nextStep()
                     env.control(["player1", "player2"])
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
