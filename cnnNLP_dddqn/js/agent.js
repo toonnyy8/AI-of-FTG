@@ -11,10 +11,10 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
     sequenceLen: 60,
-    inputNum: 16,
-    embInner: [64, 64, 64],
-    filters: 64,
-    outputInner: [512, 512, 512],
+    inputNum: 18,
+    embInner: [32, 32, 32],
+    filters: [8, 8, 8, 8, 64],
+    outputInner: [32, 32],
     actionNum: 8
 })
 let preStates
@@ -30,12 +30,13 @@ tf.ready().then(() => {
                         .predict(tf.tensor(e.data.args.states))
                     outputs.array().then(a => console.log(a))
                     tf.multinomial(outputs, 1, null, true)
+                        .reshape([-1])
                         .array()
                         .then((actions) => {
                             if (preStates != null) {
                                 preStates.forEach((s, idx) => {
                                     // dddqnModel.store(e.data.args.states[idx], e.data.args.actions[idx], e.data.args.rewards[idx], preStates[idx])
-                                    dddqnModel.store(e.data.args.states[idx], preActions[idx][0], e.data.args.rewards[idx], preStates[idx])
+                                    dddqnModel.store(e.data.args.states[idx], preActions[idx], e.data.args.rewards[idx], preStates[idx])
                                 })
                                 // dddqnModel.train(1)
                             }

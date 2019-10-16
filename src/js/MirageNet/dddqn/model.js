@@ -6,11 +6,11 @@ export class DDDQN {
     constructor({
         sequenceLen = 60,
         inputNum = 10,
-        embInner = [64, 64, 64],
-        filters = 64,
-        outputInner = [512, 512, 512],
-        actionNum = 36,
-        memorySize = 100,
+        embInner = [32, 32, 32],
+        filters = [8, 8, 8, 8],
+        outputInner = [32, 32],
+        actionNum = 8,
+        memorySize = 1000,
         updateTargetStep = 20
     }) {
 
@@ -31,6 +31,7 @@ export class DDDQN {
                 outputInner: outputInner,
                 actionNum: actionNum
             })
+            this.model.summary()
 
             this.targetModel = this.buildModel({
                 sequenceLen: sequenceLen,
@@ -50,7 +51,7 @@ export class DDDQN {
         }
 
         {
-            this.optimizer = tf.train.adam(5e-4)
+            this.optimizer = tf.train.adam(1e-4)
         }
 
     }
@@ -60,12 +61,13 @@ export class DDDQN {
             sequenceLen,
             inputNum,
             embInner = [64, 64, 64],
-            filters,
-            outputInner = [512, 512, 512],
+            filters = [64, 64, 64],
+            outputInner = [64, 64],
             actionNum = 36
         }
     ) {
         let input = tf.input({ shape: [sequenceLen, inputNum] })
+
         let embLayer = tf.layers.dense({ units: embInner[0], activation: 'selu' }).apply(input)
         for (let i = 1; i < embInner.length; i++) {
             embLayer = tf.layers.dense({ units: embInner[i], activation: 'selu' }).apply(embLayer)
@@ -73,25 +75,32 @@ export class DDDQN {
         embLayer = tf.layers.reshape({ targetShape: [sequenceLen, embInner[embInner.length - 1], 1] }).apply(embLayer)
         embLayer = tf.layers.dropout({ rate: 0.1 }).apply(embLayer)
 
-        let cnnLayers = new Array(sequenceLen).fill(0).map((val, idx) => {
-            return tf.layers.flatten().apply(
-                tf.layers.maxPooling2d({
-                    poolSize: [sequenceLen - idx, 1],
-                    strides: [sequenceLen - idx, 1]
-                }).apply(
-                    tf.layers.conv2d({
-                        filters: filters,
-                        kernelSize: [idx + 1, embInner[embInner.length - 1]],
-                        activation: "selu"
-                    }).apply(embLayer)
-                )
-            )
-        })
+        let cnnLayer = tf.layers.conv2d({
+            filters: filters[0],
+            kernelSize: [2, embInner[embInner.length - 1]],
+            activation: "selu",
+            padding: "same"
+        }).apply(embLayer)
+        for (let i = 1; i < filters.length - 1; i++) {
+            cnnLayer = tf.layers.conv2d({
+                filters: filters[i],
+                kernelSize: [i * Math.floor(sequenceLen / filters.length), embInner[embInner.length - 1]],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+        }
+        cnnLayer = tf.layers.conv2d({
+            filters: filters[filters.length - 1],
+            kernelSize: [sequenceLen, embInner[embInner.length - 1]],
+            strides: [sequenceLen, embInner[embInner.length - 1]],
+            activation: "selu",
+            padding: "same"
+        }).apply(cnnLayer)
 
-        let concatLayer = tf.layers.concatenate().apply(cnnLayers)
-        concatLayer = tf.layers.dropout({ rate: 0.1 }).apply(concatLayer)
+        let flattenLayer = tf.layers.flatten().apply(cnnLayer)
+        flattenLayer = tf.layers.dropout({ rate: 0.1 }).apply(flattenLayer)
 
-        let outputLayer = tf.layers.dense({ units: outputInner[0], activation: 'selu' }).apply(concatLayer)
+        let outputLayer = tf.layers.dense({ units: outputInner[0], activation: 'selu' }).apply(flattenLayer)
         for (let i = 1; i < outputInner.length; i++) {
             outputLayer = tf.layers.dense({ units: outputInner[i], activation: 'selu' }).apply(outputLayer)
         }
@@ -206,11 +215,11 @@ export class DDDQN {
 export function dddqn({
     sequenceLen = 60,
     inputNum = 10,
-    embInner = [64, 64, 64],
-    filters = 64,
-    outputInner = [512, 512, 512],
-    actionNum = 36,
-    memorySize = 100,
+    embInner = [32, 32, 32],
+    filters = [8, 8, 8, 8],
+    outputInner = [32, 32],
+    actionNum = 8,
+    memorySize = 1000,
     updateTargetStep = 20
 }) {
     return new DDDQN({

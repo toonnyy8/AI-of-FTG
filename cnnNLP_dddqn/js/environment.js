@@ -94,8 +94,8 @@ export class Environment {
                             this.isReturnCtrl = true
                             // console.log(e.data.output)
                             let output = e.data.output
-                            this.trigger(Object.keys(this.players)[0], output[0][0])
-                            this.trigger(Object.keys(this.players)[1], output[1][0])
+                            this.trigger(Object.keys(this.players)[0], output[0])
+                            this.trigger(Object.keys(this.players)[1], output[1])
 
                             break
                         }
@@ -277,8 +277,6 @@ export class Environment {
             let y = actor.mesh.position.y / 11
             let faceTo = actor._faceTo == "left" ? 0.1 : 1
 
-            let state = 0
-
             let chapter
             switch (actor._state["chapter"]) {
                 case "normal": {
@@ -339,11 +337,11 @@ export class Environment {
                 }
             }
 
-            let subsubsection = actor._state["subsubsection"]
+            let subsubsection = (actor._state["subsubsection"] - 0) + 1
 
             let frame = actor._state["frame"]
 
-            return [HP, x, y, faceTo, chapter * frame, section * frame, subsection * frame, subsubsection * frame]
+            return [HP, x, y, faceTo, chapter, section, subsection, subsubsection, frame]
         }
 
         return getS(actorA).concat(getS(actorB))
