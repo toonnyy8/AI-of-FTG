@@ -7,9 +7,7 @@ declare class SequenceTidy {
     run(input: any): tf.Tensor
 }
 
-export declare function sequenceTidy(func: () => {}): SequenceTidy
-
-export declare class TensorPtr {
+declare class TensorPtr {
     _ptr: tf.Tensor
     ptr: tf.Tensor
     constructor(tensor: tf.Tensor)
@@ -18,9 +16,7 @@ export declare class TensorPtr {
     sequence(func: (tensorPrt: TensorPtr) => {}): TensorPtr
 }
 
-export declare function tensorPtr(tensor: tf.Tensor): TensorPtr
-
-export declare class TensorPtrList {
+declare class TensorPtrList {
     _ptrList: { [key: string]: tf.Tensor }
     constructor(tensorList: { [key: string]: tf.Tensor })
     read(key: String): tf.Tensor
@@ -28,4 +24,10 @@ export declare class TensorPtrList {
     sequence(func: (tensorPrtList: TensorPtrList) => {}): TensorPtrList
 }
 
-export declare function tensorPtrList(tensorList: { [key: string]: tf.Tensor }): TensorPtrList
+export declare function registerTool(tf): {
+    sequenceTidy(func: () => {}): SequenceTidy
+    TensorPtr: TensorPtr
+    tensorPtr(tensor: tf.Tensor): TensorPtr
+    TensorPtrList: TensorPtrList
+    tensorPtrList(tensorList: { [key: string]: tf.Tensor }): TensorPtrList
+}

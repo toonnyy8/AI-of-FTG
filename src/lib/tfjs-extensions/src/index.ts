@@ -1,18 +1,30 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 
-export { layers } from "./layers"
+import { registerLayers } from "./layers"
+export { registerLayers }
 
-export * from "./function"
+import { registerFuncs } from "./functions"
+export { registerFuncs }
 
-import { VariableScope } from "./scope"
+import { registerScope } from "./scope"
 
-export let scope = new VariableScope("")
+export { registerScope }
 
-import * as tool from "./tool"
+import { registerTool } from "./tool"
 
-export { tool }
+export { registerTool }
 
-import * as sl from "./sl"
+import { registerSL } from "./sl"
 
-export { sl }
+export { registerSL }
+
+export const registerTfex = (tf) => {
+    return {
+        layers: registerLayers(tf),
+        funcs: registerFuncs(tf),
+        scope: registerScope(tf),
+        tool: registerTool(tf),
+        sl: registerSL(tf)
+    }
+}

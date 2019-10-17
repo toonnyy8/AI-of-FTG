@@ -13,7 +13,7 @@ let dddqnModel = dddqn({
     sequenceLen: 60,
     inputNum: 18,
     embInner: [32, 32, 32],
-    filters: [8, 8, 8, 8, 64],
+    filters: [8, 8, 8, 8, 8, 8, 8, 8, 64],
     outputInner: [32, 32],
     actionNum: 8
 })
@@ -28,8 +28,12 @@ tf.ready().then(() => {
                     let outputs = dddqnModel
                         .model
                         .predict(tf.tensor(e.data.args.states))
+                    outputs = outputs.pow(4)
+                    outputs = tf.div(outputs, outputs.sum(1, true))
                     outputs.array().then(a => console.log(a))
+
                     tf.multinomial(outputs, 1, null, true)
+                        // tf.argMax(outputs, 1)
                         .reshape([-1])
                         .array()
                         .then((actions) => {

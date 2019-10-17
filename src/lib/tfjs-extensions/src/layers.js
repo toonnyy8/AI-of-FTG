@@ -1,6 +1,9 @@
-export function layers(tf) {
+import * as tf from "@tensorflow/tfjs"
+
+export function registerLayers(tf_ = tf) {
+
     // https://github.com/GistNoesis/Wisteria/blob/master/tfjs/src/LayerNorm.js
-    class LayerNormalization extends tf.layers.Layer {
+    class LayerNormalization extends tf_.layers.Layer {
         constructor(args) {
             super({})
             this.axis = args.axis
@@ -20,8 +23,8 @@ export function layers(tf) {
         }
         build(inputShape) {
             // console.log("LayerNorm build : ")
-            this.g = this.addWeight("g", [inputShape[inputShape.length - 1]], "float32", tf.initializers.ones())
-            this.b = this.addWeight("b", [inputShape[inputShape.length - 1]], "float32", tf.initializers.zeros())
+            this.g = this.addWeight("g", [inputShape[inputShape.length - 1]], "float32", tf_.initializers.ones())
+            this.b = this.addWeight("b", [inputShape[inputShape.length - 1]], "float32", tf_.initializers.zeros())
             let gname = this.computeCorrectName(this.g.originalName)
             let bname = this.computeCorrectName(this.b.originalName)
             this.g.originalName = gname
@@ -48,15 +51,15 @@ export function layers(tf) {
             let x = input
             let epsilon = 1e-5
             let axis = this.axis == -1 ? input.shape.length - 1 : this.axis
-            let u = tf.mean(x, axis, true)
-            let xmu = tf.sub(x, u)
-            let s = tf.mean(tf.square(xmu), axis, true)
-            x = tf.mul(xmu, tf.rsqrt(tf.add(s, epsilon)))
+            let u = tf_.mean(x, axis, true)
+            let xmu = tf_.sub(x, u)
+            let s = tf_.mean(tf_.square(xmu), axis, true)
+            x = tf_.mul(xmu, tf_.rsqrt(tf_.add(s, epsilon)))
             //let gval = this.g.read()
-            let gval = tf.reshape(this.g.read(), [1, 1, -1])
-            let bval = tf.reshape(this.b.read(), [1, 1, -1])
-            //x = x * + tf.reshape( this.b,[1,1,-1])
-            x = tf.add(tf.mul(x, gval), bval)
+            let gval = tf_.reshape(this.g.read(), [1, 1, -1])
+            let bval = tf_.reshape(this.b.read(), [1, 1, -1])
+            //x = x * + tf_.reshape( this.b,[1,1,-1])
+            x = tf_.add(tf_.mul(x, gval), bval)
             return x
         }
 
@@ -73,11 +76,11 @@ export function layers(tf) {
         return new LayerNormalization(init)
     }
     // registerClass
-    tf.serialization.registerClass(LayerNormalization)
+    tf_.serialization.registerClass(LayerNormalization)
 
 
 
-    class Lambda extends tf.layers.Layer {
+    class Lambda extends tf_.layers.Layer {
         constructor({ func = () => { }, outputShape = null }) {
             super({})
             this.func = func
@@ -85,13 +88,13 @@ export function layers(tf) {
         }
 
         apply(inputs, kwargs) {
-            return tf.tidy(() => {
+            return tf_.tidy(() => {
                 return super.apply(inputs, kwargs)
             })
         }
 
         call(inputs, kwargs) {
-            return tf.tidy(() => this.func(...inputs))
+            return tf_.tidy(() => this.func(...inputs))
         }
 
         computeOutputShape(inputShape) {
@@ -120,7 +123,13 @@ export function layers(tf) {
     }
 
     // registerClass
-    tf.serialization.registerClass(Lambda)
+    tf_.serialization.registerClass(Lambda)
 
-    return { layerNormalization, lambda }
+    /********************************/
+    return {
+        LayerNormalization,
+        layerNormalization,
+        Lambda,
+        lambda
+    }
 }

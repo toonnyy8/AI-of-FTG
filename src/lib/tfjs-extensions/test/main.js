@@ -3,6 +3,9 @@ import "regenerator-runtime/runtime"
 
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../src"
+import { registerTfex } from "../src"
+const tfex_ = registerTfex(tf)
+console.log(tfex_)
 
 console.log(tf.memory())
 
@@ -66,7 +69,7 @@ console.log(tf.memory())
 // console.log(load)
 // console.log(tfex.scope.variableScope("test").load(load))
 
-let subLayer = tfex.layers.lambda({ func: (a, b) => { return tf.sub(a, b) }, outputShape: [1] })
+let subLayer = tfex_.layers.lambda({ func: (a, b) => { return tf.sub(a, b) }, outputShape: [1] })
 console.log(subLayer.apply([tf.input({ shape: [1] }), tf.input({ shape: [1] })]))
 subLayer.apply([tf.tensor([1]), tf.tensor([10])]).print()
 

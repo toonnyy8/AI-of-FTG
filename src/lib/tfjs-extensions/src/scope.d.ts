@@ -1,6 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
 
-export declare class VariableScope {
+declare class VariableScope {
     scopeName: String
     scopes: Object
     variables: Object
@@ -15,3 +15,5 @@ export declare class VariableScope {
     trainableVariables(): tf.Variable[]
     allVariables(): tf.Variable[]
 }
+
+export function registerScope(tf): VariableScope
