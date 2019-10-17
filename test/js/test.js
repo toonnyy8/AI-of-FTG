@@ -1,7 +1,8 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 import * as fs from "fs"
 let weight = fs.readFileSync(__dirname + "/../../src/param/w.bin")
 

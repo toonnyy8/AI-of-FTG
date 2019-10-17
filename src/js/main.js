@@ -5,7 +5,8 @@ import { Environment } from "./environment"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tool from "./tool"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../lib/tfjs-extensions/src"
+import { registerTfex } from "../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 let keySets = [{
     jump: "w",

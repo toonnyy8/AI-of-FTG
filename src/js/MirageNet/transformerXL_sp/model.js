@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../../lib/tfjs-extensions/src"
+import { registerTfex } from "../../../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 function myDense(
     args = {
@@ -85,7 +86,7 @@ export function positionalEmbedding(
 ) {
     //console.log("positionalEmbedding")
     return tf.tidy(() => {
-        let sinusoidInp = tfex.einsum('i,j->ij', args.posSeq, args.invFreq)
+        let sinusoidInp = tfex.funcs.einsum('i,j->ij', args.posSeq, args.invFreq)
         let posEmb = tf.concat([tf.sin(sinusoidInp), tf.cos(sinusoidInp)], -1)
         if (args.bsz != null) {
             return posEmb.expandDims(1).tile([1, args.bsz, 1])
@@ -232,10 +233,10 @@ export function relMultiheadAttn(
         let rrHeadQ = tfex.tool.tensorPtr(tf.add(wHeadQ.read(), args.rrBias))
         wHeadQ.assign(null)
         //console.log(tf.memory())
-        let AC = tfex.tool.tensorPtr(tfex.einsum('ibnd,jbnd->ijbn', rwHeadQ.read(), wHeadK.read()))
+        let AC = tfex.tool.tensorPtr(tfex.funcs.einsum('ibnd,jbnd->ijbn', rwHeadQ.read(), wHeadK.read()))
         wHeadK.assign(null)
         //console.log(tf.memory())
-        let BD = tfex.tool.tensorPtr(tfex.einsum('ibnd,jnd->ijbn', rrHeadQ.read(), rHeadK.read()))
+        let BD = tfex.tool.tensorPtr(tfex.funcs.einsum('ibnd,jnd->ijbn', rrHeadQ.read(), rHeadK.read()))
         rHeadK.assign(null)
         //console.log(tf.memory())
         BD.assign(relShift({ x: BD.read() }))
@@ -263,11 +264,11 @@ export function relMultiheadAttn(
             )
         )
 
-        let attnProb = tfex.tool.tensorPtr(tfex.softmax(attnScore.read(), 1))
+        let attnProb = tfex.tool.tensorPtr(tfex.funcs.softmax(attnScore.read(), 1))
         // tf.softmax(attnScore, 1)
         attnProb.assign(tf.dropout(attnProb.read(), args.dropatt))
         //console.log(tf.memory())
-        let attnVec = tfex.tool.tensorPtr(tfex.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
+        let attnVec = tfex.tool.tensorPtr(tfex.funcs.einsum('ijbn,jbnd->ibnd', attnProb.read(), wHeadV.read()))
         wHeadV.assign(null)
         //console.log(tf.memory())
         let sizeT = attnVec.read().shape
@@ -327,7 +328,7 @@ export function maskAdaptiveEmbeddingLookup(
             projW = scope.getVariable(
                 'projW', [args.dEmbed, args.dProj], "float32", args.initializer, true
             )
-            y = tfex.einsum('ibe,ed->ibd', y, projW)
+            y = tfex.funcs.einsum('ibe,ed->ibd', y, projW)
         } else {
             projW = null
         }
@@ -363,9 +364,9 @@ export function maskAdaptiveLogsoftmax(
             return tf.tidy(() => {
                 let y = x
                 if (proj != null) {
-                    y = tfex.einsum('ibd,ed->ibe', y, proj)
+                    y = tfex.funcs.einsum('ibd,ed->ibe', y, proj)
                 }
-                return tf.add(tfex.einsum('ibd,nd->ibn', y, W), b)
+                return tf.add(tfex.funcs.einsum('ibd,nd->ibn', y, W), b)
             })
         }
 
@@ -375,7 +376,7 @@ export function maskAdaptiveLogsoftmax(
         let softmax_b = scope.getVariable('bias', [args.nToken], "float32", args.initializer, true)
         let output = _logit(args.hidden, paramsW, softmax_b, paramsProjs)
 
-        output = tfex.softmax(output, 2)
+        output = tfex.funcs.softmax(output, 2)
 
         return output
     })
@@ -384,8 +385,8 @@ export function maskAdaptiveLogsoftmax(
 export function _createMask(qlen, mlen, sameLength = false) {
     return tf.tidy(() => {
         let attnMask = tf.ones([qlen, qlen])
-        let maskU = tfex.matrixBandPart(attnMask, 0, -1)
-        let maskDia = tfex.matrixBandPart(attnMask, 0, 0)
+        let maskU = tfex.funcs.matrixBandPart(attnMask, 0, -1)
+        let maskDia = tfex.funcs.matrixBandPart(attnMask, 0, 0)
         let attnMaskPad = tf.zeros([qlen, mlen])
         let ret = tf.concat([attnMaskPad, tf.sub(maskU, maskDia)], 1)
         // if (args.sameLength) {
@@ -408,7 +409,7 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
             newMem = tf.concat([prevMem, currOut], 0)
             newMem = tf.slice(newMem, [newMem.shape[0] - memLen], [memLen])
         }
-        return tfex.stopGradient(newMem)
+        return tfex.funcs.stopGradient(newMem)
     })
 }
 

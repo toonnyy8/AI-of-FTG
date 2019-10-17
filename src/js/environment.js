@@ -1,8 +1,9 @@
 import * as tokenSet from "../param/tokens.json"
 import { Game } from "../lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../lib/tfjs-extensions/src"
+import { registerTfex } from "../lib/tfjs-extensions/src"
 import * as FLAGS from "../param/flags.json"
+const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 // tf.enableProdMode()
