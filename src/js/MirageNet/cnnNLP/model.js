@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../../lib/tfjs-extensions/src"
+import { registerTfex } from "../../../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 class cnnNLP {
     constructor(
