@@ -228,8 +228,8 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"])
-            this.players[playerName]["reward"] *= 0.5
+            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"]) * 0.1
+            // this.players[playerName]["reward"] *= 0.5
             // console.log(this.players[playerName]["reward"])
         })
     }

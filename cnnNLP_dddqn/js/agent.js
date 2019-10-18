@@ -20,14 +20,16 @@ let dddqnModel = dddqn({
 let preArchive = {
     "player1": {
         state: null,
-        action: null,
         ASV: tf.fill([8], 1e-5, "float32"),
+        preASV: tf.fill([8], 1e-5, "float32"),
+        action: null,
         expired: true
     },
     "player2": {
         state: null,
-        action: null,
         ASV: tf.fill([8], 1e-5, "float32"),
+        preASV: tf.fill([8], 1e-5, "float32"),
+        action: null,
         expired: true
     }
 }
@@ -67,10 +69,11 @@ tf.ready().then(() => {
                                 if (preArchive[playerName].expired == false) {
                                     dddqnModel.store(
                                         preArchive[playerName].state,
-                                        preArchive[playerName].ASV.arraySync(),
+                                        preArchive[playerName].preASV.arraySync(),
                                         preArchive[playerName].action,
                                         e.data.args.archive[playerName].reward,
                                         e.data.args.archive[playerName].state,
+                                        preArchive[playerName].ASV.arraySync(),
                                         ASVsAndActions[0].arraySync()[
                                         Object.keys(e.data.args.archive)
                                             .reduce((acc, name, idx) => {
@@ -90,7 +93,8 @@ tf.ready().then(() => {
 
                         Object.keys(e.data.args.archive).forEach((playerName, idx) => {
                             preArchive[playerName].state = e.data.args.archive[playerName].state
-                            tf.dispose(preArchive[playerName].ASV)
+                            tf.dispose(preArchive[playerName].preASV)
+                            preArchive[playerName].preASV = tf.keep(preArchive[playerName].ASV)
                             preArchive[playerName].ASV = tf.keep(tf.unstack(ASVsAndActions[0])[idx])
                             preArchive[playerName].action = actions[
                                 Object.keys(e.data.args.archive)
