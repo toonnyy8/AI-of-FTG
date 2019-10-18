@@ -1,6 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../../lib/tfjs-extensions/src"
-
+import { registerTfex } from "../../../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 export class DDDQN {
     constructor({
@@ -117,14 +117,14 @@ export class DDDQN {
             activation: "selu"
         }).apply(outputLayer)
 
-        let mean = tfex.layers(tf).lambda({
+        let mean = tfex.layers.lambda({
             func: (x) => {
                 return tf.mean(x, 1, true)
             },
             outputShape: [1]
         }).apply([A])
 
-        let advantage = tfex.layers(tf).lambda({
+        let advantage = tfex.layers.lambda({
             func: (x, y) => {
                 return tf.sub(x, y)
             }
