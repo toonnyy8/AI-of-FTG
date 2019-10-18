@@ -92,11 +92,9 @@ export class Environment {
                     case "ctrl":
                         {
                             this.isReturnCtrl = true
-                            // console.log(e.data.output)
-                            let output = e.data.output
-                            this.trigger(Object.keys(this.players)[0], output[0])
-                            this.trigger(Object.keys(this.players)[1], output[1])
-
+                            Object.keys(e.data.args.archive).forEach((playerName) => {
+                                this.trigger(playerName, e.data.args.archive[playerName].action)
+                            })
                             break
                         }
                     case "train":
@@ -112,7 +110,7 @@ export class Environment {
     }
 
     trigger(actorName, action) {
-        console.log(action)
+        // console.log(action)
         switch (action) {
             case 0:
                 {
@@ -141,7 +139,7 @@ export class Environment {
                 }
             case 1:
                 {
-                    console.log(this.players[actorName].keySet["left"].keydown.key)
+                    // console.log(this.players[actorName].keySet["left"].keydown.key)
 
                     document.dispatchEvent(
                         this.players[actorName].keySet["left"].keyup
@@ -153,7 +151,7 @@ export class Environment {
                 }
             case 2:
                 {
-                    console.log(this.players[actorName].keySet["right"].keydown.key)
+                    // console.log(this.players[actorName].keySet["right"].keydown.key)
 
                     document.dispatchEvent(
                         this.players[actorName].keySet["right"].keyup
@@ -165,7 +163,7 @@ export class Environment {
                 }
             case 3:
                 {
-                    console.log(this.players[actorName].keySet["jump"].keydown.key)
+                    // console.log(this.players[actorName].keySet["jump"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keyup
                     )
@@ -176,7 +174,7 @@ export class Environment {
                 }
             case 4:
                 {
-                    console.log(this.players[actorName].keySet["squat"].keydown.key)
+                    // console.log(this.players[actorName].keySet["squat"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["squat"].keyup
                     )
@@ -187,7 +185,7 @@ export class Environment {
                 }
             case 5:
                 {
-                    console.log(this.players[actorName].keySet.attack["small"].keydown.key)
+                    // console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keyup
                     )
@@ -198,7 +196,7 @@ export class Environment {
                 }
             case 6:
                 {
-                    console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
+                    // console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
@@ -209,7 +207,7 @@ export class Environment {
                 }
             case 7:
                 {
-                    console.log(this.players[actorName].keySet.attack["large"].keydown.key)
+                    // console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
@@ -230,30 +228,25 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"]) * 0.1
+            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"])
             this.players[playerName]["reward"] *= 0.5
-            console.log(this.players[playerName]["reward"])
+            // console.log(this.players[playerName]["reward"])
         })
     }
 
-    control(playersName) {
-        let states = playersName.map((playerName) => {
-            return this.players[playerName]["memory"].slice(0, this.ctrlLength)
-        })
-        let rewards = playersName.map((playerName) => {
-            return this.players[playerName]["reward"]
-        })
-        let actions = playersName.map((playerName) => {
-            // console.log(this.players[playerName])
-            return Environment.getAction(this.players[playerName]["action"])
-        })
-        console.log(states)
+    control(playerNames) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
-                states: states,
-                rewards: rewards,
-                actions: actions
+                archive: playerNames.reduce(
+                    (acc, playerName) => {
+                        acc[playerName] = {
+                            state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
+                            reward: this.players[playerName]["reward"],
+                            action: Environment.getAction(this.players[playerName]["action"])
+                        }
+                        return acc
+                    }, {})
             }
         })
         console.log("ctrl")

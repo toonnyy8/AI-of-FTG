@@ -17,12 +17,19 @@ let dddqnModel = dddqn({
     outputInner: [32, 32],
     actionNum: 8
 })
-let preStates
-let preActions
-let preOutputs = tf.fill([1, 8], 1e-5)
-
-let selectAction = (outputs) => {
-    return tf.multinomial(outputs, 1, null, true)
+let preArchive = {
+    "player1": {
+        state: null,
+        action: null,
+        ASV: tf.fill([8], 1e-5, "float32"),
+        expired: true
+    },
+    "player2": {
+        state: null,
+        action: null,
+        ASV: tf.fill([8], 1e-5, "float32"),
+        expired: true
+    }
 }
 
 tf.ready().then(() => {
@@ -31,29 +38,82 @@ tf.ready().then(() => {
         tf.tidy(() => {
             switch (e.data.instruction) {
                 case 'ctrl': {
-                    let outputs = dddqnModel
-                        .model
-                        .predict(tf.tensor(e.data.args.states))
-                    // outputs = outputs.pow(0.5)
-                    // outputs = tf.div(outputs, outputs.sum(1, true))
-                    outputs.sub(preOutputs).div(preOutputs).array().then(a => console.log(a))
+                    if (Object.keys(e.data.args.archive).length != 0) {
+                        let ASVsAndActions = dddqnModel
+                            .model
+                            .predict([
+                                tf.tensor(
+                                    Object.values(e.data.args.archive)
+                                        .map(archive => {
+                                            return archive.state
+                                        })
+                                ),
+                                tf.stack(
+                                    Object.keys(e.data.args.archive)
+                                        .map(playerName => {
+                                            return preArchive[playerName].ASV
+                                        })
+                                )
+                            ])
+                        ASVsAndActions[1].array().then(a => console.log(a))
 
-                    outputs.sub(preOutputs).div(preOutputs).argMax(1)
-                        // selectAction(outputs)
-                        .reshape([-1])
-                        .array()
-                        .then((actions) => {
-                            if (preStates != null) {
-                                preStates.forEach((s, idx) => {
-                                    dddqnModel.store(e.data.args.states[idx], preActions[idx], e.data.args.rewards[idx], preStates[idx])
-                                })
+                        let actions = ASVsAndActions[1].argMax(1)
+                            // selectAction(outputs)
+                            .reshape([-1])
+                            .arraySync()
+
+                        Object.keys(preArchive).forEach((playerName) => {
+                            if (Object.keys(e.data.args.archive).find(name => name === playerName) !== undefined) {
+                                if (preArchive[playerName].expired == false) {
+                                    dddqnModel.store(
+                                        preArchive[playerName].state,
+                                        preArchive[playerName].ASV.arraySync(),
+                                        preArchive[playerName].action,
+                                        e.data.args.archive[playerName].reward,
+                                        e.data.args.archive[playerName].state,
+                                        ASVsAndActions[0].arraySync()[
+                                        Object.keys(e.data.args.archive)
+                                            .reduce((acc, name, idx) => {
+                                                if (name === playerName) {
+                                                    acc = idx
+                                                }
+                                                return acc
+                                            }, 0)
+                                        ]
+                                    )
+                                }
+                                preArchive[playerName].expired = false
+                            } else {
+                                preArchive[playerName].expired = true
                             }
-                            preStates = e.data.args.states
-                            preActions = actions
-                            channel.postMessage({ instruction: "ctrl", output: actions })
                         })
-                    tf.dispose(preOutputs)
-                    preOutputs = tf.keep(outputs)
+
+                        Object.keys(e.data.args.archive).forEach((playerName, idx) => {
+                            preArchive[playerName].state = e.data.args.archive[playerName].state
+                            tf.dispose(preArchive[playerName].ASV)
+                            preArchive[playerName].ASV = tf.keep(tf.unstack(ASVsAndActions[0])[idx])
+                            preArchive[playerName].action = actions[
+                                Object.keys(e.data.args.archive)
+                                    .reduce((acc, name, idx) => {
+                                        if (name === playerName) {
+                                            acc = idx
+                                        }
+                                        return acc
+                                    }, 0)
+                            ]
+                        })
+                        channel.postMessage({
+                            instruction: "ctrl",
+                            args: {
+                                archive: Object.keys(e.data.args.archive).reduce((acc, name, idx) => {
+                                    acc[name] = {
+                                        action: actions[idx]
+                                    }
+                                    return acc
+                                }, {})
+                            }
+                        })
+                    }
                     console.log("ctrl")
                     break
                 }
@@ -67,31 +127,15 @@ tf.ready().then(() => {
     }
 })
 
-document.getElementById("save").onclick = () => {
-    tf.tidy(() => {
-        let blob = new Blob([tfex.sl.save(tfex.scope.variableScope("transformerXL").save())]);
-        let a = document.createElement("a");
-        let url = window.URL.createObjectURL(blob);
-        let filename = "w.bin";
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    })
-}
-
-document.getElementById("selectAction").onclick = () => {
-    if (document.getElementById("selectAction").innerText == "change to argMax") {
-        selectAction = (outputs) => {
-            return tf.argMax(outputs, 1)
-        }
-        document.getElementById("selectAction").innerText = "change to multinomial"
-        document.getElementById("selectActionText").innerText = "select action : argMax"
-    } else if (document.getElementById("selectAction").innerText == "change to multinomial") {
-        selectAction = (outputs) => {
-            return tf.multinomial(outputs, 1, null, true)
-        }
-        document.getElementById("selectAction").innerText = "change to argMax"
-        document.getElementById("selectActionText").innerText = "select action : multinomial"
-    }
-}
+// document.getElementById("save").onclick = () => {
+//     tf.tidy(() => {
+//         let blob = new Blob([tfex.sl.save(tfex.scope.variableScope("transformerXL").save())]);
+//         let a = document.createElement("a");
+//         let url = window.URL.createObjectURL(blob);
+//         let filename = "w.bin";
+//         a.href = url;
+//         a.download = filename;
+//         a.click();
+//         window.URL.revokeObjectURL(url);
+//     })
+// }

@@ -8,29 +8,19 @@ let weight = fs.readFileSync(__dirname + "/../../src/param/w.bin")
 
 import * as cnnNLP from "../../src/js/MirageNet/cnnNLP"
 console.log(tf.memory());
-// console.log(tfex.sl.load(weight))
-// tfex.scope.variableScope("transformer_XL").load(tfex.sl.load(weight))
-// console.log(tfex.scope)
 
-// let a = tfex.scope.variableScope("a")
-// a.getVariable("test", [2, 2])
-// a.variableScope("b").getVariable("test", [20, 10])
-// console.log(a.save())
-let model = cnnNLP.buildModel({
-    sequenceLen: 60,
-    inputNum: 10,
-    embInner: [64, 64, 64],
-    filters: 64,
-    outputInner: [512, 512, 512],
-    outputNum: 36
-})
+const input1 = tf.input({ shape: [10] });
+const input2 = tf.input({ shape: [20] });
+const dense1 = tf.layers.dense({ units: 4 }).apply(input1);
+const dense2 = tf.layers.dense({ units: 8 }).apply(input2);
+const concat = tf.layers.concatenate().apply([dense1, dense2]);
+const output1 =
+    tf.layers.dense({ units: 3, activation: 'softmax' }).apply(concat);
+const output2 =
+    tf.layers.dense({ units: 3, activation: 'softmax' }).apply(concat);
+const model = tf.model({ inputs: [input1, input2], outputs: [output1, output2] });
+model.summary();
 
-let loop = () => {
-    tf.tidy(() => {
-        tf.argMax(model.predict(tf.randomNormal([1, 60, 10])), 1).print()
-    })
-    // trainLoop.run()
-    requestAnimationFrame(loop)
-}
-loop()
+model.predict([tf.ones([1, 10]), tf.ones([1, 20])])[0].print()
+
 console.log(tf.memory())

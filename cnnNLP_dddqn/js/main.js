@@ -7,6 +7,22 @@ import * as tool from "../../src/js/tool"
 import * as tf from "@tensorflow/tfjs"
 import * as tfex from "../../src/lib/tfjs-extensions/src"
 
+document.getElementById("player1").onclick = () => {
+    if (document.getElementById("player1").innerText == "off") {
+        document.getElementById("player1").innerText = "on"
+    } else {
+        document.getElementById("player1").innerText = "off"
+    }
+}
+
+document.getElementById("player2").onclick = () => {
+    if (document.getElementById("player2").innerText == "off") {
+        document.getElementById("player2").innerText = "on"
+    } else {
+        document.getElementById("player2").innerText = "off"
+    }
+}
+
 let keySets = [{
     jump: "w",
     squat: "s",
@@ -60,7 +76,14 @@ let main = () => {
             if (env.isReturnTrain) {
                 env.nextStep()
                 if (env.isReturnCtrl) {
-                    env.control(["player1"])
+                    let players = []
+                    if (document.getElementById("player1").innerText == "on") {
+                        players.push("player1")
+                    }
+                    if (document.getElementById("player2").innerText == "on") {
+                        players.push("player2")
+                    }
+                    env.control(players)
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
                 }
