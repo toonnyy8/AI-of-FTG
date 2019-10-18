@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../../lib/tfjs-extensions/src"
+import { registerTfex } from "../../../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 //----------positional embedding
 export function positionalEmbedding(
@@ -11,7 +12,7 @@ export function positionalEmbedding(
 ) {
     return tfex.layers.lambda({
         func: (posSeq, invFreq) => {
-            let sinusoidInp = tfex.einsum('i,j->ij', posSeq, invFreq)
+            let sinusoidInp = tfex.funcs.einsum('i,j->ij', posSeq, invFreq)
             let posEmb = tf.concat([tf.sin(sinusoidInp), tf.cos(sinusoidInp)], -1)
             if (args.bsz != null) {
                 return posEmb.expandDims(1).tile([1, args.bsz, 1])
@@ -156,13 +157,13 @@ export function relMultiheadAttn(
 
     AC = tfex.layers.lambda({
         func: (x, y) => {
-            return tfex.einsum('ibnd,jbnd->ijbn', x, y)
+            return tfex.funcs.einsum('ibnd,jbnd->ijbn', x, y)
         }
     }).apply([rwHeadQ, wHeadK])
 
     BD = tfex.layers.lambda({
         func: (x, y) => {
-            return tfex.einsum('ibnd,jnd->ijbn', x, y)
+            return tfex.funcs.einsum('ibnd,jnd->ijbn', x, y)
         }
     }).apply([rrHeadQ, rHeadK])
     BD = relShift({ x: BD })

@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../../lib/tfjs-extensions/src"
+import { registerTfex } from "../../../lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 import { transformer } from "./model"
 
 let optimizer = tf.train.adam(0.0005)
@@ -176,7 +177,7 @@ export function train(inp, tgt, nToken, FLAGS, initializer, projInitializer, isT
             [],
             []
         ])
-        let [clipped, gnorm] = tfex.clipByGlobalNorm(grads, FLAGS.clip)
+        let [clipped, gnorm] = tfex.funcs.clipByGlobalNorm(grads, FLAGS.clip)
         optimizer.applyGradients(
             names.reduce((last, name, idx) => {
                 last[name] = clipped[idx]
