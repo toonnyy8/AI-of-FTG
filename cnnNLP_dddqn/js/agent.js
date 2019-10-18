@@ -19,6 +19,12 @@ let dddqnModel = dddqn({
 })
 let preStates
 let preActions
+let preOutputs = tf.fill([1, 8], 1e-5)
+
+let selectAction = (outputs) => {
+    return tf.multinomial(outputs, 1, null, true)
+}
+
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');
     channel.onmessage = (e) => {
@@ -28,28 +34,26 @@ tf.ready().then(() => {
                     let outputs = dddqnModel
                         .model
                         .predict(tf.tensor(e.data.args.states))
-                    outputs = outputs.pow(4)
-                    outputs = tf.div(outputs, outputs.sum(1, true))
-                    outputs.array().then(a => console.log(a))
+                    // outputs = outputs.pow(0.5)
+                    // outputs = tf.div(outputs, outputs.sum(1, true))
+                    outputs.sub(preOutputs).div(preOutputs).array().then(a => console.log(a))
 
-                    tf.multinomial(outputs, 1, null, true)
-                        // tf.argMax(outputs, 1)
+                    outputs.sub(preOutputs).div(preOutputs).argMax(1)
+                        // selectAction(outputs)
                         .reshape([-1])
                         .array()
                         .then((actions) => {
                             if (preStates != null) {
                                 preStates.forEach((s, idx) => {
-                                    // dddqnModel.store(e.data.args.states[idx], e.data.args.actions[idx], e.data.args.rewards[idx], preStates[idx])
                                     dddqnModel.store(e.data.args.states[idx], preActions[idx], e.data.args.rewards[idx], preStates[idx])
                                 })
-                                // dddqnModel.train(1)
                             }
-                            // console.log(preActions)
                             preStates = e.data.args.states
                             preActions = actions
                             channel.postMessage({ instruction: "ctrl", output: actions })
                         })
-
+                    tf.dispose(preOutputs)
+                    preOutputs = tf.keep(outputs)
                     console.log("ctrl")
                     break
                 }
@@ -74,4 +78,20 @@ document.getElementById("save").onclick = () => {
         a.click();
         window.URL.revokeObjectURL(url);
     })
+}
+
+document.getElementById("selectAction").onclick = () => {
+    if (document.getElementById("selectAction").innerText == "change to argMax") {
+        selectAction = (outputs) => {
+            return tf.argMax(outputs, 1)
+        }
+        document.getElementById("selectAction").innerText = "change to multinomial"
+        document.getElementById("selectActionText").innerText = "select action : argMax"
+    } else if (document.getElementById("selectAction").innerText == "change to multinomial") {
+        selectAction = (outputs) => {
+            return tf.multinomial(outputs, 1, null, true)
+        }
+        document.getElementById("selectAction").innerText = "change to argMax"
+        document.getElementById("selectActionText").innerText = "select action : multinomial"
+    }
 }

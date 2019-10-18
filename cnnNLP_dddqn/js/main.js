@@ -60,7 +60,7 @@ let main = () => {
             if (env.isReturnTrain) {
                 env.nextStep()
                 if (env.isReturnCtrl) {
-                    env.control(["player1", "player2"])
+                    env.control(["player1"])
                     env.isReturnCtrl = false
                     // console.log(tf.memory())
                 }
