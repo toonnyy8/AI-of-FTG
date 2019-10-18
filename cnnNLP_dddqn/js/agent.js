@@ -73,16 +73,7 @@ tf.ready().then(() => {
                                         preArchive[playerName].action,
                                         e.data.args.archive[playerName].reward,
                                         e.data.args.archive[playerName].state,
-                                        preArchive[playerName].ASV.arraySync(),
-                                        ASVsAndActions[0].arraySync()[
-                                        Object.keys(e.data.args.archive)
-                                            .reduce((acc, name, idx) => {
-                                                if (name === playerName) {
-                                                    acc = idx
-                                                }
-                                                return acc
-                                            }, 0)
-                                        ]
+                                        preArchive[playerName].ASV.arraySync()
                                     )
                                 }
                                 preArchive[playerName].expired = false
@@ -96,15 +87,7 @@ tf.ready().then(() => {
                             tf.dispose(preArchive[playerName].preASV)
                             preArchive[playerName].preASV = tf.keep(preArchive[playerName].ASV)
                             preArchive[playerName].ASV = tf.keep(tf.unstack(ASVsAndActions[0])[idx])
-                            preArchive[playerName].action = actions[
-                                Object.keys(e.data.args.archive)
-                                    .reduce((acc, name, idx) => {
-                                        if (name === playerName) {
-                                            acc = idx
-                                        }
-                                        return acc
-                                    }, 0)
-                            ]
+                            preArchive[playerName].action = actions[idx]
                         })
                         channel.postMessage({
                             instruction: "ctrl",
