@@ -19,8 +19,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "parcel ./main/index.html ./main/agent.html -p 8080 --open",
-    "build": "parcel build ./main/index.html ./main/agent.html --out-dir build --public-url=./",
+    "build": "parcel build --no-content-hash  ./main/index.html ./main/agent.html --out-dir build --public-url=./",
     "dev:cnnNLP_dddqn": "parcel ./cnnNLP_dddqn/index.html ./cnnNLP_dddqn/agent.html -p 8080 --open",
+    "build:cnnNLP_dddqn": "parcel build --no-content-hash  ./cnnNLP_dddqn/index.html ./cnnNLP_dddqn/agent.html --out-dir build/cnnNLP_dddqn --public-url=./",
+    "dev:cnnNLP_dddqn_webworker": "parcel ./cnnNLP_dddqn_webworker/index.html -p 8080 --open",
+    "build:cnnNLP_dddqn_webworker": "parcel build --no-content-hash  ./cnnNLP_dddqn_webworker/index.html --out-dir build/cnnNLP_dddqn_webworker --public-url=./",
     "dev:test": "parcel ./test/test.html -p 8080 --open"
   },
   "keywords": [],

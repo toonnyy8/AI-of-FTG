@@ -19,3 +19,9 @@ npm run dev
 npm run build
 ```
 開啟./build/index.html
+
+## 線上測試
+
+```
+npm run build
+```
