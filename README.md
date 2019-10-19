@@ -23,5 +23,10 @@ npm run build
 ## 線上測試
 
 ```
-npm run build
+https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/index.html
+https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/agent.html
+```
+
+```
+https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn_webworker/index.html
 ```
