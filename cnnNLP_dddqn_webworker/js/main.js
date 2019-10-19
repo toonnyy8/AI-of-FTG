@@ -48,6 +48,7 @@ let main = () => {
             document.getElementById("player1").innerText = "on"
         } else {
             document.getElementById("player1").innerText = "off"
+            env.trigger("player1", -1)
         }
     }
 
@@ -56,6 +57,7 @@ let main = () => {
             document.getElementById("player2").innerText = "on"
         } else {
             document.getElementById("player2").innerText = "off"
+            env.trigger("player2", -1)
         }
     }
     document.getElementById("reduceHP").onclick = () => {
@@ -78,6 +80,10 @@ let main = () => {
     let ctrlLoop = new tool.Loop(() => {
         if (game.restart) {
             if (env.isReturnCtrl && env.isReturnTrain) {
+                if (epochCount == epoch) {
+                    env.trigger("player1", -1)
+                    env.trigger("player2", -1)
+                }
                 env.train(1, 2)
                 env.isReturnTrain = false
                 epochCount -= 1
@@ -103,21 +109,14 @@ let main = () => {
                     }
                     env.control(players)
                     env.isReturnCtrl = false
-                    // console.log(tf.memory())
                 }
             }
         }
     }, 6)
-    // let trainLoop = new tool.Loop(() => {
-    //     if (env.isReturnCtrl && env.isReturnTrain) {
-    //         env.train(2, 2)
-    //         env.isReturnTrain = false
-    //     }
-    // }, 8)
+
     game.restart = false
     let loop = () => {
         ctrlLoop.run()
-        // trainLoop.run()
         requestAnimationFrame(loop)
     }
     loop()
