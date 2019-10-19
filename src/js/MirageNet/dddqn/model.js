@@ -196,12 +196,45 @@ export class DDDQN {
         let input = tf.input({ shape: [sequenceLen, inputNum] })
         let preASV = tf.input({ shape: [actionNum] })
 
+        class WeightedSequence extends tf.layers.Layer {
+            constructor(args = { axis, script }) {
+                super({})
+                this.axis = args.axis
+                this.script = args.script
+            }
+            build(inputShape) {
+                this.w = this.addWeight("w", [inputShape[this.axis]], "float32", tf.initializers.constant({ value: 0.5 }))
+                this.w.write(tf.range(1, 2, 1 / inputShape[this.axis]))
+                this.built = true
+            }
+            computeOutputShape(inputShape) {
+                return inputShape
+            }
+            call(inputs, kwargs) {
+                //console.log("LayerNorm call")
+                this.invokeCallHook(inputs, kwargs)
+                return tfex.funcs.einsum(this.script, inputs[0], this.w.read())
+            }
+
+            /*
+            * If a custom layer class is to support serialization, it must implement
+            * the `className` static getter.
+            */
+            static get className() {
+                return "WeightedSequence"
+            }
+        }
+        // registerClass
+        tf.serialization.registerClass(WeightedSequence)
+
+        let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
+
         let cnnLayer = tf.layers.conv1d({
             filters: filters,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
-        }).apply(input)
+        }).apply(WSLayer)
         while (1 <= cnnLayer.shape[1] / 2) {
             // cnnLayer = tf.layers.conv1d({
             //     filters: filters,
@@ -313,7 +346,7 @@ export class DDDQN {
 
     loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV) {
         return tf.tidy(() => {
-            console.log(arrayPrevS)
+            // console.log(arrayPrevS)
             let batchPrevS = tf.tensor3d(arrayPrevS)
             let batchPrevASV = tf.tensor2d(arrayPrevASV)
             let batchA = tf.tensor1d(arrayA, 'int32')
@@ -345,7 +378,7 @@ export class DDDQN {
 
             for (let i = 0; i < replayNum; i++) {
                 let data = this.load(idx[i])
-                console.log(data)
+                // console.log(data)
                 arrayPrevS.push(data[0])
                 arrayPrevASV.push(data[1])
                 arrayA.push(data[2])
