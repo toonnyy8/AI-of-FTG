@@ -1,12 +1,12 @@
 import * as tf from "@tensorflow/tfjs"
 import { dddqn } from "../../src/js/MirageNet/dddqn"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
-// //載入權重
-// import * as fs from "fs"
-// let weight = fs.readFileSync(__dirname + "/../param/w.bin")
-// tfex.scope.variableScope("transformerXL").load(tfex.sl.load(weight))
-// console.log(tfex.scope.variableScope("transformerXL"))
+//載入權重
+import * as fs from "fs"
+let saveWeights = fs.readFileSync(__dirname + "/../w.bin")
+saveWeights = tfex.sl.load(saveWeights)
 
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
@@ -18,6 +18,10 @@ let dddqnModel = dddqn({
     outputInner: [32, 32],
     actionNum: 8
 })
+dddqnModel.model.getWeights().forEach((w) => {
+    w.assign(saveWeights[w.name])
+})
+
 let preArchive = {
     "player1": {
         state: null,
@@ -115,15 +119,21 @@ tf.ready().then(() => {
     }
 })
 
-// document.getElementById("save").onclick = () => {
-//     tf.tidy(() => {
-//         let blob = new Blob([tfex.sl.save(tfex.scope.variableScope("transformerXL").save())]);
-//         let a = document.createElement("a");
-//         let url = window.URL.createObjectURL(blob);
-//         let filename = "w.bin";
-//         a.href = url;
-//         a.download = filename;
-//         a.click();
-//         window.URL.revokeObjectURL(url);
-//     })
-// }
+document.getElementById("save").onclick = () => {
+    tf.tidy(() => {
+        let Ws = dddqnModel.model.getWeights()
+        let tList = Ws.reduce((acc, w) => {
+            acc[w.name] = w
+            return acc
+        }, {})
+        console.log(tList)
+        let blob = new Blob([tfex.sl.save(tList)]);
+        let a = document.createElement("a");
+        let url = window.URL.createObjectURL(blob);
+        let filename = "w.bin";
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    })
+}

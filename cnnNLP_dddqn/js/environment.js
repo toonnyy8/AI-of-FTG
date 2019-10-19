@@ -230,7 +230,7 @@ export class Environment {
 
             this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"]) * 0.1
             this.players[playerName]["reward"] *= 0.5
-            // console.log(this.players[playerName]["reward"])
+            console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
         })
     }
 
@@ -349,7 +349,7 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = -0.2
+        let reward = (actor.HP / actor.maxHP) - 1
         reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
         if (actor.isPD) {
             reward += 0.5

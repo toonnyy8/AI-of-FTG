@@ -74,6 +74,8 @@ let main = () => {
         } else {
             epochCount = epoch
             if (env.isReturnTrain) {
+                game.player1.HP -= 10
+                game.player2.HP -= 10
                 env.nextStep()
                 if (env.isReturnCtrl) {
                     let players = []
