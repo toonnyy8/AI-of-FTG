@@ -58,6 +58,13 @@ let main = () => {
             document.getElementById("player2").innerText = "off"
         }
     }
+    document.getElementById("reduceHP").onclick = () => {
+        if (document.getElementById("reduceHP").innerText == "off") {
+            document.getElementById("reduceHP").innerText = "on"
+        } else {
+            document.getElementById("reduceHP").innerText = "off"
+        }
+    }
     document.getElementById("save").onclick = () => {
         env.save()
     }
@@ -81,8 +88,10 @@ let main = () => {
         } else {
             epochCount = epoch
             if (env.isReturnTrain) {
-                game.player1.HP -= 10
-                game.player2.HP -= 10
+                if (document.getElementById("reduceHP").innerText == "on") {
+                    game.player1.HP -= 10
+                    game.player2.HP -= 10
+                }
                 env.nextStep()
                 if (env.isReturnCtrl) {
                     let players = []
