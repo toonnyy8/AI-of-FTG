@@ -24,11 +24,11 @@ npm run build
 
 ###版本2(channel通訊版)
 ```
-https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/index.html[https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/index.html]
-https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/agent.html[https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/agent.html]
+[environment](https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/index.html)
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn/agent.html)
 ```
 
 ###版本2(web worker版)
 ```
-https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn_webworker/index.html[https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn_webworker/index.html]
+[environment](https://toonnyy8.github.io/AI-of-FTG/build/cnnNLP_dddqn_webworker/index.html)
 ```
