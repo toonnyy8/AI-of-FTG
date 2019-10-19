@@ -1648,7 +1648,7 @@ export class Actor {
                 tempM.ambientColor = new BABYLON.Color3(1, 1, 1)
 
                 this.materialMesh.material = tempM
-                console.log("perfect")
+                // console.log("perfect")
             } else {
                 this.HP -= atk / 5
             }
@@ -1683,8 +1683,8 @@ export class Actor {
 
         this.beHitNum += 1
         this.HP -= this.beInjuredObj.atk / this.beHitNum
-        console.log(this.HP)
-        console.log(this.vector)
+        // console.log(this.HP)
+        // console.log(this.vector)
 
         this.beInjuredObj.atk = null
         // this.isHit = false
