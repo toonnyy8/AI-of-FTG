@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
 import * as binary from "js-binary"
+import { default as toBuffer } from "typedarray-to-buffer"
 
 let dtypeCoder = {
     int32: new binary.Type(['int']),
@@ -50,14 +51,13 @@ export function registerSL(tf_ = tf) {
 
     function load(saver) {
         return tf_.tidy(() => {
-            let tList = saverCoder.decode(saver)
+            let tList = saverCoder.decode(toBuffer(saver))
             return tList.keys.reduce((last, key, idx) => {
                 let tObj = tensorCoder.decode(tList.tensors[idx])
                 tObj.values = dtypeCoder[tObj.dtype].decode(tObj.values)
                 last[key] = tf_.tensor(tObj.values, tObj.shape, tObj.dtype)
                 return last
             }, {})
-
         })
     }
 

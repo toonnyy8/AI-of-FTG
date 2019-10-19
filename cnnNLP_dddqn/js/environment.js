@@ -1,7 +1,7 @@
 import { Game } from "../../src/lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
-import * as FLAGS from "../../src/param/flags.json"
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 // tf.enableProdMode()
@@ -100,6 +100,24 @@ export class Environment {
                     case "train":
                         {
                             this.isReturnTrain = true
+                            break
+                        }
+                    case "save":
+                        {
+                            tf.tidy(() => {
+                                let blob = new Blob([e.data.args.weightsBuffer]);
+                                let a = document.createElement("a");
+                                let url = window.URL.createObjectURL(blob);
+                                let filename = "w.bin";
+                                a.href = url;
+                                a.download = filename;
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                            })
+                            break
+                        }
+                    case "load":
+                        {
                             break
                         }
                     default:
@@ -260,6 +278,48 @@ export class Environment {
             }
         })
         console.log("train")
+    }
+
+    init() {
+        this.channel.postMessage({
+            instruction: "init",
+            args: {
+                bsz: bsz
+            }
+        })
+        console.log("init")
+    }
+    save() {
+        this.channel.postMessage({
+            instruction: "save",
+            args: {}
+        })
+        console.log("save")
+    }
+    load() {
+        tf.tidy(() => {
+            let load = document.createElement("input")
+            load.type = "file"
+            load.accept = ".bin"
+
+            load.onchange = event => {
+                const files = load.files
+                console.log(files[0])
+                var reader = new FileReader()
+                reader.addEventListener("loadend", () => {
+                    this.channel.postMessage({
+                        instruction: "load",
+                        args: {
+                            weightsBuffer: new Uint8Array(reader.result)
+                        }
+                    })
+                    console.log("load")
+                });
+                reader.readAsArrayBuffer(files[0])
+            };
+
+            load.click()
+        })
     }
 
     static getState(actorA, actorB) {

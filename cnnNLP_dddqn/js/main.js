@@ -5,23 +5,8 @@ import { Environment } from "./environment"
 import { Game } from "../../src/lib/slime-FTG/src/js"
 import * as tool from "../../src/js/tool"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
-
-document.getElementById("player1").onclick = () => {
-    if (document.getElementById("player1").innerText == "off") {
-        document.getElementById("player1").innerText = "on"
-    } else {
-        document.getElementById("player1").innerText = "off"
-    }
-}
-
-document.getElementById("player2").onclick = () => {
-    if (document.getElementById("player2").innerText == "off") {
-        document.getElementById("player2").innerText = "on"
-    } else {
-        document.getElementById("player2").innerText = "off"
-    }
-}
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 let keySets = [{
     jump: "w",
@@ -57,6 +42,28 @@ let main = () => {
         actor: game.player2,
         keySet: keySets[1]
     }], 5000, 1024)
+
+    document.getElementById("player1").onclick = () => {
+        if (document.getElementById("player1").innerText == "off") {
+            document.getElementById("player1").innerText = "on"
+        } else {
+            document.getElementById("player1").innerText = "off"
+        }
+    }
+
+    document.getElementById("player2").onclick = () => {
+        if (document.getElementById("player2").innerText == "off") {
+            document.getElementById("player2").innerText = "on"
+        } else {
+            document.getElementById("player2").innerText = "off"
+        }
+    }
+    document.getElementById("save").onclick = () => {
+        env.save()
+    }
+    document.getElementById("load").onclick = () => {
+        env.load()
+    }
 
     let epoch = 100
     let epochCount = epoch

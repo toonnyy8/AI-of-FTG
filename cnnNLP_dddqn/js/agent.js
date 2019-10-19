@@ -3,11 +3,6 @@ import { dddqn } from "../../src/js/MirageNet/dddqn"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
-//載入權重
-import * as fs from "fs"
-let saveWeights = fs.readFileSync(__dirname + "/../w.bin")
-saveWeights = tfex.sl.load(saveWeights)
-
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
     sequenceLen: 1024,
@@ -17,9 +12,6 @@ let dddqnModel = dddqn({
     filters: 64,
     outputInner: [32, 32],
     actionNum: 8
-})
-dddqnModel.model.getWeights().forEach((w) => {
-    w.assign(saveWeights[w.name])
 })
 
 let preArchive = {
@@ -44,6 +36,10 @@ tf.ready().then(() => {
     channel.onmessage = (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {
+                case 'init': {
+                    channel.postMessage({ instruction: "init" })
+                    break
+                }
                 case 'ctrl': {
                     if (Object.keys(e.data.args.archive).length != 0) {
                         let ASVsAndActions = dddqnModel
@@ -114,26 +110,35 @@ tf.ready().then(() => {
                     channel.postMessage({ instruction: "train" })
                     break
                 }
+                case 'save': {
+                    tf.tidy(() => {
+                        let Ws = dddqnModel.model.getWeights()
+                        let tList = Ws.reduce((acc, w) => {
+                            acc[w.name] = w
+                            return acc
+                        }, {})
+                        channel.postMessage({
+                            instruction: "save",
+                            args: {
+                                weightsBuffer: tfex.sl.save(tList)
+                            }
+                        })
+                    })
+
+                    break
+                }
+                case 'load': {
+                    let loadWeights = tfex.sl.load(e.data.args.weightsBuffer)
+                    dddqnModel.model.getWeights().forEach((w) => {
+                        w.assign(loadWeights[w.name])
+                    })
+                    dddqnModel.targetModel.setWeights(
+                        dddqnModel.model.getWeights()
+                    )
+                    channel.postMessage({ instruction: "load" })
+                    break
+                }
             }
         })
     }
 })
-
-document.getElementById("save").onclick = () => {
-    tf.tidy(() => {
-        let Ws = dddqnModel.model.getWeights()
-        let tList = Ws.reduce((acc, w) => {
-            acc[w.name] = w
-            return acc
-        }, {})
-        console.log(tList)
-        let blob = new Blob([tfex.sl.save(tList)]);
-        let a = document.createElement("a");
-        let url = window.URL.createObjectURL(blob);
-        let filename = "w.bin";
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    })
-}
