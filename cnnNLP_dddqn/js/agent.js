@@ -7,11 +7,12 @@ tf.setBackend("webgl")
 let dddqnModel = dddqn({
     sequenceLen: 1024,
     inputNum: 18,
-    embInner: [32, 32, 32],
+    // embInner: [32, 32, 32],
     // filters: [8, 8, 8, 8, 8, 8, 8, 8, 64],
-    filters: 64,
-    outputInner: [32, 32],
-    actionNum: 8
+    filters: 32,
+    // outputInner: [32, 32],
+    actionNum: 8,
+    memorySize: 10000
 })
 
 let preArchive = {
@@ -58,7 +59,7 @@ tf.ready().then(() => {
                                         })
                                 )
                             ])
-                        ASVsAndActions[1].argMax(1).print()
+                        // ASVsAndActions[1].argMax(1).print()
 
                         let actions = ASVsAndActions[1].argMax(1)
                             // selectAction(outputs)
@@ -101,8 +102,15 @@ tf.ready().then(() => {
                                 }, {})
                             }
                         })
+                    } else {
+                        channel.postMessage({
+                            instruction: "ctrl",
+                            args: {
+                                archive: {}
+                            }
+                        })
                     }
-                    console.log("ctrl")
+                    // console.log("ctrl")
                     break
                 }
                 case 'train': {

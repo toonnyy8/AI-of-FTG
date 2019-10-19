@@ -230,11 +230,18 @@ export class DDDQN {
         let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
 
         let cnnLayer = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
+            kernelSize: [1],
+            activation: "linear",
+            padding: "same"
+        }).apply(WSLayer)
+        cnnLayer = tf.layers.conv1d({
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
-        }).apply(WSLayer)
+        }).apply(cnnLayer)
+
         while (1 <= cnnLayer.shape[1] / 2) {
             // cnnLayer = tf.layers.conv1d({
             //     filters: filters,
@@ -250,6 +257,13 @@ export class DDDQN {
                 padding: "same"
             }).apply(cnnLayer)
         }
+
+        cnnLayer = tf.layers.conv1d({
+            filters: filters * 4,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(cnnLayer)
 
         cnnLayer = tf.layers.conv1d({
             filters: actionNum,

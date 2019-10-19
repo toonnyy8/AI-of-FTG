@@ -158,25 +158,53 @@ export class Environment {
             case 1:
                 {
                     // console.log(this.players[actorName].keySet["left"].keydown.key)
-
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
+                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
             case 2:
                 {
                     // console.log(this.players[actorName].keySet["right"].keydown.key)
-
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
-                    )
+                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    }
                     break;
                 }
             case 3:
@@ -231,6 +259,31 @@ export class Environment {
                     )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
+                    )
+                    break;
+                }
+            case -1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["left"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["jump"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["squat"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keyup
                     )
                     break;
                 }
@@ -326,9 +379,9 @@ export class Environment {
         //actorA state
         let getS = (actor) => {
             let HP = actor.HP / actor.maxHP
-            let x = (actor.mesh.position.x + 11) / 22
+            let x = actor.mesh.position.x / 22
             let y = actor.mesh.position.y / 11
-            let faceTo = actor._faceTo == "left" ? 0.1 : 1
+            let faceTo = actor._faceTo == "left" ? -1 : 1
 
             let chapter
             switch (actor._state["chapter"]) {
@@ -409,20 +462,22 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = (actor.HP / actor.maxHP) - 1
+        let reward = ((actor.HP / actor.maxHP) - 1) * 0.5
         reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+        let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
+        reward += Math.min(positionXreward, positionXreward ** 2)
         if (actor.isPD) {
-            reward += 0.5
+            reward += 1
         }
         if (actor._state["chapter"] == "attack") {
             if (actor.isHit) {
                 reward += (actor.opponent.beHitNum * 0.5)
             } else {
-                reward -= 0.1
+                reward -= 0.3
             }
         }
         if (actor._state.chapter == "defense") {
-            reward += 0.1
+            reward += 0.5
         }
         if (actor.beHitNum != 0) {
             reward -= actor.beHitNum * 0.1
