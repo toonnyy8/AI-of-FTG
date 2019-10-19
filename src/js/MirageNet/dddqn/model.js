@@ -23,7 +23,7 @@ export class DDDQN {
         }
 
         {
-            this.model = this.buildModel({
+            this.model = this.buildModel2({
                 sequenceLen: sequenceLen,
                 inputNum: inputNum,
                 embInner: embInner,
@@ -33,7 +33,7 @@ export class DDDQN {
             })
             this.model.summary()
 
-            this.targetModel = this.buildModel({
+            this.targetModel = this.buildModel2({
                 sequenceLen: sequenceLen,
                 inputNum: inputNum,
                 embInner: embInner,
@@ -185,6 +185,132 @@ export class DDDQN {
         return tf.model({ inputs: [input, preASV], outputs: [ASV, action] })
     }
 
+    buildModel2(
+        {
+            sequenceLen,
+            inputNum,
+            filters = 8,
+            actionNum = 36
+        }
+    ) {
+        let input = tf.input({ shape: [sequenceLen, inputNum] })
+        let preASV = tf.input({ shape: [actionNum] })
+
+        let cnnLayer = tf.layers.conv1d({
+            filters: filters,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(input)
+        while (1 <= cnnLayer.shape[1] / 2) {
+            // cnnLayer = tf.layers.conv1d({
+            //     filters: filters,
+            //     kernelSize: [2],
+            //     activation: "selu",
+            //     padding: "same"
+            // }).apply(cnnLayer)
+            cnnLayer = tf.layers.conv1d({
+                filters: filters,
+                kernelSize: [2],
+                strides: [2],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+        }
+
+        cnnLayer = tf.layers.conv1d({
+            filters: actionNum,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(cnnLayer)
+
+        let flattenLayer = tf.layers.flatten().apply(cnnLayer)
+        flattenLayer = tf.layers.dropout({ rate: 0.1 }).apply(flattenLayer)
+
+        let value = tf.layers.dense({
+            units: actionNum,
+            activation: "selu"
+        }).apply(flattenLayer)
+
+        let A = tf.layers.dense({
+            units: actionNum,
+            activation: "selu"
+        }).apply(flattenLayer)
+
+        let mean = tfex.layers.lambda({
+            func: (x) => {
+                return tf.mean(x, 1, true)
+            },
+            outputShape: [1]
+        }).apply([A])
+
+        let advantage = tfex.layers.lambda({
+            func: (x, y) => {
+                return tf.sub(x, y)
+            }
+        }).apply([A, mean])
+
+        let Q = tf.layers.add().apply([value, advantage])
+
+        //Action Selection Value
+        let ASV = tf.layers.softmax().apply(Q)
+
+        //Action Activation Value
+        let AAV = tfex.layers.lambda({
+            func: (ASV, preASV) => {
+                return tf.tidy(() => {
+                    let O_ = tf.div(tf.sub(ASV, preASV), tf.max(tf.stack([ASV, preASV]), 0))
+                    // O_.print()
+                    O_ = tf.div(O_, O_.abs().sum(1, true))
+                    // O_.print()
+                    return O_
+                })
+            }
+        }).apply([ASV, preASV])
+
+        // AAV = tf.layers.softmax().apply(AAV)
+
+        class WeightedAverage extends tf.layers.Layer {
+            constructor(args) {
+                super({})
+            }
+            build(inputShape) {
+                // console.log("LayerNorm build : ")
+                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.5 }))
+                this.built = true
+            }
+            computeOutputShape(inputShape) {
+                //console.log("LayerNorm computeOutputShape")
+                //console.log(inputShape)
+                return inputShape[0]
+            }
+            call(inputs, kwargs) {
+                //console.log("LayerNorm call")
+                this.invokeCallHook(inputs, kwargs)
+                return tf.add(
+                    tf.mul(inputs[0], this.w.read()),
+                    tf.mul(inputs[1], tf.sub(1, this.w.read()))
+                )
+            }
+
+            /*
+            * If a custom layer class is to support serialization, it must implement
+            * the `className` static getter.
+            */
+            static get className() {
+                return "WeightedAverage"
+            }
+        }
+        // registerClass
+        tf.serialization.registerClass(WeightedAverage)
+
+        let action = new WeightedAverage().apply([ASV, AAV])
+        // action = tf.layers.softmax().apply(action)
+
+        return tf.model({ inputs: [input, preASV], outputs: [ASV, action] })
+    }
+
     loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV) {
         return tf.tidy(() => {
             console.log(arrayPrevS)
@@ -208,7 +334,7 @@ export class DDDQN {
 
     }
 
-    train(replayNum = 100) {
+    train(replayNum = 100, idx = [null]) {
         tf.tidy(() => {
             let arrayPrevS = []
             let arrayPrevASV = []
@@ -218,7 +344,7 @@ export class DDDQN {
             let arrayNextASV = []
 
             for (let i = 0; i < replayNum; i++) {
-                let data = this.load()
+                let data = this.load(idx[i])
                 console.log(data)
                 arrayPrevS.push(data[0])
                 arrayPrevASV.push(data[1])

@@ -10,10 +10,11 @@ import * as tfex from "../../src/lib/tfjs-extensions/src"
 
 tf.setBackend("webgl")
 let dddqnModel = dddqn({
-    sequenceLen: 60,
+    sequenceLen: 1024,
     inputNum: 18,
     embInner: [32, 32, 32],
-    filters: [8, 8, 8, 8, 8, 8, 8, 8, 64],
+    // filters: [8, 8, 8, 8, 8, 8, 8, 8, 64],
+    filters: 64,
     outputInner: [32, 32],
     actionNum: 8
 })
@@ -57,7 +58,7 @@ tf.ready().then(() => {
                                         })
                                 )
                             ])
-                        ASVsAndActions[1].array().then(a => console.log(a))
+                        ASVsAndActions[1].argMax(1).print()
 
                         let actions = ASVsAndActions[1].argMax(1)
                             // selectAction(outputs)
@@ -105,7 +106,7 @@ tf.ready().then(() => {
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(10)
+                    dddqnModel.train(64)
                     channel.postMessage({ instruction: "train" })
                     break
                 }

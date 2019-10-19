@@ -9,18 +9,28 @@ let weight = fs.readFileSync(__dirname + "/../../src/param/w.bin")
 import * as cnnNLP from "../../src/js/MirageNet/cnnNLP"
 console.log(tf.memory());
 
-const input1 = tf.input({ shape: [10] });
-const input2 = tf.input({ shape: [20] });
-const dense1 = tf.layers.dense({ units: 4 }).apply(input1);
-const dense2 = tf.layers.dense({ units: 8 }).apply(input2);
-const concat = tf.layers.concatenate().apply([dense1, dense2]);
-const output1 =
-    tf.layers.dense({ units: 3, activation: 'softmax' }).apply(concat);
-const output2 =
-    tf.layers.dense({ units: 3, activation: 'softmax' }).apply(concat);
-const model = tf.model({ inputs: [input1, input2], outputs: [output1, output2] });
-model.summary();
+{
+    let input = tf.input({ shape: [1, 1, 8] })
+    let cnnLayer = tf.layers.conv2d({ kernelSize: [1, 1], filters: 64 }).apply(input)
+    cnnLayer = tf.layers.conv2d({ kernelSize: [1, 1], filters: 1 }).apply(cnnLayer)
+    cnnModel = tf.model({ inputs: [input], outputs: cnnLayer })
+    tf.tidy(() => {
+        let i = tf.truncatedNormal([1, 1, 1, 8])
+        cnnModel.predict(i).print()
+    })
+}
 
-model.predict([tf.ones([1, 10]), tf.ones([1, 20])])[0].print()
+console.log(tf.memory())
+
+{
+    let input = tf.input({ shape: [8] })
+    let fcLayer = tf.layers.dense({ units: 64 }).apply(input)
+    fcLayer = tf.layers.dense({ units: 1 }).apply(fcLayer)
+    fcModel = tf.model({ inputs: [input], outputs: fcLayer })
+    tf.tidy(() => {
+        let i = tf.truncatedNormal([1, 8])
+        fcModel.predict(i).print()
+    })
+}
 
 console.log(tf.memory())
