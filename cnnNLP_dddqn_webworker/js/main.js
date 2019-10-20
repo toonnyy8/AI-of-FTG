@@ -85,6 +85,21 @@ let main = () => {
     let epochCount = epoch
 
     let ctrlLoop = new tool.Loop(() => {
+        if (env.isReturnCtrl) {
+            let players = []
+            if (document.getElementById("player1").innerText == "on") {
+                players.push("player1")
+            }
+            if (document.getElementById("player2").innerText == "on") {
+                players.push("player2")
+            }
+            env.control(players)
+            env.isReturnCtrl = false
+        }
+    }, 6)
+
+    game.restart = false
+    let loop = () => {
         if (document.getElementById("training").innerText == "off") {
             game.restart = false
         }
@@ -105,29 +120,14 @@ let main = () => {
             epochCount = epoch
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
-                    game.player1.HP -= 10
-                    game.player2.HP -= 10
+                    game.player1.HP -= 1
+                    game.player2.HP -= 1
                 }
                 // console.clear()
                 env.nextStep()
-                if (env.isReturnCtrl) {
-                    let players = []
-                    if (document.getElementById("player1").innerText == "on") {
-                        players.push("player1")
-                    }
-                    if (document.getElementById("player2").innerText == "on") {
-                        players.push("player2")
-                    }
-                    env.control(players)
-                    env.isReturnCtrl = false
-                }
+                ctrlLoop.run()
             }
         }
-    }, 6)
-
-    game.restart = false
-    let loop = () => {
-        ctrlLoop.run()
         requestAnimationFrame(loop)
     }
     loop()
