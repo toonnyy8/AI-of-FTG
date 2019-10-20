@@ -67,6 +67,13 @@ let main = () => {
             document.getElementById("reduceHP").innerText = "off"
         }
     }
+    document.getElementById("training").onclick = () => {
+        if (document.getElementById("training").innerText == "off") {
+            document.getElementById("training").innerText = "on"
+        } else {
+            document.getElementById("training").innerText = "off"
+        }
+    }
     document.getElementById("save").onclick = () => {
         env.save()
     }
@@ -74,10 +81,13 @@ let main = () => {
         env.load()
     }
 
-    let epoch = 100
+    let epoch = 200
     let epochCount = epoch
 
     let ctrlLoop = new tool.Loop(() => {
+        if (document.getElementById("training").innerText == "off") {
+            game.restart = false
+        }
         if (game.restart) {
             if (env.isReturnCtrl && env.isReturnTrain) {
                 if (epochCount == epoch) {
@@ -98,6 +108,7 @@ let main = () => {
                     game.player1.HP -= 10
                     game.player2.HP -= 10
                 }
+                // console.clear()
                 env.nextStep()
                 if (env.isReturnCtrl) {
                     let players = []

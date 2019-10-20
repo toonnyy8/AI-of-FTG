@@ -83,11 +83,10 @@ export class Environment {
             return last
         }, {})
 
-        // this.channel = new BroadcastChannel('agent');
-        this.channel = new Worker("./agent.js");
+        this.channel = new Worker('./agent.js');
         this.isReturnCtrl = true
         this.isReturnTrain = true
-        this.channel.addEventListener('message', (e) => {
+        this.channel.addEventListener("message", (e) => {
             tf.tidy(() => {
                 switch (e.data.instruction) {
                     case "ctrl":
@@ -96,11 +95,13 @@ export class Environment {
                             Object.keys(e.data.args.archive).forEach((playerName) => {
                                 this.trigger(playerName, e.data.args.archive[playerName].action)
                             })
+                            console.log("ctrl")
                             break
                         }
                     case "train":
                         {
                             this.isReturnTrain = true
+                            console.log("train")
                             break
                         }
                     case "save":
@@ -115,10 +116,12 @@ export class Environment {
                                 a.click();
                                 window.URL.revokeObjectURL(url);
                             })
+                            console.log("save")
                             break
                         }
                     case "load":
                         {
+                            console.log("load")
                             break
                         }
                     default:
@@ -129,7 +132,7 @@ export class Environment {
     }
 
     trigger(actorName, action) {
-        // console.log(action)
+        // // console.log(action)
         switch (action) {
             case 0:
                 {
@@ -158,7 +161,7 @@ export class Environment {
                 }
             case 1:
                 {
-                    // console.log(this.players[actorName].keySet["left"].keydown.key)
+                    // // console.log(this.players[actorName].keySet["left"].keydown.key)
                     if (this.players[actorName].actor.shouldFaceTo == "left") {
                         document.dispatchEvent(
                             this.players[actorName].keySet["right"].keyup
@@ -184,7 +187,7 @@ export class Environment {
                 }
             case 2:
                 {
-                    // console.log(this.players[actorName].keySet["right"].keydown.key)
+                    // // console.log(this.players[actorName].keySet["right"].keydown.key)
                     if (this.players[actorName].actor.shouldFaceTo == "left") {
                         document.dispatchEvent(
                             this.players[actorName].keySet["left"].keyup
@@ -210,7 +213,7 @@ export class Environment {
                 }
             case 3:
                 {
-                    // console.log(this.players[actorName].keySet["jump"].keydown.key)
+                    // // console.log(this.players[actorName].keySet["jump"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keyup
                     )
@@ -221,7 +224,7 @@ export class Environment {
                 }
             case 4:
                 {
-                    // console.log(this.players[actorName].keySet["squat"].keydown.key)
+                    // // console.log(this.players[actorName].keySet["squat"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["squat"].keyup
                     )
@@ -232,7 +235,7 @@ export class Environment {
                 }
             case 5:
                 {
-                    // console.log(this.players[actorName].keySet.attack["small"].keydown.key)
+                    // // console.log(this.players[actorName].keySet.attack["small"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keyup
                     )
@@ -243,7 +246,7 @@ export class Environment {
                 }
             case 6:
                 {
-                    // console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
+                    // // console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
@@ -254,7 +257,7 @@ export class Environment {
                 }
             case 7:
                 {
-                    // console.log(this.players[actorName].keySet.attack["large"].keydown.key)
+                    // // console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
@@ -302,7 +305,7 @@ export class Environment {
 
             this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"]) * 0.1
             this.players[playerName]["reward"] *= 0.5
-            console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
+            // console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
         })
     }
 
@@ -321,7 +324,7 @@ export class Environment {
                     }, {})
             }
         })
-        console.log("ctrl")
+        // console.log("ctrl")
     }
 
     train(simulationBsz = 1, bsz = 1) {
@@ -331,7 +334,7 @@ export class Environment {
                 bsz: bsz
             }
         })
-        console.log("train")
+        // console.log("train")
     }
 
     init() {
@@ -341,14 +344,14 @@ export class Environment {
                 bsz: bsz
             }
         })
-        console.log("init")
+        // console.log("init")
     }
     save() {
         this.channel.postMessage({
             instruction: "save",
             args: {}
         })
-        console.log("save")
+        // console.log("save")
     }
     load() {
         tf.tidy(() => {
@@ -358,7 +361,7 @@ export class Environment {
 
             load.onchange = event => {
                 const files = load.files
-                console.log(files[0])
+                // console.log(files[0])
                 var reader = new FileReader()
                 reader.addEventListener("loadend", () => {
                     this.channel.postMessage({
@@ -367,7 +370,7 @@ export class Environment {
                             weightsBuffer: new Uint8Array(reader.result)
                         }
                     })
-                    console.log("load")
+                    // console.log("load")
                 });
                 reader.readAsArrayBuffer(files[0])
             };

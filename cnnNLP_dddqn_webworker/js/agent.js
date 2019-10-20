@@ -12,7 +12,9 @@ let dddqnModel = dddqn({
     filters: 32,
     // outputInner: [32, 32],
     actionNum: 8,
-    memorySize: 10000
+    memorySize: 3200,
+    learningRate: 5e-4,
+    updateTargetStep: 100
 })
 
 let preArchive = {
@@ -33,11 +35,12 @@ let preArchive = {
 }
 
 tf.ready().then(() => {
-    self.addEventListener('message', (e) => {
+    let channel = self
+    channel.addEventListener("message", (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {
                 case 'init': {
-                    self.postMessage({ instruction: "init" })
+                    channel.postMessage({ instruction: "init" })
                     break
                 }
                 case 'ctrl': {
@@ -58,7 +61,7 @@ tf.ready().then(() => {
                                         })
                                 )
                             ])
-                        ASVsAndActions[1].argMax(1).print()
+                        // ASVsAndActions[1].argMax(1).print()
 
                         let actions = ASVsAndActions[1].argMax(1)
                             // selectAction(outputs)
@@ -90,7 +93,7 @@ tf.ready().then(() => {
                             preArchive[playerName].ASV = tf.keep(tf.unstack(ASVsAndActions[0])[idx])
                             preArchive[playerName].action = actions[idx]
                         })
-                        self.postMessage({
+                        channel.postMessage({
                             instruction: "ctrl",
                             args: {
                                 archive: Object.keys(e.data.args.archive).reduce((acc, name, idx) => {
@@ -101,13 +104,20 @@ tf.ready().then(() => {
                                 }, {})
                             }
                         })
+                    } else {
+                        channel.postMessage({
+                            instruction: "ctrl",
+                            args: {
+                                archive: {}
+                            }
+                        })
                     }
-                    console.log("ctrl")
+                    // console.log("ctrl")
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(64)
-                    self.postMessage({ instruction: "train" })
+                    dddqnModel.train(32)
+                    channel.postMessage({ instruction: "train" })
                     break
                 }
                 case 'save': {
@@ -117,7 +127,7 @@ tf.ready().then(() => {
                             acc[w.name] = w
                             return acc
                         }, {})
-                        self.postMessage({
+                        channel.postMessage({
                             instruction: "save",
                             args: {
                                 weightsBuffer: tfex.sl.save(tList)
@@ -135,7 +145,7 @@ tf.ready().then(() => {
                     dddqnModel.targetModel.setWeights(
                         dddqnModel.model.getWeights()
                     )
-                    self.postMessage({ instruction: "load" })
+                    channel.postMessage({ instruction: "load" })
                     break
                 }
             }
