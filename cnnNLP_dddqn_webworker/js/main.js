@@ -33,6 +33,9 @@ let keySets = [{
 let game = new Game(keySets)
 
 let main = () => {
+    // game.player1.maxHP = 1000
+    // game.player2.maxHP = 1000
+
     let env = new Environment([{
         name: "player1",
         actor: game.player1,
@@ -100,20 +103,17 @@ let main = () => {
 
     game.restart = false
     let loop = () => {
-        if (document.getElementById("training").innerText == "off") {
-            game.restart = false
-        }
         if (game.restart) {
-            if (env.isReturnCtrl && env.isReturnTrain) {
-                if (epochCount == epoch) {
-                    env.trigger("player1", -1)
-                    env.trigger("player2", -1)
-                }
-                env.train(1, 2)
+            if (document.getElementById("training").innerText == "off") {
+                game.restart = false
+                env.init()
+            } else if (env.isReturnCtrl && env.isReturnTrain) {
+                env.train(32)
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {
                     game.restart = false
+                    env.init()
                 }
             }
         } else {

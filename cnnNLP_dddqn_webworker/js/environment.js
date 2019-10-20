@@ -86,7 +86,7 @@ export class Environment {
         this.channel = new Worker('./agent.js');
         this.isReturnCtrl = true
         this.isReturnTrain = true
-        this.channel.addEventListener("message", (e) => {
+        this.channel.addEventListener('message', (e) => {
             tf.tidy(() => {
                 switch (e.data.instruction) {
                     case "ctrl":
@@ -327,7 +327,7 @@ export class Environment {
         // console.log("ctrl")
     }
 
-    train(simulationBsz = 1, bsz = 1) {
+    train(bsz = 32) {
         this.channel.postMessage({
             instruction: "train",
             args: {
@@ -338,13 +338,16 @@ export class Environment {
     }
 
     init() {
-        this.channel.postMessage({
-            instruction: "init",
-            args: {
-                bsz: bsz
-            }
+        Object.keys(this.players).forEach((playerName) => {
+            this.trigger(playerName, -1)
         })
-        // console.log("init")
+        Object.values(this.players).forEach((player) => {
+            player.memory = new Array(this.memorySize).fill(Environment.getState(player["actor"], player["actor"].opponent))
+            player.reward = 0
+            player.action = "null"
+        })
+
+        console.log("init")
     }
     save() {
         this.channel.postMessage({
