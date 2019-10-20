@@ -12,7 +12,9 @@ let dddqnModel = dddqn({
     filters: 32,
     // outputInner: [32, 32],
     actionNum: 8,
-    memorySize: 10000
+    memorySize: 3200,
+    learningRate: 5e-4,
+    updateTargetStep: 100
 })
 
 let preArchive = {
@@ -114,7 +116,7 @@ tf.ready().then(() => {
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(64)
+                    dddqnModel.train(32)
                     channel.postMessage({ instruction: "train" })
                     break
                 }

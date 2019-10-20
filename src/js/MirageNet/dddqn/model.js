@@ -11,7 +11,8 @@ export class DDDQN {
         outputInner = [32, 32],
         actionNum = 8,
         memorySize = 1000,
-        updateTargetStep = 20
+        updateTargetStep = 20,
+        learningRate = 1e-3
     }) {
 
         {
@@ -51,7 +52,7 @@ export class DDDQN {
         }
 
         {
-            this.optimizer = tf.train.adam(1e-4)
+            this.optimizer = tf.train.adam(learningRate)
         }
 
     }
@@ -307,11 +308,10 @@ export class DDDQN {
         let AAV = tfex.layers.lambda({
             func: (ASV, preASV) => {
                 return tf.tidy(() => {
-                    let O_ = tf.div(tf.sub(ASV, preASV), tf.max(tf.stack([ASV, preASV]), 0))
-                    // O_.print()
-                    O_ = tf.div(O_, O_.abs().sum(1, true))
-                    // O_.print()
-                    return O_
+                    let aav = tf.sub(ASV, preASV)
+                    aav = tf.add(aav, aav.abs())
+                    aav = tf.div(aav, aav.sum(1, true))
+                    return aav
                 })
             }
         }).apply([ASV, preASV])
@@ -441,7 +441,8 @@ export function dddqn({
     outputInner = [32, 32],
     actionNum = 8,
     memorySize = 1000,
-    updateTargetStep = 20
+    updateTargetStep = 20,
+    learningRate = 1e-3
 }) {
     return new DDDQN({
         sequenceLen,
@@ -451,6 +452,7 @@ export function dddqn({
         outputInner,
         actionNum,
         memorySize,
-        updateTargetStep
+        updateTargetStep,
+        learningRate
     })
 }
