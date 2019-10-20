@@ -7,10 +7,7 @@ tf.setBackend("webgl")
 let dddqnModel = dddqn({
     sequenceLen: 1024,
     inputNum: 18,
-    // embInner: [32, 32, 32],
-    // filters: [8, 8, 8, 8, 8, 8, 8, 8, 64],
     filters: 32,
-    // outputInner: [32, 32],
     actionNum: 8,
     memorySize: 3200,
     learningRate: 5e-4,
@@ -116,7 +113,7 @@ tf.ready().then(() => {
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(32)
+                    dddqnModel.train(e.data.args.bsz)
                     channel.postMessage({ instruction: "train" })
                     break
                 }

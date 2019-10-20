@@ -127,7 +127,13 @@ export class Game {
                             camera.setTarget(new BABYLON.Vector3(0, 4, 0));
                         }
                         HPBar.p1.scaling.x = this.player1.HP / this.player1.maxHP
-                        HPBar.p2.scaling.x = this.player2.HP / this.player1.maxHP
+                        HPBar.p2.scaling.x = this.player2.HP / this.player2.maxHP
+                        if (this.player1.HP > this.player1.maxHP) {
+                            this.player1.HP = this.player1.maxHP
+                        }
+                        if (this.player2.HP > this.player2.maxHP) {
+                            this.player2.HP = this.player2.maxHP
+                        }
                         if (this.player1.HP <= 0 || this.player2.HP <= 0) {
                             this.player1.restart()
                             this.player2.restart()

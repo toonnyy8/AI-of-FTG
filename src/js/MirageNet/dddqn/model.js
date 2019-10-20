@@ -205,7 +205,7 @@ export class DDDQN {
             }
             build(inputShape) {
                 this.w = this.addWeight("w", [inputShape[this.axis]], "float32", tf.initializers.constant({ value: 0.5 }))
-                this.w.write(tf.range(1, 2, 1 / inputShape[this.axis]))
+                this.w.write(tf.linspace(2, 1, inputShape[this.axis]))
                 this.built = true
             }
             computeOutputShape(inputShape) {
@@ -259,6 +259,12 @@ export class DDDQN {
             }).apply(cnnLayer)
         }
 
+        cnnLayer = tf.layers.conv1d({
+            filters: filters * 4,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(cnnLayer)
         cnnLayer = tf.layers.conv1d({
             filters: filters * 4,
             kernelSize: [1],
