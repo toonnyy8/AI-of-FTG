@@ -205,7 +205,7 @@ export class DDDQN {
             }
             build(inputShape) {
                 this.w = this.addWeight("w", [inputShape[this.axis]], "float32", tf.initializers.constant({ value: 0.5 }))
-                this.w.write(tf.linspace(2, 1, inputShape[this.axis]))
+                this.w.write(tf.sin(tf.linspace(Math.PI / 2, 0.1, inputShape[this.axis])))
                 this.built = true
             }
             computeOutputShape(inputShape) {
@@ -231,25 +231,21 @@ export class DDDQN {
         let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
 
         let cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters,
             kernelSize: [1],
-            activation: "linear",
+            activation: "selu",
             padding: "same"
         }).apply(WSLayer)
         cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
 
+        cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
+
         while (1 <= cnnLayer.shape[1] / 2) {
-            // cnnLayer = tf.layers.conv1d({
-            //     filters: filters,
-            //     kernelSize: [2],
-            //     activation: "selu",
-            //     padding: "same"
-            // }).apply(cnnLayer)
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
                 kernelSize: [2],
@@ -257,40 +253,48 @@ export class DDDQN {
                 activation: "selu",
                 padding: "same"
             }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
         }
 
-        cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+        let value = tf.layers.conv1d({
+            filters: filters,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+        value = tf.layers.conv1d({
+            filters: filters,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
-        }).apply(cnnLayer)
+        }).apply(value)
 
-        cnnLayer = tf.layers.conv1d({
+        value = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
+        }).apply(value)
+
+        let A = tf.layers.conv1d({
+            filters: filters,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
         }).apply(cnnLayer)
+        A = tf.layers.conv1d({
+            filters: filters,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(A)
 
-        let flattenLayer = tf.layers.flatten().apply(cnnLayer)
-        flattenLayer = tf.layers.dropout({ rate: 0.1 }).apply(flattenLayer)
-
-        let value = tf.layers.dense({
-            units: actionNum,
-            activation: "selu"
-        }).apply(flattenLayer)
-
-        let A = tf.layers.dense({
-            units: actionNum,
-            activation: "selu"
-        }).apply(flattenLayer)
+        A = tf.layers.conv1d({
+            filters: actionNum,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(A)
 
         let mean = tfex.layers.lambda({
             func: (x) => {
@@ -305,7 +309,9 @@ export class DDDQN {
             }
         }).apply([A, mean])
 
-        let Q = tf.layers.add().apply([value, advantage])
+        let Q = tf.layers.flatten().apply(
+            tf.layers.add().apply([value, advantage])
+        )
 
         //Action Selection Value
         let ASV = tf.layers.softmax().apply(Q)
@@ -374,53 +380,55 @@ export class DDDQN {
             let batchNextS = tf.tensor3d(arrayNextS)
             let batchNextASV = tf.tensor2d(arrayNextASV)
 
-            const maxQ = this.targetModel.predict([batchNextS, batchNextASV])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
+            const predictions = this.model.predict([batchPrevS, batchPrevASV]);
+
+            const maxQ = this.targetModel.predict([batchNextS, predictions[0]])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
 
             const predMask = tf.oneHot(batchA, this.actionNum);
 
             const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
 
-            const predictions = this.model.predict([batchPrevS, batchPrevASV])[1];
-
-            return tf.mul(predictions.sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
+            return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
 
     }
 
     train(replayNum = 100, idx = [null]) {
-        tf.tidy(() => {
-            let arrayPrevS = []
-            let arrayPrevASV = []
-            let arrayA = []
-            let arrayR = []
-            let arrayNextS = []
-            let arrayNextASV = []
+        if (this.memory.length != 0) {
+            tf.tidy(() => {
+                let arrayPrevS = []
+                let arrayPrevASV = []
+                let arrayA = []
+                let arrayR = []
+                let arrayNextS = []
+                let arrayNextASV = []
 
-            for (let i = 0; i < replayNum; i++) {
-                let data = this.load(idx[i])
-                // console.log(data)
-                arrayPrevS.push(data[0])
-                arrayPrevASV.push(data[1])
-                arrayA.push(data[2])
-                arrayR.push(data[3])
-                arrayNextS.push(data[4])
-                arrayNextASV.push(data[5])
-            }
+                for (let i = 0; i < replayNum; i++) {
+                    let data = this.load(idx[i])
+                    // console.log(data)
+                    arrayPrevS.push(data[0])
+                    arrayPrevASV.push(data[1])
+                    arrayA.push(data[2])
+                    arrayR.push(data[3])
+                    arrayNextS.push(data[4])
+                    arrayNextASV.push(data[5])
+                }
 
-            this.optimizer.minimize(() => {
-                let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
-                // loss.print()
-                return loss
-            }, true, this.model.getWeights());
+                this.optimizer.minimize(() => {
+                    let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
+                    loss.print()
+                    return loss
+                }, true, this.model.getWeights());
 
-            this.count++
+                this.count++
 
-            if (this.count >= this.updateTargetStep) {
+                if (this.count >= this.updateTargetStep) {
 
-                this.targetModel.setWeights(this.model.getWeights())
-                this.count = 0
-            }
-        })
+                    this.targetModel.setWeights(this.model.getWeights())
+                    this.count = 0
+                }
+            })
+        }
     }
 
     store(preState, preASV, action, reward, nextState, nextASV) {

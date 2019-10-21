@@ -54,13 +54,19 @@ let main = () => {
             env.trigger("player1", -1)
         }
     }
-
     document.getElementById("player2").onclick = () => {
         if (document.getElementById("player2").innerText == "off") {
             document.getElementById("player2").innerText = "on"
         } else {
             document.getElementById("player2").innerText = "off"
             env.trigger("player2", -1)
+        }
+    }
+    document.getElementById("chooseAction").onclick = () => {
+        if (document.getElementById("chooseAction").innerText == "argMax") {
+            document.getElementById("chooseAction").innerText = "multinomial"
+        } else {
+            document.getElementById("chooseAction").innerText = "argMax"
         }
     }
     document.getElementById("reduceHP").onclick = () => {
@@ -70,11 +76,18 @@ let main = () => {
             document.getElementById("reduceHP").innerText = "off"
         }
     }
-    document.getElementById("training").onclick = () => {
-        if (document.getElementById("training").innerText == "off") {
-            document.getElementById("training").innerText = "on"
+    document.getElementById("trainAtFrame").onclick = () => {
+        if (document.getElementById("trainAtFrame").innerText == "off") {
+            document.getElementById("trainAtFrame").innerText = "on"
         } else {
-            document.getElementById("training").innerText = "off"
+            document.getElementById("trainAtFrame").innerText = "off"
+        }
+    }
+    document.getElementById("trainAtEnd").onclick = () => {
+        if (document.getElementById("trainAtEnd").innerText == "off") {
+            document.getElementById("trainAtEnd").innerText = "on"
+        } else {
+            document.getElementById("trainAtEnd").innerText = "off"
         }
     }
     document.getElementById("save").onclick = () => {
@@ -87,6 +100,12 @@ let main = () => {
     let epoch = 200
     let epochCount = epoch
 
+    let trainLoop = new tool.Loop(() => {
+        if (document.getElementById("trainAtFrame").innerText == "on") {
+            env.train(32)
+        }
+    }, 5)
+
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
             let players = []
@@ -96,7 +115,9 @@ let main = () => {
             if (document.getElementById("player2").innerText == "on") {
                 players.push("player2")
             }
-            env.control(players)
+            env.control(players, document.getElementById("chooseAction").innerText)
+            trainLoop.run()
+
             env.isReturnCtrl = false
         }
     }, 6)
@@ -104,11 +125,11 @@ let main = () => {
     game.restart = false
     let loop = () => {
         if (game.restart) {
-            if (document.getElementById("training").innerText == "off") {
+            if (document.getElementById("trainAtEnd").innerText == "off") {
                 game.restart = false
                 env.init()
             } else if (env.isReturnCtrl && env.isReturnTrain) {
-                env.train(32)
+                env.train(64)
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {
