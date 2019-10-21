@@ -414,11 +414,20 @@ export class DDDQN {
                     arrayNextASV.push(data[5])
                 }
 
-                this.optimizer.minimize(() => {
-                    let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
-                    loss.print()
-                    return loss
-                }, true, this.model.getWeights());
+                let grads = this.optimizer.computeGradients(
+                    () => {
+                        let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
+                        loss.print()
+                        return loss
+                    }, this.model.getWeights(true)).grads
+
+                let gradsName = Object.keys(grads)
+                grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 0.25)[0]
+
+                this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
+                    acc[gn] = grads[idx]
+                    return acc
+                }, {}))
 
                 this.count++
 

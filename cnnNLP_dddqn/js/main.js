@@ -104,7 +104,7 @@ let main = () => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
             env.train(32)
         }
-    }, 5)
+    }, 32)
 
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
