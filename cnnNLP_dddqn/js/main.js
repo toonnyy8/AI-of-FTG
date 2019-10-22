@@ -102,7 +102,7 @@ let main = () => {
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(32)
+            env.train(16)
         }
     }, 32)
 
