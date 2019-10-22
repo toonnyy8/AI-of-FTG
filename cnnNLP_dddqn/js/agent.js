@@ -10,11 +10,11 @@ let actionNum = 9
 let dddqnModel = dddqn({
     sequenceLen: 1024,
     inputNum: 18,
-    filters: 64,
+    filters: 32,
     actionNum: actionNum,
     memorySize: 3200,
-    learningRate: 5e-4,
-    updateTargetStep: 100
+    learningRate: 1e-4,
+    updateTargetStep: 32
 })
 
 let preArchive = {

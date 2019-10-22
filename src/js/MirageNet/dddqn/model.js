@@ -231,13 +231,13 @@ export class DDDQN {
         let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
 
         let cnnLayer = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(WSLayer)
         cnnLayer = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
@@ -257,13 +257,13 @@ export class DDDQN {
         }
 
         let value = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
         value = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
@@ -277,13 +277,13 @@ export class DDDQN {
         }).apply(value)
 
         let A = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
         A = tf.layers.conv1d({
-            filters: filters,
+            filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
@@ -422,7 +422,7 @@ export class DDDQN {
                     }, this.model.getWeights(true)).grads
 
                 let gradsName = Object.keys(grads)
-                grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 0.25)[0]
+                grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 0.05)[0]
 
                 this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
                     acc[gn] = grads[idx]

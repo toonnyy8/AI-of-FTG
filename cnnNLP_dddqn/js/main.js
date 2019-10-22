@@ -97,14 +97,14 @@ let main = () => {
         env.load()
     }
 
-    let epoch = 200
+    let epoch = 32
     let epochCount = epoch
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(16)
+            env.train(8)
         }
-    }, 32)
+    }, 8)
 
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
