@@ -4,28 +4,31 @@ import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
+
+let actionNum = 9
+
 let dddqnModel = dddqn({
     sequenceLen: 1024,
     inputNum: 18,
     filters: 32,
-    actionNum: 8,
+    actionNum: actionNum,
     memorySize: 3200,
-    learningRate: 5e-4,
-    updateTargetStep: 100
+    learningRate: 1e-4,
+    updateTargetStep: 32
 })
 
 let preArchive = {
     "player1": {
         state: null,
-        ASV: tf.fill([8], 1e-5, "float32"),
-        preASV: tf.fill([8], 1e-5, "float32"),
+        ASV: tf.fill([actionNum], 1e-5, "float32"),
+        preASV: tf.fill([actionNum], 1e-5, "float32"),
         action: null,
         expired: true
     },
     "player2": {
         state: null,
-        ASV: tf.fill([8], 1e-5, "float32"),
-        preASV: tf.fill([8], 1e-5, "float32"),
+        ASV: tf.fill([actionNum], 1e-5, "float32"),
+        preASV: tf.fill([actionNum], 1e-5, "float32"),
         action: null,
         expired: true
     }
@@ -58,12 +61,20 @@ tf.ready().then(() => {
                                         })
                                 )
                             ])
-                        // ASVsAndActions[1].argMax(1).print()
+                        // ASVsAndActions[1].print()
 
-                        let actions = ASVsAndActions[1].argMax(1)
-                            // selectAction(outputs)
-                            .reshape([-1])
-                            .arraySync()
+                        let actions
+                        if (e.data.args.chooseAction == "argMax") {
+                            actions = ASVsAndActions[1].argMax(1)
+                                // selectAction(outputs)
+                                .reshape([-1])
+                                .arraySync()
+                        } else if (e.data.args.chooseAction == "multinomial") {
+                            actions = tf.multinomial(ASVsAndActions[1], 1, null, true)
+                                // selectAction(outputs)
+                                .reshape([-1])
+                                .arraySync()
+                        }
 
                         Object.keys(preArchive).forEach((playerName) => {
                             if (Object.keys(e.data.args.archive).find(name => name === playerName) !== undefined) {

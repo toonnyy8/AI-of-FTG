@@ -136,27 +136,6 @@ export class Environment {
         switch (action) {
             case 0:
                 {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet["left"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet["right"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet["jump"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet["squat"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["small"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["medium"].keyup
-                    // )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["large"].keyup
-                    // )
                     break;
                 }
             case 1:
@@ -266,7 +245,7 @@ export class Environment {
                     )
                     break;
                 }
-            case -1:
+            case 8:
                 {
                     document.dispatchEvent(
                         this.players[actorName].keySet["left"].keyup
@@ -303,13 +282,13 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] += Environment.getReward(this.players[playerName]["actor"]) * 0.1
-            this.players[playerName]["reward"] *= 0.5
+            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getReward(this.players[playerName]["actor"]) * 0.5
+            // this.players[playerName]["reward"] *= 0.5
             // console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
         })
     }
 
-    control(playerNames) {
+    control(playerNames, chooseAction) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
@@ -321,7 +300,8 @@ export class Environment {
                             action: Environment.getAction(this.players[playerName]["action"])
                         }
                         return acc
-                    }, {})
+                    }, {}),
+                chooseAction: chooseAction
             }
         })
         // console.log("ctrl")
@@ -339,7 +319,7 @@ export class Environment {
 
     init() {
         Object.keys(this.players).forEach((playerName) => {
-            this.trigger(playerName, -1)
+            this.trigger(playerName, 8)
         })
         Object.values(this.players).forEach((player) => {
             player.memory = new Array(this.memorySize).fill(Environment.getState(player["actor"], player["actor"].opponent))
@@ -480,14 +460,14 @@ export class Environment {
             if (actor.isHit) {
                 reward += (actor.opponent.beHitNum * 0.5)
             } else {
-                reward -= 0.3
+                reward -= 0.1
             }
         }
         if (actor._state.chapter == "defense") {
             reward += 0.5
         }
         if (actor.beHitNum != 0) {
-            reward -= actor.beHitNum * 0.1
+            reward -= actor.beHitNum
         }
 
         return reward
