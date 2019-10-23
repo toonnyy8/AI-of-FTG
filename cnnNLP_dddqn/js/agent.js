@@ -124,7 +124,7 @@ tf.ready().then(() => {
                     break
                 }
                 case 'train': {
-                    dddqnModel.train(e.data.args.bsz)
+                    dddqnModel.train(e.data.args.bsz, e.data.args.idx)
                     channel.postMessage({ instruction: "train" })
                     break
                 }

@@ -307,11 +307,12 @@ export class Environment {
         // console.log("ctrl")
     }
 
-    train(bsz = 32) {
+    train(bsz = 32, idx = [null]) {
         this.channel.postMessage({
             instruction: "train",
             args: {
-                bsz: bsz
+                bsz: bsz,
+                idx: idx
             }
         })
         // console.log("train")
