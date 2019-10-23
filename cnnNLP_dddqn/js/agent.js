@@ -63,18 +63,23 @@ tf.ready().then(() => {
                             ])
                         // ASVsAndActions[1].print()
 
-                        let actions
-                        if (e.data.args.chooseAction == "argMax") {
-                            actions = ASVsAndActions[1].argMax(1)
-                                // selectAction(outputs)
-                                .reshape([-1])
-                                .arraySync()
-                        } else if (e.data.args.chooseAction == "multinomial") {
-                            actions = tf.multinomial(ASVsAndActions[1], 1, null, true)
-                                // selectAction(outputs)
-                                .reshape([-1])
-                                .arraySync()
-                        }
+                        let actions = []
+                        let chooseByArgMax = ASVsAndActions[1].argMax(1)
+                            // selectAction(outputs)
+                            .reshape([-1])
+                            .arraySync()
+                        let chooseByMultinomial = tf.multinomial(ASVsAndActions[1], 1, null, true)
+                            // selectAction(outputs)
+                            .reshape([-1])
+                            .arraySync()
+                        e.data.args.chooseAction.forEach((chooseAction, idx) => {
+                            if (chooseAction == "argMax") {
+                                actions[idx] = chooseByArgMax[idx]
+                            } else if (chooseAction == "multinomial") {
+                                actions[idx] = chooseByMultinomial[idx]
+                            }
+                        })
+
 
                         Object.keys(preArchive).forEach((playerName) => {
                             if (Object.keys(e.data.args.archive).find(name => name === playerName) !== undefined) {

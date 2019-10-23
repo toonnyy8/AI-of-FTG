@@ -62,11 +62,18 @@ let main = () => {
             env.trigger("player2", -1)
         }
     }
-    document.getElementById("chooseAction").onclick = () => {
-        if (document.getElementById("chooseAction").innerText == "argMax") {
-            document.getElementById("chooseAction").innerText = "multinomial"
+    document.getElementById("player1ChooseAction").onclick = () => {
+        if (document.getElementById("player1ChooseAction").innerText == "argMax") {
+            document.getElementById("player1ChooseAction").innerText = "multinomial"
         } else {
-            document.getElementById("chooseAction").innerText = "argMax"
+            document.getElementById("player1ChooseAction").innerText = "argMax"
+        }
+    }
+    document.getElementById("player2ChooseAction").onclick = () => {
+        if (document.getElementById("player2ChooseAction").innerText == "argMax") {
+            document.getElementById("player2ChooseAction").innerText = "multinomial"
+        } else {
+            document.getElementById("player2ChooseAction").innerText = "argMax"
         }
     }
     document.getElementById("reduceHP").onclick = () => {
@@ -109,13 +116,16 @@ let main = () => {
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
             let players = []
+            let chooseAction = []
             if (document.getElementById("player1").innerText == "on") {
                 players.push("player1")
+                chooseAction.push(document.getElementById("player1ChooseAction").innerText)
             }
             if (document.getElementById("player2").innerText == "on") {
                 players.push("player2")
+                chooseAction.push(document.getElementById("player2ChooseAction").innerText)
             }
-            env.control(players, document.getElementById("chooseAction").innerText)
+            env.control(players, chooseAction)
             trainLoop.run()
 
             env.isReturnCtrl = false
