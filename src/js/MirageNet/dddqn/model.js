@@ -321,7 +321,7 @@ export class DDDQN {
             func: (ASV, preASV) => {
                 return tf.tidy(() => {
                     let aav = tf.sub(ASV, preASV)
-                    aav = tf.add(aav, aav.abs())
+                    aav = tf.relu(aav)
                     aav = tf.div(aav, aav.sum(1, true))
                     return aav
                 })
