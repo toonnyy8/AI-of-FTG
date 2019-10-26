@@ -308,12 +308,13 @@ export class Environment {
         // console.log("ctrl")
     }
 
-    train(bsz = 32, idx = [null]) {
+    train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
         this.channel.postMessage({
             instruction: "train",
             args: {
                 bsz: bsz,
-                idx: idx
+                replayIdxes: replayIdxes,
+                usePrioritizedReplay: usePrioritizedReplay
             }
         })
         // console.log("train")

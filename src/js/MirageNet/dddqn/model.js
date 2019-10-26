@@ -393,8 +393,8 @@ export class DDDQN {
 
     }
 
-    train(replayNum = 100, idx = [null]) {
-        if (this.memory.length != 0) {
+    train(replayNum = 100, loadIdxes = [null], usePrioritizedReplay = false) {
+        let train_ = (replayIdxes) => {
             tf.tidy(() => {
                 let arrayPrevS = []
                 let arrayPrevASV = []
@@ -404,7 +404,7 @@ export class DDDQN {
                 let arrayNextASV = []
 
                 for (let i = 0; i < replayNum; i++) {
-                    let data = this.load(idx[i])
+                    let data = this.load(replayIdxes[i])
                     // console.log(data)
                     arrayPrevS.push(data[0])
                     arrayPrevASV.push(data[1])
@@ -437,6 +437,24 @@ export class DDDQN {
                     this.count = 0
                 }
             })
+        }
+        if (this.memory.length != 0) {
+            if (usePrioritizedReplay) {
+                tf.tidy(() => {
+                    let e = tf.tensor(this.memory.map(mem => mem[3]))
+                    e = tf.abs(e.sub(e.mean()))
+                    e = e.div(e.sum(0, true))
+                    // e.print()
+                    return tf.multinomial(e, replayNum, null, true)
+                }).array().then(prioritizedReplayBuffer => {
+                    // console.log(prioritizedReplayBuffer)
+                    train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
+                        return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
+                    }))
+                })
+            } else {
+                train_(loadIdxes)
+            }
         }
     }
 

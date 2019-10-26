@@ -109,7 +109,7 @@ let main = () => {
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(8)
+            env.train(8, [], false)
         }
     }, 8)
 
@@ -139,7 +139,7 @@ let main = () => {
                 game.restart = false
                 env.init()
             } else if (env.isReturnCtrl && env.isReturnTrain) {
-                env.train(64)
+                env.train(64, [], true)
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {
