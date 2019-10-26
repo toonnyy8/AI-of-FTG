@@ -111,7 +111,7 @@ let main = () => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
             env.train(8, [], false)
         }
-    }, 8)
+    }, 8 * 6)
 
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
@@ -130,7 +130,7 @@ let main = () => {
 
             env.isReturnCtrl = false
         }
-    }, 6)
+    }, 2)
 
     game.restart = false
     let loop = () => {

@@ -394,68 +394,70 @@ export class DDDQN {
     }
 
     train(replayNum = 100, loadIdxes = [null], usePrioritizedReplay = false) {
-        let train_ = (replayIdxes) => {
-            tf.tidy(() => {
-                let arrayPrevS = []
-                let arrayPrevASV = []
-                let arrayA = []
-                let arrayR = []
-                let arrayNextS = []
-                let arrayNextASV = []
-
-                for (let i = 0; i < replayNum; i++) {
-                    let data = this.load(replayIdxes[i])
-                    // console.log(data)
-                    arrayPrevS.push(data[0])
-                    arrayPrevASV.push(data[1])
-                    arrayA.push(data[2])
-                    arrayR.push(data[3])
-                    arrayNextS.push(data[4])
-                    arrayNextASV.push(data[5])
-                }
-
-                let grads = this.optimizer.computeGradients(
-                    () => {
-                        let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
-                        loss.print()
-                        return loss
-                    }, this.model.getWeights(true)).grads
-
-                let gradsName = Object.keys(grads)
-                grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 0.05)[0]
-
-                this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
-                    acc[gn] = grads[idx]
-                    return acc
-                }, {}))
-
-                this.count++
-
-                if (this.count >= this.updateTargetStep) {
-
-                    this.targetModel.setWeights(this.model.getWeights())
-                    this.count = 0
-                }
-            })
-        }
-        if (this.memory.length != 0) {
-            if (usePrioritizedReplay) {
+        tf.tidy(() => {
+            let train_ = (replayIdxes) => {
                 tf.tidy(() => {
-                    let e = tf.tensor(this.memory.map(mem => mem[3]))
-                    e = tf.abs(e.sub(e.mean()))
-                    e = e.div(e.sum(0, true))
-                    // e.print()
-                    return tf.multinomial(e, replayNum, null, true)
-                }).array().then(prioritizedReplayBuffer => {
-                    // console.log(prioritizedReplayBuffer)
-                    train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
-                        return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
-                    }))
+                    let arrayPrevS = []
+                    let arrayPrevASV = []
+                    let arrayA = []
+                    let arrayR = []
+                    let arrayNextS = []
+                    let arrayNextASV = []
+
+                    for (let i = 0; i < replayNum; i++) {
+                        let data = this.load(replayIdxes[i])
+                        // console.log(data)
+                        arrayPrevS.push(data[0])
+                        arrayPrevASV.push(data[1])
+                        arrayA.push(data[2])
+                        arrayR.push(data[3])
+                        arrayNextS.push(data[4])
+                        arrayNextASV.push(data[5])
+                    }
+
+                    let grads = this.optimizer.computeGradients(
+                        () => {
+                            let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
+                            loss.print()
+                            return loss
+                        }, this.model.getWeights(true)).grads
+
+                    let gradsName = Object.keys(grads)
+                    grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 0.05)[0]
+
+                    this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
+                        acc[gn] = grads[idx]
+                        return acc
+                    }, {}))
+
+                    this.count++
+
+                    if (this.count >= this.updateTargetStep) {
+
+                        this.targetModel.setWeights(this.model.getWeights())
+                        this.count = 0
+                    }
                 })
-            } else {
-                train_(loadIdxes)
             }
-        }
+            if (this.memory.length != 0) {
+                if (usePrioritizedReplay) {
+                    tf.tidy(() => {
+                        let e = tf.tensor(this.memory.map(mem => mem[3]))
+                        e = tf.abs(e.sub(e.mean()))
+                        e = e.div(e.sum(0, true))
+                        // e.print()
+                        return tf.multinomial(e, replayNum, null, true)
+                    }).array().then(prioritizedReplayBuffer => {
+                        // console.log(prioritizedReplayBuffer)
+                        train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
+                            return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
+                        }))
+                    })
+                } else {
+                    train_(loadIdxes)
+                }
+            }
+        })
     }
 
     store(preState, preASV, action, reward, nextState, nextASV) {
