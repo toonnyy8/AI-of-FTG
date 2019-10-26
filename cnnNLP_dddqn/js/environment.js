@@ -121,6 +121,7 @@ export class Environment {
                         }
                     case "load":
                         {
+                            alert("load")
                             console.log("load")
                             break
                         }
