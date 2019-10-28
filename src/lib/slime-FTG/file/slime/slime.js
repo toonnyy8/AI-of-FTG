@@ -574,7 +574,14 @@ export class Actor {
                 case keySet.jump:
                     {
                         if (!this.keyDown.jump && this.jumpTimes < 2) {
+                            if (this.cumulativeDamage < 500) {
+                                if (this._state.chapter == "hitRecover" && this._state.section != "reStand" && this._state.subsubsection == 1) {
+                                    this._state.chapter = "normal"
+                                    this.HP *= 0.9
+                                }
+                            }
                             if (this._state.chapter == "normal") {
+
                                 this._state.section = "jump"
                                 this._state.subsection = "main"
                                 this._state.subsubsection = 0
