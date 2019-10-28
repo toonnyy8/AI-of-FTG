@@ -369,6 +369,7 @@ export class Environment {
         //actorA state
         let getS = (actor) => {
             let HP = actor.HP / actor.maxHP
+            let cumulativeDamage = actor.cumulativeDamage / actor.maxCumulativeDamage
             let x = actor.mesh.position.x / 22
             let y = actor.mesh.position.y / 11
             let faceTo = actor._faceTo == "left" ? -1 : 1
@@ -437,7 +438,7 @@ export class Environment {
 
             let frame = actor._state["frame"]
 
-            return [HP, x, y, faceTo, chapter, section, subsection, subsubsection, frame]
+            return [HP, cumulativeDamage, x, y, faceTo, chapter, section, subsection, subsubsection, frame]
         }
 
         return getS(actorA).concat(getS(actorB))
@@ -445,7 +446,7 @@ export class Environment {
 
     static getMask() {
         let getM = () => {
-            return [-1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30]
+            return [-1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30]
         }
 
         return getM().concat(getM())
@@ -454,8 +455,12 @@ export class Environment {
     static getReward(actor) {
         let reward = ((actor.HP / actor.maxHP) - 1) * 0.5
         reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+
+        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) - (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+
         let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
         reward += Math.min(positionXreward, positionXreward ** 2)
+
         if (actor.isPD) {
             reward += 1
         }

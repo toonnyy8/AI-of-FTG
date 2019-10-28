@@ -53,16 +53,34 @@ export class Game {
             hpMaterial.ambientColor = new BABYLON.Color3(1, 0.3, 0.3)
 
             let HPBar = { p1: BABYLON.MeshBuilder.CreateBox("P1_hp", { size: 0.5, width: 8 }), p2: BABYLON.MeshBuilder.CreateBox("P2_hp", { size: 0.5, width: 8 }) }
-            HPBar.p1.setPivotMatrix(new BABYLON.Matrix.Translation(-3, 0, 0), false);
+            HPBar.p1.setPivotMatrix(new BABYLON.Matrix.Translation(-4, 0, 0), false);
             HPBar.p1.position.y = 9
-            HPBar.p1.position.x = 9
+            HPBar.p1.position.x = 10
             HPBar.p1.material = hpMaterial
 
 
-            HPBar.p2.setPivotMatrix(new BABYLON.Matrix.Translation(3, 0, 0), false);
+            HPBar.p2.setPivotMatrix(new BABYLON.Matrix.Translation(4, 0, 0), false);
             HPBar.p2.position.y = 9
-            HPBar.p2.position.x = -9
+            HPBar.p2.position.x = -10
             HPBar.p2.material = hpMaterial
+
+            let cumulativeDamageMaterial = new BABYLON.StandardMaterial("hpMaterial", scene);
+            cumulativeDamageMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.8, 0.5)
+            cumulativeDamageMaterial.specularColor = new BABYLON.Color3(0.5, 0.8, 0.5)
+            cumulativeDamageMaterial.emissiveColor = new BABYLON.Color3(0.5, 0.8, 0.5)
+            cumulativeDamageMaterial.ambientColor = new BABYLON.Color3(0.5, 0.8, 0.5)
+
+            let cumulativeDamageBar = { p1: BABYLON.MeshBuilder.CreateBox("P1_ cumulativeDamage", { size: 0.1, width: 8 }), p2: BABYLON.MeshBuilder.CreateBox("P2_cumulativeDamage", { size: 0.1, width: 8 }) }
+            cumulativeDamageBar.p1.setPivotMatrix(new BABYLON.Matrix.Translation(-4, 0, 0), false);
+            cumulativeDamageBar.p1.position.y = 8.5
+            cumulativeDamageBar.p1.position.x = 10
+            cumulativeDamageBar.p1.material = cumulativeDamageMaterial
+
+
+            cumulativeDamageBar.p2.setPivotMatrix(new BABYLON.Matrix.Translation(4, 0, 0), false);
+            cumulativeDamageBar.p2.position.y = 8.5
+            cumulativeDamageBar.p2.position.x = -10
+            cumulativeDamageBar.p2.material = cumulativeDamageMaterial
 
             BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(loader => {
                 loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.NONE
@@ -83,7 +101,8 @@ export class Game {
                     scene: scene,
                     startPosition: new BABYLON.Vector3(5, 0, 0),
                     startRotationQuaternion: new BABYLON.Vector3(0, Math.PI, 0).toQuaternion(),
-                    maxHP: 3000
+                    maxHP: 3000,
+                    maxCumulativeDamage: 500
                 })
 
                 // var skeletonViewer = new BABYLON.Debug.SkeletonViewer(skeletons[0], meshes[0], scene);// Create a skeleton viewer for the mesh
@@ -111,7 +130,8 @@ export class Game {
                         // keySet: { jump: "ArrowUp", squat: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", attack: { small: "1", medium: "2", large: "3" } },
                         startPosition: new BABYLON.Vector3(-5, 0, 0),
                         startRotationQuaternion: new BABYLON.Vector3(0, 0, 0).toQuaternion(),
-                        maxHP: 3000
+                        maxHP: 3000,
+                        maxCumulativeDamage: 500
                     })
 
                     this.player1.setOpponent(this.player2)
@@ -126,19 +146,31 @@ export class Game {
                         } else {
                             camera.setTarget(new BABYLON.Vector3(0, 4, 0));
                         }
-                        HPBar.p1.scaling.x = this.player1.HP / this.player1.maxHP
-                        HPBar.p2.scaling.x = this.player2.HP / this.player2.maxHP
+
                         if (this.player1.HP > this.player1.maxHP) {
                             this.player1.HP = this.player1.maxHP
                         }
                         if (this.player2.HP > this.player2.maxHP) {
                             this.player2.HP = this.player2.maxHP
                         }
+                        HPBar.p1.scaling.x = this.player1.HP / this.player1.maxHP
+                        HPBar.p2.scaling.x = this.player2.HP / this.player2.maxHP
                         if (this.player1.HP <= 0 || this.player2.HP <= 0) {
                             this.player1.restart()
                             this.player2.restart()
                             this.restart = true
                         }
+
+                        if (this.player1.cumulativeDamage > this.player1.maxCumulativeDamage) {
+                            this.player1.cumulativeDamage = this.player1.maxCumulativeDamage
+                        }
+                        if (this.player2.cumulativeDamage > this.player2.maxCumulativeDamage) {
+                            this.player2.cumulativeDamage = this.player2.maxCumulativeDamage
+                        }
+                        cumulativeDamageBar.p1.scaling.x = this.player1.cumulativeDamage / this.player1.maxCumulativeDamage
+                        cumulativeDamageBar.p2.scaling.x = this.player2.cumulativeDamage / this.player2.maxCumulativeDamage
+
+
                     })
 
                 }, null, null, ".glb")

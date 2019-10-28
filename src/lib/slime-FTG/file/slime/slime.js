@@ -3,7 +3,29 @@ import fs from 'fs'
 import * as BABYLON from "babylonjs"
 
 export class Actor {
-    constructor({ mesh, materialMesh, animationGroup, skeleton, startPosition, startRotationQuaternion, scene, keySet = { jump: "w", squat: "s", left: "a", right: "d", attack: { small: "j", medium: "k", large: "l" } }, fps = 60, maxHP = 3000 }) {
+    constructor({
+        mesh,
+        materialMesh,
+        animationGroup,
+        skeleton,
+        startPosition,
+        startRotationQuaternion,
+        scene,
+        keySet = {
+            jump: "w",
+            squat: "s",
+            left: "a",
+            right: "d",
+            attack: {
+                small: "j",
+                medium: "k",
+                large: "l"
+            }
+        },
+        fps = 60,
+        maxHP = 3000,
+        maxCumulativeDamage = 500
+    }) {
         this._faceTo = "left"
         this._fps = fps && !Number.isNaN(fps - 0) ? fps : this.fps
         this._actions = Actor.actionSet()
@@ -40,6 +62,7 @@ export class Actor {
         this.mesh.rotationQuaternion = this._startRotationQuaternion.clone()
 
         this.cumulativeDamage = 0
+        this.maxCumulativeDamage = 500
 
         this.perfectDefenseTime = -1
         this.isPD = false
@@ -374,7 +397,7 @@ export class Actor {
                                         {
                                             this._actions[chapter][section][subsection][0].onAnimationEndObservable.add(() => {
                                                 if (stateEqual(0)) {
-                                                    if (this.cumulativeDamage < 500) {
+                                                    if (this.cumulativeDamage < this.maxCumulativeDamage) {
                                                         this._state.subsubsection = 1
                                                     } else {
                                                         this._state.subsection = "large"
@@ -409,7 +432,7 @@ export class Actor {
                                         {
                                             this._actions[chapter][section][subsection][0].onAnimationEndObservable.add(() => {
                                                 if (stateEqual(0)) {
-                                                    if (this.cumulativeDamage < 500) {
+                                                    if (this.cumulativeDamage < this.maxCumulativeDamage) {
                                                         this._state.subsubsection = 1
                                                     } else {
                                                         this._state.subsection = "large"
@@ -574,7 +597,15 @@ export class Actor {
                 case keySet.jump:
                     {
                         if (!this.keyDown.jump && this.jumpTimes < 2) {
+                            if (this.cumulativeDamage < this.maxCumulativeDamage) {
+                                if (this._state.chapter == "hitRecover" && this._state.section != "reStand" && this._state.subsubsection == 1) {
+                                    this._state.chapter = "normal"
+                                    this.HP -= this.cumulativeDamage * (this.HP / this.maxHP)
+                                    this.cumulativeDamage = 0
+                                }
+                            }
                             if (this._state.chapter == "normal") {
+
                                 this._state.section = "jump"
                                 this._state.subsection = "main"
                                 this._state.subsubsection = 0
@@ -1353,6 +1384,9 @@ export class Actor {
     tick(debug) {
         this.perfectDefenseTime -= 1
 
+        if (this.cumulativeDamage < this.maxCumulativeDamage) {
+            this.cumulativeDamage = this.cumulativeDamage <= 0 ? 0 : this.cumulativeDamage - 1
+        }
         if (debug) {
             // console.log(this.vector)
         }
@@ -1384,7 +1418,7 @@ export class Actor {
             case "normal":
                 {
                     this.isHit = false
-                    this.cumulativeDamage = 0
+                    // this.cumulativeDamage = 0
                     switch (this._state.section) {
                         case "stand":
                             {
@@ -1421,7 +1455,7 @@ export class Actor {
                 }
             case "attack":
                 {
-                    this.cumulativeDamage = 0
+                    // this.cumulativeDamage = 0
 
                     switch (this._state.section) {
                         case "stand":
@@ -1649,8 +1683,12 @@ export class Actor {
 
                 this.materialMesh.material = tempM
                 // console.log("perfect")
+
+                this.opponent.cumulativeDamage = this.cumulativeDamage * (2 / 3)
+                this.cumulativeDamage /= 3
             } else {
                 this.HP -= atk / 5
+                this.cumulativeDamage += atk / 5
             }
         } else {
             this.beInjuredObj = { atk: atk, scale: scale == "fall" ? "small" : scale, beHitVector: beHitVector }
@@ -1679,12 +1717,17 @@ export class Actor {
             this.mesh.position = this.mesh.position.add(this.beInjuredObj.beHitVector)
             this.isHit = false
         }
-        this.cumulativeDamage += this.beInjuredObj.atk
-
         this.beHitNum += 1
         this.HP -= this.beInjuredObj.atk / this.beHitNum
         // console.log(this.HP)
-        // console.log(this.vector)
+        // console.log(this.vector) 
+
+        if (this.cumulativeDamage >= this.maxCumulativeDamage) {
+            this.HP -= this.cumulativeDamage
+            this.cumulativeDamage = 0
+        } else {
+            this.cumulativeDamage += this.beInjuredObj.atk / this.beHitNum
+        }
 
         this.beInjuredObj.atk = null
         // this.isHit = false
