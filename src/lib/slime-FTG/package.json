@@ -1,10 +1,6 @@
 {
     "name": "slime-ftg",
-<<<<<<< HEAD
     "version": "1.0.12",
-=======
-    "version": "1.0.11",
->>>>>>> b13c3c99724d0f61a89e5fbb23dca591dedb4502
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -20,11 +16,7 @@
         "babylonjs-gui": "^4.0.3",
         "babylonjs-loaders": "^4.0.3",
         "cannon": "^0.6.2",
-<<<<<<< HEAD
         "core-js": "^3.3.4",
-=======
-        "core-js": "^3.2.1",
->>>>>>> b13c3c99724d0f61a89e5fbb23dca591dedb4502
         "parcel": "^1.12.4",
         "regenerator-runtime": "^0.13.3"
     },
