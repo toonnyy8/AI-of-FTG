@@ -597,11 +597,18 @@ export class Actor {
                 case keySet.jump:
                     {
                         if (!this.keyDown.jump && this.jumpTimes < 2) {
+<<<<<<< HEAD
                             if (this.cumulativeDamage < this.maxCumulativeDamage) {
                                 if (this._state.chapter == "hitRecover" && this._state.section != "reStand" && this._state.subsubsection == 1) {
                                     this._state.chapter = "normal"
                                     this.HP -= this.cumulativeDamage * (this.HP / this.maxHP)
                                     this.cumulativeDamage = 0
+=======
+                            if (this.cumulativeDamage < 500) {
+                                if (this._state.chapter == "hitRecover" && this._state.section != "reStand" && this._state.subsubsection == 1) {
+                                    this._state.chapter = "normal"
+                                    this.HP *= 0.9
+>>>>>>> b13c3c99724d0f61a89e5fbb23dca591dedb4502
                                 }
                             }
                             if (this._state.chapter == "normal") {
