@@ -156,6 +156,13 @@ export class Game {
                         HPBar.p1.scaling.x = this.player1.HP / this.player1.maxHP
                         HPBar.p2.scaling.x = this.player2.HP / this.player2.maxHP
                         if (this.player1.HP <= 0 || this.player2.HP <= 0) {
+                            if (this.player1.HP > 0) {
+                                console.log("Player1 win")
+                            } else if (this.player2.HP > 0) {
+                                console.log("Player2 win")
+                            } else {
+                                console.log("Draw")
+                            }
                             this.player1.restart()
                             this.player2.restart()
                             this.restart = true
