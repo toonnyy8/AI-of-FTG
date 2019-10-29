@@ -336,7 +336,7 @@ export class DDDQN {
             }
             build(inputShape) {
                 // console.log("LayerNorm build : ")
-                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.5 }))
+                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.8 }))
                 this.built = true
             }
             computeOutputShape(inputShape) {
