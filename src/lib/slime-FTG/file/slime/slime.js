@@ -1706,7 +1706,7 @@ export class Actor {
     }
 
     beInjured() {
-        if (!(this._state.chapter == "attack" && this._state.subsection == "large" && this._state.subsubsection <= 1)) {
+        if (!(this._state.chapter == "attack" && this._state.subsection == "large" && this._state.subsubsection <= 1) || (this.cumulativeDamage >= this.maxCumulativeDamage)) {
             if (this.beInjuredObj.beHitVector.y > 0) {
                 this._state.section = "jump"
             }
