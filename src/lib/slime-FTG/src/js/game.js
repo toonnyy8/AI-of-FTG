@@ -102,7 +102,8 @@ export class Game {
                     startPosition: new BABYLON.Vector3(5, 0, 0),
                     startRotationQuaternion: new BABYLON.Vector3(0, Math.PI, 0).toQuaternion(),
                     maxHP: 3000,
-                    maxCumulativeDamage: 500
+                    maxCumulativeDamage: 500,
+                    maxPerfectDefenseTime: 10
                 })
 
                 // var skeletonViewer = new BABYLON.Debug.SkeletonViewer(skeletons[0], meshes[0], scene);// Create a skeleton viewer for the mesh
@@ -131,7 +132,8 @@ export class Game {
                         startPosition: new BABYLON.Vector3(-5, 0, 0),
                         startRotationQuaternion: new BABYLON.Vector3(0, 0, 0).toQuaternion(),
                         maxHP: 3000,
-                        maxCumulativeDamage: 500
+                        maxCumulativeDamage: 500,
+                        maxPerfectDefenseTime: 10
                     })
 
                     this.player1.setOpponent(this.player2)

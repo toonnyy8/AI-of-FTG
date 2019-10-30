@@ -24,7 +24,8 @@ export class Actor {
         },
         fps = 60,
         maxHP = 3000,
-        maxCumulativeDamage = 500
+        maxCumulativeDamage = 500,
+        maxPerfectDefenseTime = 10
     }) {
         this._faceTo = "left"
         this._fps = fps && !Number.isNaN(fps - 0) ? fps : this.fps
@@ -65,8 +66,9 @@ export class Actor {
         this.mesh.rotationQuaternion = this._startRotationQuaternion.clone()
 
         this.cumulativeDamage = 0
-        this.maxCumulativeDamage = 500
+        this.maxCumulativeDamage = maxCumulativeDamage
 
+        this.maxPerfectDefenseTime = maxPerfectDefenseTime
         this.perfectDefenseTime = -1
         this.isPD = false
 
@@ -576,7 +578,7 @@ export class Actor {
                                 }
                                 this.keyDown.right = true
                                 if (this.shouldFaceTo == "left") {
-                                    this.perfectDefenseTime = 6
+                                    this.perfectDefenseTime = this.maxPerfectDefenseTime
                                 }
                             }
                         }
