@@ -57,6 +57,9 @@ export class Actor {
         this.HP = this.maxHP
         this.beHitNum = 0
 
+        this.lastAttack = null
+        this.lastAttackRepeatNum = 0
+
         this.vector = BABYLON.Vector3.Zero()
         this.mesh.position = this._startPosition.clone()
         this.mesh.rotationQuaternion = this._startRotationQuaternion.clone()
@@ -661,6 +664,13 @@ export class Actor {
                                             if (this._state.section == "jump") {
                                                 this.jumpAttackNum += 1
                                             }
+                                            if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                this.lastAttackRepeatNum += 1
+                                                this.cumulativeDamage += 20 * this.lastAttackRepeatNum
+                                            } else {
+                                                this.lastAttackRepeatNum = 1
+                                            }
+                                            this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
                                         break;
                                     }
@@ -677,6 +687,13 @@ export class Actor {
                                                         this.jumpAttackNum += 1
                                                     }
                                                     // this.isHit = false
+                                                    if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                        this.lastAttackRepeatNum += 1
+                                                        this.cumulativeDamage += 20 * this.lastAttackRepeatNum
+                                                    } else {
+                                                        this.lastAttackRepeatNum = 1
+                                                    }
+                                                    this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
                                             }
                                         }
@@ -735,6 +752,13 @@ export class Actor {
                                             if (this._state.section == "jump") {
                                                 this.jumpAttackNum += 2
                                             }
+                                            if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                this.lastAttackRepeatNum += 1
+                                                this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                            } else {
+                                                this.lastAttackRepeatNum = 1
+                                            }
+                                            this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
                                         break;
                                     }
@@ -751,6 +775,13 @@ export class Actor {
                                                         this.jumpAttackNum += 2
                                                     }
                                                     // this.isHit = false
+                                                    if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                        this.lastAttackRepeatNum += 1
+                                                        this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                                    } else {
+                                                        this.lastAttackRepeatNum = 1
+                                                    }
+                                                    this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
                                             }
                                         }
@@ -800,6 +831,13 @@ export class Actor {
                                             if (this._state.section == "jump") {
                                                 this.jumpAttackNum += 3
                                             }
+                                            if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                this.lastAttackRepeatNum += 1
+                                                this.cumulativeDamage += 40 * this.lastAttackRepeatNum
+                                            } else {
+                                                this.lastAttackRepeatNum = 1
+                                            }
+                                            this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
                                         break;
                                     }
@@ -820,6 +858,13 @@ export class Actor {
                                                         this.jumpAttackNum += 3
                                                     }
                                                     // this.isHit = false
+                                                    if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
+                                                        this.lastAttackRepeatNum += 1
+                                                        this.cumulativeDamage += 40 * this.lastAttackRepeatNum
+                                                    } else {
+                                                        this.lastAttackRepeatNum = 1
+                                                    }
+                                                    this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
                                             }
                                         }
@@ -1684,8 +1729,8 @@ export class Actor {
                 this.materialMesh.material = tempM
                 // console.log("perfect")
 
-                this.opponent.cumulativeDamage = this.cumulativeDamage * (2 / 3)
-                this.cumulativeDamage /= 3
+                this.opponent.cumulativeDamage = this.cumulativeDamage
+                this.cumulativeDamage = 0
             } else {
                 this.HP -= atk / 5
                 this.cumulativeDamage += atk / 5
@@ -1728,6 +1773,8 @@ export class Actor {
         } else {
             this.cumulativeDamage += this.beInjuredObj.atk / this.beHitNum
         }
+        this.lastAttack = null
+        this.lastAttackRepeatNum = 0
 
         this.beInjuredObj.atk = null
         // this.isHit = false
