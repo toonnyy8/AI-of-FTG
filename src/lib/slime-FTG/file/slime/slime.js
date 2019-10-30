@@ -1073,7 +1073,7 @@ export class Actor {
                         start: 119,
                         end: 130,
                         atk: 0,
-                        speed: 1.5
+                        speed: 2
                     }],
                     medium: [{
                         start: 131,
@@ -1729,7 +1729,7 @@ export class Actor {
                 this.materialMesh.material = tempM
                 // console.log("perfect")
 
-                this.opponent.cumulativeDamage = this.cumulativeDamage
+                this.opponent.cumulativeDamage += this.cumulativeDamage
                 this.cumulativeDamage = 0
             } else {
                 this.HP -= atk / 5
