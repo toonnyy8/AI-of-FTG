@@ -666,9 +666,9 @@ export class Actor {
                                             }
                                             if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                 this.lastAttackRepeatNum += 1
-                                                this.cumulativeDamage += 20 * this.lastAttackRepeatNum
+                                                this.cumulativeDamage += 30 * this.lastAttackRepeatNum
                                             } else {
-                                                this.lastAttackRepeatNum = 1
+                                                this.lastAttackRepeatNum = 0
                                             }
                                             this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
@@ -689,9 +689,9 @@ export class Actor {
                                                     // this.isHit = false
                                                     if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                         this.lastAttackRepeatNum += 1
-                                                        this.cumulativeDamage += 20 * this.lastAttackRepeatNum
+                                                        this.cumulativeDamage += 30 * this.lastAttackRepeatNum
                                                     } else {
-                                                        this.lastAttackRepeatNum = 1
+                                                        this.lastAttackRepeatNum = 0
                                                     }
                                                     this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
@@ -754,9 +754,9 @@ export class Actor {
                                             }
                                             if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                 this.lastAttackRepeatNum += 1
-                                                this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                                this.cumulativeDamage += 35 * this.lastAttackRepeatNum
                                             } else {
-                                                this.lastAttackRepeatNum = 1
+                                                this.lastAttackRepeatNum = 0
                                             }
                                             this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
@@ -777,9 +777,9 @@ export class Actor {
                                                     // this.isHit = false
                                                     if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                         this.lastAttackRepeatNum += 1
-                                                        this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                                        this.cumulativeDamage += 35 * this.lastAttackRepeatNum
                                                     } else {
-                                                        this.lastAttackRepeatNum = 1
+                                                        this.lastAttackRepeatNum = 0
                                                     }
                                                     this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
@@ -835,7 +835,7 @@ export class Actor {
                                                 this.lastAttackRepeatNum += 1
                                                 this.cumulativeDamage += 40 * this.lastAttackRepeatNum
                                             } else {
-                                                this.lastAttackRepeatNum = 1
+                                                this.lastAttackRepeatNum = 0
                                             }
                                             this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                         }
@@ -862,7 +862,7 @@ export class Actor {
                                                         this.lastAttackRepeatNum += 1
                                                         this.cumulativeDamage += 40 * this.lastAttackRepeatNum
                                                     } else {
-                                                        this.lastAttackRepeatNum = 1
+                                                        this.lastAttackRepeatNum = 0
                                                     }
                                                     this.lastAttack = `${this._state.section}:${this._state.subsection}`
                                                 }
@@ -1432,6 +1432,12 @@ export class Actor {
         if (this.cumulativeDamage < this.maxCumulativeDamage) {
             this.cumulativeDamage = this.cumulativeDamage <= 0 ? 0 : this.cumulativeDamage - 1
         }
+
+        if (this.cumulativeDamage == 0 && this.lastAttackRepeatNum >= 1) {
+            this.lastAttack = null
+            this.lastAttackRepeatNum = 0
+        }
+
         if (debug) {
             // console.log(this.vector)
         }
