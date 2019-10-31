@@ -1435,8 +1435,10 @@ export class Actor {
             this.cumulativeDamage = this.cumulativeDamage <= 0 ? 0 : this.cumulativeDamage - 1
         }
 
-        if (this.cumulativeDamage == 0 && this.lastAttackRepeatNum >= 1) {
-            this.lastAttack = null
+        if (this.cumulativeDamage == 0) {
+            // if (this.lastAttackRepeatNum >= 1) {
+            //     this.lastAttack = null
+            // }
             this.lastAttackRepeatNum = 0
         }
 

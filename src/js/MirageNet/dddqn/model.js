@@ -248,7 +248,7 @@ export class DDDQN {
         while (1 <= cnnLayer.shape[1] / 2) {
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
-                kernelSize: [2],
+                kernelSize: [4],
                 strides: [2],
                 activation: "selu",
                 padding: "same"
