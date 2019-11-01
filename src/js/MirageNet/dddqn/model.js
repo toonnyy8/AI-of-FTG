@@ -365,7 +365,6 @@ export class DDDQN {
         tf.serialization.registerClass(WeightedAverage)
 
         let action = new WeightedAverage().apply([ASV, AAV])
-        action = tf.layers.softmax().apply(action)
 
         return tf.model({ inputs: [input, preASV], outputs: [ASV, action] })
     }
