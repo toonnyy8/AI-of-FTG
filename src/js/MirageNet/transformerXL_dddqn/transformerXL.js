@@ -415,7 +415,6 @@ export function _cacheMem(currOut, prevMem, memLen = null) {
 
 export function transformer(args = {
     decInp: null,
-    target: null,
     mems: null, //stack tensor
     nToken: null, //字典大小，在此視為一次傳入的狀態數(??)
     nLayer: null,
@@ -552,7 +551,6 @@ export function transformer(args = {
         output.assign(
             maskAdaptiveLogsoftmax({
                 hidden: output.read(),
-                target: args.target,
                 nToken: args.nToken,
                 dEmbed: args.dEmbed,
                 dProj: args.dModel,
