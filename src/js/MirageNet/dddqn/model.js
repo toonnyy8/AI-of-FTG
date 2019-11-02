@@ -236,16 +236,16 @@ export class DDDQN {
             activation: "selu",
             padding: "same"
         }).apply(WSLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+        // cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
         cnnLayer = tf.layers.conv1d({
             filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+        // cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
 
-        // cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
+        cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
 
         while (1 <= cnnLayer.shape[1] / 2) {
             cnnLayer = tf.layers.conv1d({
@@ -264,14 +264,14 @@ export class DDDQN {
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        value = tf.layers.batchNormalization({}).apply(value)
+        // value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
             filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(value)
-        value = tf.layers.batchNormalization({}).apply(value)
+        // value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
@@ -285,14 +285,14 @@ export class DDDQN {
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        A = tf.layers.batchNormalization({}).apply(A)
+        // A = tf.layers.batchNormalization({}).apply(A)
         A = tf.layers.conv1d({
             filters: filters * 4,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(A)
-        A = tf.layers.batchNormalization({}).apply(A)
+        // A = tf.layers.batchNormalization({}).apply(A)
         A = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
