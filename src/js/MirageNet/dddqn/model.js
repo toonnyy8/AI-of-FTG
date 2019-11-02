@@ -444,18 +444,17 @@ export class DDDQN {
             }
             if (this.memory.length != 0) {
                 if (usePrioritizedReplay) {
-                    tf.tidy(() => {
+                    let prioritizedReplayBuffer = tf.tidy(() => {
                         let e = tf.tensor(this.memory.map(mem => mem[3]))
                         e = tf.abs(e.sub(e.mean()))
                         e = e.div(e.sum(0, true))
                         // e.print()
-                        return tf.multinomial(e, replayNum, null, true)
-                    }).array().then(prioritizedReplayBuffer => {
-                        // console.log(prioritizedReplayBuffer)
-                        train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
-                            return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
-                        }))
+                        return tf.multinomial(e, replayNum, null, true).arraySync()
                     })
+                    // console.log(prioritizedReplayBuffer)
+                    train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
+                        return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
+                    }))
                 } else {
                     train_(loadIdxes)
                 }
