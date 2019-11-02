@@ -120,35 +120,7 @@ export class DDDQN {
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
                 kernelSize: [4],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [4],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [4],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [4],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [2],
-                strides: [2],
+                strides: [4],
                 activation: "selu",
                 padding: "same"
             }).apply(cnnLayer)
@@ -157,8 +129,7 @@ export class DDDQN {
 
         let value = tf.layers.conv1d({
             filters: filters * 2,
-            kernelSize: [2],
-            strides: [2],
+            kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
@@ -177,8 +148,7 @@ export class DDDQN {
 
         let A = tf.layers.conv1d({
             filters: filters * 2,
-            kernelSize: [2],
-            strides: [2],
+            kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)

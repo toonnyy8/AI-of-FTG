@@ -44,7 +44,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 32)
+    }], 5000, 64)
 
     document.getElementById("player1").onclick = () => {
         if (document.getElementById("player1").innerText == "off") {
@@ -110,9 +110,9 @@ let main = () => {
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(8, [], false)
+            env.train(64, [], false)
         }
-    }, 8 * 6)
+    }, 32)
 
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
