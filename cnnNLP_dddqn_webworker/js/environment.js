@@ -283,7 +283,7 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getReward(this.players[playerName]["actor"]) * 0.5
+            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getReward(this.players[playerName]["actor"]) * 0.1
             // this.players[playerName]["reward"] *= 0.5
             // console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
         })
@@ -453,13 +453,16 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = ((actor.HP / actor.maxHP) - 1) * 0.5
-        reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+        let reward = -1 * ((1 - (actor.HP / actor.maxHP)) ** 2)
+        reward += (actor.HP / actor.maxHP) ** 2 - (actor.opponent.HP / actor.opponent.maxHP) ** 2
 
-        // reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) - (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) ** 2
+        reward += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage) ** 2
 
-        let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
-        reward += Math.min(positionXreward, positionXreward ** 2)
+        // let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
+        // reward += Math.min(positionXreward, positionXreward ** 2)
+
+        reward *= (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
 
         if (actor.isPD) {
             reward += 1
