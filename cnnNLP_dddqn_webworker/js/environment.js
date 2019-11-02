@@ -456,7 +456,7 @@ export class Environment {
         let reward = ((actor.HP / actor.maxHP) - 1) * 0.5
         reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
 
-        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) - (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+        // reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) - (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
 
         let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
         reward += Math.min(positionXreward, positionXreward ** 2)
