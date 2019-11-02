@@ -24,7 +24,7 @@ export class DDDQN {
         }
 
         {
-            this.model = this.buildModel2({
+            this.model = this.buildModel({
                 sequenceLen: sequenceLen,
                 inputNum: inputNum,
                 embInner: embInner,
@@ -34,7 +34,7 @@ export class DDDQN {
             })
             this.model.summary()
 
-            this.targetModel = this.buildModel2({
+            this.targetModel = this.buildModel({
                 sequenceLen: sequenceLen,
                 inputNum: inputNum,
                 embInner: embInner,
@@ -58,135 +58,6 @@ export class DDDQN {
     }
 
     buildModel(
-        {
-            sequenceLen,
-            inputNum,
-            embInner = [64, 64, 64],
-            filters = [64, 64, 64],
-            outputInner = [64, 64],
-            actionNum = 36
-        }
-    ) {
-        let input = tf.input({ shape: [sequenceLen, inputNum] })
-        let preASV = tf.input({ shape: [actionNum] })
-
-        let embLayer = tf.layers.dense({ units: embInner[0], activation: 'selu' }).apply(input)
-        for (let i = 1; i < embInner.length; i++) {
-            embLayer = tf.layers.dense({ units: embInner[i], activation: 'selu' }).apply(embLayer)
-        }
-        embLayer = tf.layers.reshape({ targetShape: [sequenceLen, embInner[embInner.length - 1], 1] }).apply(embLayer)
-        embLayer = tf.layers.dropout({ rate: 0.1 }).apply(embLayer)
-
-        let cnnLayer = tf.layers.conv2d({
-            filters: filters[0],
-            kernelSize: [2, embInner[embInner.length - 1]],
-            activation: "selu",
-            padding: "same"
-        }).apply(embLayer)
-        for (let i = 1; i < filters.length - 1; i++) {
-            cnnLayer = tf.layers.conv2d({
-                filters: filters[i],
-                kernelSize: [i * Math.floor(sequenceLen / filters.length), embInner[embInner.length - 1]],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-        }
-        cnnLayer = tf.layers.conv2d({
-            filters: filters[filters.length - 1],
-            kernelSize: [sequenceLen, embInner[embInner.length - 1]],
-            strides: [sequenceLen, embInner[embInner.length - 1]],
-            activation: "selu",
-            padding: "same"
-        }).apply(cnnLayer)
-
-        let flattenLayer = tf.layers.flatten().apply(cnnLayer)
-        flattenLayer = tf.layers.dropout({ rate: 0.1 }).apply(flattenLayer)
-
-        let outputLayer = tf.layers.dense({ units: outputInner[0], activation: 'selu' }).apply(flattenLayer)
-        for (let i = 1; i < outputInner.length; i++) {
-            outputLayer = tf.layers.dense({ units: outputInner[i], activation: 'selu' }).apply(outputLayer)
-        }
-        outputLayer = tf.layers.dense({ units: actionNum, activation: 'selu' }).apply(outputLayer)
-        outputLayer = tf.layers.dropout({ rate: 0.1 }).apply(outputLayer)
-
-        let value = tf.layers.dense({
-            units: actionNum,
-            activation: "selu"
-        }).apply(outputLayer)
-
-        let A = tf.layers.dense({
-            units: actionNum,
-            activation: "selu"
-        }).apply(outputLayer)
-
-        let mean = tfex.layers.lambda({
-            func: (x) => {
-                return tf.mean(x, 1, true)
-            },
-            outputShape: [1]
-        }).apply([A])
-
-        let advantage = tfex.layers.lambda({
-            func: (x, y) => {
-                return tf.sub(x, y)
-            }
-        }).apply([A, mean])
-
-        let Q = tf.layers.add().apply([value, advantage])
-
-        //Action Selection Value
-        let ASV = tf.layers.softmax().apply(Q)
-
-        //Action Activation Value
-        let AAV = tfex.layers.lambda({
-            func: (ASV, preASV) => {
-                return tf.div(tf.sub(ASV, preASV), tf.max(tf.stack([ASV, preASV]), 0))
-            }
-        }).apply([ASV, preASV])
-
-        // AAV = tf.layers.softmax().apply(AAV)
-
-        class WeightedAverage extends tf.layers.Layer {
-            constructor(args) {
-                super({})
-            }
-            build(inputShape) {
-                // console.log("LayerNorm build : ")
-                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.5 }))
-                this.built = true
-            }
-            computeOutputShape(inputShape) {
-                //console.log("LayerNorm computeOutputShape")
-                //console.log(inputShape)
-                return inputShape[0]
-            }
-            call(inputs, kwargs) {
-                //console.log("LayerNorm call")
-                this.invokeCallHook(inputs, kwargs)
-                return tf.add(
-                    tf.mul(inputs[0], this.w.read()),
-                    tf.mul(inputs[1], tf.sub(1, this.w.read()))
-                )
-            }
-
-            /*
-            * If a custom layer class is to support serialization, it must implement
-            * the `className` static getter.
-            */
-            static get className() {
-                return "WeightedAverage"
-            }
-        }
-        // registerClass
-        tf.serialization.registerClass(WeightedAverage)
-
-        let action = new WeightedAverage().apply([ASV, AAV])
-        // action = tf.layers.softmax().apply(action)
-
-        return tf.model({ inputs: [input, preASV], outputs: [ASV, action] })
-    }
-
-    buildModel2(
         {
             sequenceLen,
             inputNum,
@@ -231,26 +102,45 @@ export class DDDQN {
         let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
 
         let cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters * 2,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(WSLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
         cnnLayer = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters * 2,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
 
         cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
 
-        while (1 <= cnnLayer.shape[1] / 2) {
+        while (1 <= cnnLayer.shape[1] / 4) {
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
-                kernelSize: [2],
+                kernelSize: [4],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            cnnLayer = tf.layers.conv1d({
+                filters: filters,
+                kernelSize: [4],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            cnnLayer = tf.layers.conv1d({
+                filters: filters,
+                kernelSize: [4],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            cnnLayer = tf.layers.conv1d({
+                filters: filters,
+                kernelSize: [4],
                 activation: "selu",
                 padding: "same"
             }).apply(cnnLayer)
@@ -266,19 +156,18 @@ export class DDDQN {
         }
 
         let value = tf.layers.conv1d({
-            filters: filters * 4,
-            kernelSize: [1],
+            filters: filters * 2,
+            kernelSize: [2],
+            strides: [2],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters * 2,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(value)
-        value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
@@ -287,19 +176,18 @@ export class DDDQN {
         }).apply(value)
 
         let A = tf.layers.conv1d({
-            filters: filters * 4,
-            kernelSize: [1],
+            filters: filters * 2,
+            kernelSize: [2],
+            strides: [2],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
-        A = tf.layers.batchNormalization({}).apply(A)
         A = tf.layers.conv1d({
-            filters: filters * 4,
+            filters: filters * 2,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(A)
-        A = tf.layers.batchNormalization({}).apply(A)
         A = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],

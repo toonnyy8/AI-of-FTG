@@ -44,7 +44,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 1024)
+    }], 5000, 32)
 
     document.getElementById("player1").onclick = () => {
         if (document.getElementById("player1").innerText == "off") {
@@ -104,8 +104,9 @@ let main = () => {
         env.load()
     }
 
-    let epoch = 32
-    let epochCount = epoch
+    let maxEpoch = 32
+    let epochCount = maxEpoch
+    let ctrlNum = 0
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
@@ -129,6 +130,8 @@ let main = () => {
             trainLoop.run()
 
             env.isReturnCtrl = false
+
+            ctrlNum += 1
         }
     }, 2)
 
@@ -143,12 +146,14 @@ let main = () => {
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {
+                    ctrlNum = 0
                     game.restart = false
                     env.init()
                 }
             }
         } else {
-            epochCount = epoch
+            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum / 32))
+            // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
                     game.player1.HP -= 1
