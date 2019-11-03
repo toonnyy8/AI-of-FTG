@@ -142,7 +142,7 @@ export class DDDQN {
         value = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
-            activation: "selu",
+            activation: "softmax",
             padding: "same"
         }).apply(value)
 
@@ -161,7 +161,7 @@ export class DDDQN {
         A = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
-            activation: "selu",
+            activation: "softmax",
             padding: "same"
         }).apply(A)
 
@@ -205,7 +205,7 @@ export class DDDQN {
             }
             build(inputShape) {
                 // console.log("LayerNorm build : ")
-                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.8 }))
+                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.randomNormal({ mean: 0.5, stddev: 0.2 }))
                 this.built = true
             }
             computeOutputShape(inputShape) {
@@ -250,7 +250,7 @@ export class DDDQN {
 
             const predictions = this.model.predict([batchPrevS, batchPrevASV]);
 
-            const maxQ = this.targetModel.predict([batchNextS, predictions[0]])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
+            const maxQ = this.targetModel.predict([batchNextS, batchNextASV])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
 
             const predMask = tf.oneHot(batchA, this.actionNum);
 
@@ -295,6 +295,9 @@ export class DDDQN {
 
                     this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
                         acc[gn] = grads[idx]
+                        // if (gn == "weighted_average_WeightedAverage1/w") {
+                        //     acc[gn].print()
+                        // }
                         return acc
                     }, {}))
 

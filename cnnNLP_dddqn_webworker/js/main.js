@@ -135,7 +135,7 @@ let main = () => {
 
             ctrlNum += 1
         }
-    }, 2)
+    }, 6)
 
     game.restart = false
     let loop = () => {
@@ -158,8 +158,8 @@ let main = () => {
             // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
-                    game.player1.HP -= 1
-                    game.player2.HP -= 1
+                    game.player1.HP -= 0.5
+                    game.player2.HP -= 0.5
                 }
                 // console.clear()
                 env.nextStep()
