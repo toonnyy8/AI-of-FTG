@@ -11,12 +11,12 @@ export class DDDQN {
         outputInner = [32, 32],
         actionNum = 8,
         memorySize = 1000,
-        updateTargetStep = 20,
-        learningRate = 1e-3
+        // updateTargetStep = 20,
+        minLearningRate = 1e-5
     }) {
 
         {
-            this.updateTargetStep = updateTargetStep
+            // this.updateTargetStep = updateTargetStep
 
             this.count = 0
 
@@ -34,16 +34,16 @@ export class DDDQN {
             })
             this.model.summary()
 
-            this.targetModel = this.buildModel({
-                sequenceLen: sequenceLen,
-                inputNum: inputNum,
-                embInner: embInner,
-                filters: filters,
-                outputInner: outputInner,
-                actionNum: actionNum
-            })
+            // this.targetModel = this.buildModel({
+            //     sequenceLen: sequenceLen,
+            //     inputNum: inputNum,
+            //     embInner: embInner,
+            //     filters: filters,
+            //     outputInner: outputInner,
+            //     actionNum: actionNum
+            // })
 
-            this.targetModel.setWeights(this.model.getWeights())
+            // this.targetModel.setWeights(this.model.getWeights())
         }
 
         {
@@ -52,7 +52,8 @@ export class DDDQN {
         }
 
         {
-            this.optimizer = tf.train.adam(learningRate)
+            this.minLearningRate = minLearningRate
+            this.optimizer = tf.train.adam(1e-3)
         }
 
     }
@@ -311,11 +312,12 @@ export class DDDQN {
 
                     this.count++
 
-                    if (this.count >= this.updateTargetStep) {
+                    this.optimizer.learningRate = (1e-3 / this.count ** 0.5) + this.minLearningRate
 
-                        this.targetModel.setWeights(this.model.getWeights())
-                        this.count = 0
-                    }
+                    // if (this.count >= this.updateTargetStep) {
+                    //     // this.targetModel.setWeights(this.model.getWeights())
+                    //     this.count = 0
+                    // }
                 })
             }
             if (this.memory.length != 0) {
@@ -362,8 +364,8 @@ export function dddqn({
     outputInner = [32, 32],
     actionNum = 8,
     memorySize = 1000,
-    updateTargetStep = 20,
-    learningRate = 1e-3
+    // updateTargetStep = 20,
+    minLearningRate = 1e-3
 }) {
     return new DDDQN({
         sequenceLen,
@@ -373,7 +375,7 @@ export function dddqn({
         outputInner,
         actionNum,
         memorySize,
-        updateTargetStep,
-        learningRate
+        // updateTargetStep,
+        minLearningRate
     })
 }

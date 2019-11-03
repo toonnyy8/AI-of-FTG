@@ -13,8 +13,8 @@ let dddqnModel = dddqn({
     filters: 32,
     actionNum: actionNum,
     memorySize: 3200,
-    learningRate: 1e-3,
-    updateTargetStep: 32
+    minLearningRate: 1e-3,
+    // updateTargetStep: 32
 })
 
 let preArchive = {
