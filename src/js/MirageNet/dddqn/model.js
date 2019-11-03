@@ -116,7 +116,7 @@ export class DDDQN {
         }).apply(cnnLayer)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
 
-        cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
+        cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
 
         while (1 <= cnnLayer.shape[1] / 2) {
             cnnLayer = tf.layers.conv1d({
@@ -127,6 +127,7 @@ export class DDDQN {
                 padding: "same"
             }).apply(cnnLayer)
             cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
         }
 
         let value = tf.layers.conv1d({
