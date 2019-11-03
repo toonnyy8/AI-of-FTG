@@ -30,7 +30,7 @@ let keySets = [{
     }
 }]
 
-let game = new Game(keySets)
+let game = new Game(keySets, document.getElementById("bobylonCanvas"))
 
 let main = () => {
     // game.player1.maxHP = 1000

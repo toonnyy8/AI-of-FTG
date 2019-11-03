@@ -19,4 +19,4 @@ new Game([{
         medium: "2",
         large: "3"
     }
-}])
+}], document.getElementById('bobylonCanvas'))

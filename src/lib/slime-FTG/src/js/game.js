@@ -9,10 +9,10 @@ import * as CANNON from "cannon"
 global.CANNON = CANNON
 
 export class Game {
-    constructor(keySets) {
+    constructor(keySets, canvas) {
 
         // Get the canvas DOM element
-        canvas = document.getElementById('bobylonCanvas')
+        // canvas = document.getElementById('bobylonCanvas')
         // Load the 3D engine
         engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true })
         // CreateScene function that creates and return the scene
