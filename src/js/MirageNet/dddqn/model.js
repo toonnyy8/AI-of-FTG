@@ -116,11 +116,11 @@ export class DDDQN {
 
         cnnLayer = tf.layers.dropout({ rate: 0.1 }).apply(cnnLayer)
 
-        while (1 <= cnnLayer.shape[1] / 4) {
+        while (1 <= cnnLayer.shape[1] / 2) {
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
-                kernelSize: [4],
-                strides: [4],
+                kernelSize: [2],
+                strides: [2],
                 activation: "selu",
                 padding: "same"
             }).apply(cnnLayer)
