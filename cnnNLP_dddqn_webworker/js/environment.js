@@ -455,7 +455,7 @@ export class Environment {
     }
 
     static getReward(actor) {
-        let reward = -1 * ((1 - (actor.HP / actor.maxHP)) ** 2)
+        let reward = 0
         reward += (actor.HP / actor.maxHP) ** 2 - (actor.opponent.HP / actor.opponent.maxHP) ** 2
 
         reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) ** 2
@@ -472,8 +472,6 @@ export class Environment {
         if (actor._state["chapter"] == "attack") {
             if (actor.isHit) {
                 reward += (actor.opponent.beHitNum * 0.5)
-            } else {
-                reward -= 0.1
             }
         }
         if (actor._state.chapter == "defense") {
