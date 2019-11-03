@@ -61,6 +61,7 @@ tf.ready().then(() => {
                                         })
                                 )
                             ])
+                        // ASVsAndActions[1].sum(1).print()
                         // ASVsAndActions[1].print()
 
                         let actions = []

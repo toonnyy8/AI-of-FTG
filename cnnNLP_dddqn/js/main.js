@@ -30,7 +30,9 @@ let keySets = [{
     }
 }]
 
-let game = new Game(keySets, document.getElementById("bobylonCanvas"))
+let canvas = document.getElementById("bobylonCanvas")
+
+let game = new Game(keySets, canvas)
 
 let main = () => {
     // game.player1.maxHP = 1000
@@ -44,7 +46,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], 5000, 64)
+    }], canvas, 5000, 64)
 
     document.getElementById("player1").onclick = () => {
         if (document.getElementById("player1").innerText == "off") {

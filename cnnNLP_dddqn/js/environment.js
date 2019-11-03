@@ -23,11 +23,13 @@ export class Environment {
                 }
             }
         }],
+        canvas,
         memorySize = 256,
         ctrlLength = 5
     ) {
         this.memorySize = memorySize
         this.ctrlLength = ctrlLength
+        this.canvas = canvas
         this.players = players.reduce((last, player) => {
             last[player["name"]] = {
                 actor: player["actor"],

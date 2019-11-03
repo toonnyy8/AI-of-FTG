@@ -255,8 +255,8 @@ export class DDDQN {
             const predMask = tf.oneHot(batchA, this.actionNum);
 
             const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
-
-            return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
+            return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions[1].sub(targets.expandDims(1)).square())
+            // return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
 
     }
