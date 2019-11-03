@@ -257,7 +257,8 @@ export class DDDQN {
 
             const predictions = this.model.predict([batchPrevS, batchPrevASV]);
 
-            const maxQ = this.targetModel.predict([batchNextS, batchNextASV])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
+            // const maxQ = this.targetModel.predict([batchNextS, batchNextASV])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
+            const maxQ = this.model.predict([batchNextS, predictions[0]])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
 
             const predMask = tf.oneHot(batchA, this.actionNum);
 
