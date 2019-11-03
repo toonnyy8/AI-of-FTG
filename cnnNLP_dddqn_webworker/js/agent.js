@@ -13,7 +13,7 @@ let dddqnModel = dddqn({
     filters: 32,
     actionNum: actionNum,
     memorySize: 3200,
-    learningRate: 1e-5,
+    learningRate: 1e-3,
     updateTargetStep: 32
 })
 
