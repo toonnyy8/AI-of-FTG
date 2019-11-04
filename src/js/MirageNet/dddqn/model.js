@@ -246,7 +246,7 @@ export class DDDQN {
             if (this.memory.length != 0) {
                 if (usePrioritizedReplay) {
                     let prioritizedReplayBuffer = tf.tidy(() => {
-                        let e = tf.tensor(this.memory.map(mem => mem[3]))
+                        let e = tf.tensor(this.memory.map(mem => mem[2]))
                         e = tf.abs(e.sub(e.mean()))
                         e = e.div(e.sum(0, true))
                         // e.print()
