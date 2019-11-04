@@ -315,7 +315,7 @@ export class Environment {
             this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getPoint(this.players[playerName]["actor"]) * 0.1
             this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"])
             // this.players[playerName]["reward"] *= 0.5
-            console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100}`)
+            // console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100}`)
         })
     }
 

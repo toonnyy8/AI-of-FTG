@@ -69,45 +69,12 @@ export class DDDQN {
         let input = tf.input({ shape: [sequenceLen, inputNum] })
         let preASV = tf.input({ shape: [actionNum] })
 
-        class WeightedSequence extends tf.layers.Layer {
-            constructor(args = { axis, script }) {
-                super({})
-                this.axis = args.axis
-                this.script = args.script
-            }
-            build(inputShape) {
-                this.w = this.addWeight("w", [inputShape[this.axis]], "float32", tf.initializers.constant({ value: 0.5 }))
-                this.w.write(tf.sin(tf.linspace(Math.PI / 2, 0.1, inputShape[this.axis])))
-                this.built = true
-            }
-            computeOutputShape(inputShape) {
-                return inputShape
-            }
-            call(inputs, kwargs) {
-                //console.log("LayerNorm call")
-                this.invokeCallHook(inputs, kwargs)
-                return tfex.funcs.einsum(this.script, inputs[0], this.w.read())
-            }
-
-            /*
-            * If a custom layer class is to support serialization, it must implement
-            * the `className` static getter.
-            */
-            static get className() {
-                return "WeightedSequence"
-            }
-        }
-        // registerClass
-        tf.serialization.registerClass(WeightedSequence)
-
-        let WSLayer = new WeightedSequence({ axis: 1, script: "ijk,j->ijk" }).apply(input)
-
         let cnnLayer = tf.layers.conv1d({
             filters: filters * 2,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
-        }).apply(WSLayer)
+        }).apply(input)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
         cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
         cnnLayer = tf.layers.conv1d({
@@ -120,6 +87,14 @@ export class DDDQN {
         cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
 
         while (1 <= cnnLayer.shape[1] / 2) {
+            cnnLayer = tf.layers.conv1d({
+                filters: filters,
+                kernelSize: [2],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
             cnnLayer = tf.layers.conv1d({
                 filters: filters,
                 kernelSize: [2],
@@ -214,7 +189,7 @@ export class DDDQN {
             }
             build(inputShape) {
                 // console.log("LayerNorm build : ")
-                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 0.5 }))
+                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 1 }), undefined, false)
                 this.built = true
             }
             computeOutputShape(inputShape) {
