@@ -60,27 +60,54 @@ export class Environment {
                         }
                         return last
                     }, {}),
-                memory: new Array(this.memorySize).fill(Environment.getState(player["actor"], player["actor"].opponent)),
+                memory: new Array(this.memorySize),
                 reward: 0,
-                action: "null"
+                point: 0,
+                keyDown: Object.keys(player["keySet"])
+                    .reduce((last, actionName) => {
+                        if (actionName == "attack") {
+                            last[actionName] = Object.keys(player["keySet"]["attack"])
+                                .reduce((last, attackName) => {
+                                    last[attackName] = false
+                                    return last
+                                }, {})
+                        } else {
+                            last[actionName] = false
+                        }
+                        return last
+                    }, {})
             }
+            last[player["name"]]["memory"].fill(Environment.getState(last[player["name"]]))
             document.addEventListener('keydown', (event) => {
                 Object.keys(player["keySet"]).forEach((actionName) => {
                     if (actionName == "attack") {
                         Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
                             if (player["keySet"]["attack"][actionName] == event.key) {
-                                last[player["name"]]["action"] = actionName
+                                last[player["name"]]["keyDown"]["attack"][actionName] = true
                             }
                         })
                     } else {
                         if (player["keySet"][actionName] == event.key) {
-                            last[player["name"]]["action"] = actionName
+                            last[player["name"]]["keyDown"][actionName] = true
                         }
                     }
                 })
             })
             document.addEventListener('keyup', (event) => {
                 // last[player["name"]]["action"] = "null"
+                Object.keys(player["keySet"]).forEach((actionName) => {
+                    if (actionName == "attack") {
+                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
+                            if (player["keySet"]["attack"][actionName] == event.key) {
+                                last[player["name"]]["keyDown"]["attack"][actionName] = false
+                            }
+                        })
+                    } else {
+                        if (player["keySet"][actionName] == event.key) {
+                            last[player["name"]]["keyDown"][actionName] = false
+                        }
+                    }
+                })
             })
             return last
         }, {})
@@ -279,15 +306,16 @@ export class Environment {
     nextStep() {
         Object.keys(this.players).forEach((playerName) => {
             this.players[playerName]["memory"].unshift(
-                Environment.getState(this.players[playerName]["actor"], this.players[playerName]["actor"].opponent)
+                Environment.getState(this.players[playerName])
             )
             if (this.players[playerName]["memory"].length > this.memorySize) {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getReward(this.players[playerName]["actor"]) * 0.1
+            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getPoint(this.players[playerName]["actor"]) * 0.1
+            this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"])
             // this.players[playerName]["reward"] *= 0.5
-            // console.log(`${playerName} reward : ${this.players[playerName]["reward"]}`)
+            console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100}`)
         })
     }
 
@@ -299,8 +327,7 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            reward: this.players[playerName]["reward"],
-                            action: Environment.getAction(this.players[playerName]["action"])
+                            reward: (this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100
                         }
                         return acc
                     }, {}),
@@ -327,7 +354,7 @@ export class Environment {
             this.trigger(playerName, 8)
         })
         Object.values(this.players).forEach((player) => {
-            player.memory = new Array(this.memorySize).fill(Environment.getState(player["actor"], player["actor"].opponent))
+            player.memory = new Array(this.memorySize).fill(Environment.getState(player))
             player.reward = 0
             player.action = "null"
         })
@@ -367,83 +394,98 @@ export class Environment {
         })
     }
 
-    static getState(actorA, actorB) {
+    static getState(player) {
         //actorA state
-        let getS = (actor) => {
+        let getActorState = (actor) => {
             let HP = actor.HP / actor.maxHP
             let cumulativeDamage = actor.cumulativeDamage / actor.maxCumulativeDamage
             let x = actor.mesh.position.x / 22
             let y = actor.mesh.position.y / 11
             let faceTo = actor._faceTo == "left" ? -1 : 1
 
-            let chapter
+            let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
                 case "normal": {
-                    chapter = 1
+                    chapter[0] = actor._state["frame"]
                     break
                 } case "attack": {
-                    chapter = 2
+                    chapter[1] = actor._state["frame"]
                     break
                 } case "defense": {
-                    chapter = 3
+                    chapter[2] = actor._state["frame"]
                     break
                 } case "hitRecover": {
-                    chapter = 4
+                    chapter[3] = actor._state["frame"]
                     break
                 }
             }
 
-            let section
+            let section = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["section"]) {
                 case "stand": {
-                    section = 1
+                    section[0] = actor._state["frame"]
                     break
                 } case "jump": {
-                    section = 2
+                    section[1] = actor._state["frame"]
                     break
                 } case "squat": {
-                    section = 3
+                    section[2] = actor._state["frame"]
                     break
                 } case "reStand": {
-                    section = 4
+                    section[3] = actor._state["frame"]
                     break
                 }
             }
 
-            let subsection
+            let subsection = new Array(7).fill(-1 * actor._state["frame"])
             switch (actor._state["subsection"]) {
                 case "main": {
-                    subsection = 1
+                    subsection[0] = actor._state["frame"]
                     break
                 } case "forward": {
-                    subsection = 2
+                    subsection[1] = actor._state["frame"]
                     break
                 } case "backward": {
-                    subsection = 3
+                    subsection[2] = actor._state["frame"]
                     break
                 } case "small": {
-                    subsection = 4
+                    subsection[3] = actor._state["frame"]
                     break
                 } case "medium": {
-                    subsection = 5
+                    subsection[4] = actor._state["frame"]
                     break
                 } case "large": {
-                    subsection = 6
+                    subsection[5] = actor._state["frame"]
                     break
                 } case "fall": {
-                    subsection = 7
+                    subsection[6] = actor._state["frame"]
                     break
                 }
             }
+            let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
+            subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
 
-            let subsubsection = (actor._state["subsubsection"] - 0) + 1
-
-            let frame = actor._state["frame"]
-
-            return [HP, cumulativeDamage, x, y, faceTo, chapter, section, subsection, subsubsection, frame]
+            return [HP, cumulativeDamage, x, y, faceTo]
+                .concat(chapter)
+                .concat(section)
+                .concat(subsection)
+                .concat(subsubsection)
         }
 
-        return getS(actorA).concat(getS(actorB))
+        return getActorState(player["actor"])
+            .concat(getActorState(player["actor"].opponent))
+            .concat(Object.values(player["keyDown"]).reduce((last, v) => {
+                if (Object.values(v).length != 0) {
+                    return last.concat(Object.values(v))
+                } else {
+                    return last.concat(v)
+                }
+            }, [])
+                .map((v) => {
+                    return v ?
+                        v * Environment.getPoint(player["actor"]) :
+                        -1 * v * Environment.getPoint(player["actor"])
+                }))
     }
 
     static getMask() {
@@ -454,7 +496,7 @@ export class Environment {
         return getM().concat(getM())
     }
 
-    static getReward(actor) {
+    static getPoint(actor) {
         let reward = 0
         reward += (actor.HP / actor.maxHP) ** 2 - (actor.opponent.HP / actor.opponent.maxHP) ** 2
 
@@ -482,42 +524,6 @@ export class Environment {
         }
 
         return reward
-    }
-
-    static actionDecoder(encodeAction) {
-        let lr = Math.floor(encodeAction / 12)
-        let js = Math.floor((encodeAction - (12 * lr)) / 4)
-        let atk = encodeAction - lr * 12 - js * 4
-        return [lr, js, atk]
-    }
-
-    static getAction(action) {
-        switch (action) {
-            case "null": {
-                return 0
-            }
-            case "left": {
-                return 1
-            }
-            case "right": {
-                return 2
-            }
-            case "jump": {
-                return 3
-            }
-            case "squat": {
-                return 4
-            }
-            case "small": {
-                return 5
-            }
-            case "medium": {
-                return 6
-            }
-            case "large": {
-                return 7
-            }
-        }
     }
 
 }

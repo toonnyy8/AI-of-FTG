@@ -11,12 +11,12 @@ export class DDDQN {
         outputInner = [32, 32],
         actionNum = 8,
         memorySize = 1000,
-        // updateTargetStep = 20,
+        updateTargetStep = 20,
         minLearningRate = 1e-5
     }) {
 
         {
-            // this.updateTargetStep = updateTargetStep
+            this.updateTargetStep = updateTargetStep
 
             this.count = 0
 
@@ -34,16 +34,16 @@ export class DDDQN {
             })
             this.model.summary()
 
-            // this.targetModel = this.buildModel({
-            //     sequenceLen: sequenceLen,
-            //     inputNum: inputNum,
-            //     embInner: embInner,
-            //     filters: filters,
-            //     outputInner: outputInner,
-            //     actionNum: actionNum
-            // })
+            this.targetModel = this.buildModel({
+                sequenceLen: sequenceLen,
+                inputNum: inputNum,
+                embInner: embInner,
+                filters: filters,
+                outputInner: outputInner,
+                actionNum: actionNum
+            })
 
-            // this.targetModel.setWeights(this.model.getWeights())
+            this.targetModel.setWeights(this.model.getWeights())
         }
 
         {
@@ -109,6 +109,7 @@ export class DDDQN {
             padding: "same"
         }).apply(WSLayer)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+        cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
         cnnLayer = tf.layers.conv1d({
             filters: filters * 2,
             kernelSize: [1],
@@ -116,7 +117,6 @@ export class DDDQN {
             padding: "same"
         }).apply(cnnLayer)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-
         cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
 
         while (1 <= cnnLayer.shape[1] / 2) {
@@ -199,6 +199,7 @@ export class DDDQN {
                 return tf.tidy(() => {
                     let aav = tf.sub(ASV, preASV)
                     aav = tf.relu(aav)
+                    aav = tf.mul(aav, ASV)
                     aav = tf.div(aav, aav.sum(1, true))
                     return aav
                 })
@@ -247,6 +248,16 @@ export class DDDQN {
     }
 
     loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV) {
+        let calcTarget = (batchR, batchNextS, batchNextASV) => {
+            return tf.tidy(() => {
+                const maxQ = tf.mul(
+                    tf.oneHot(this.model.predict([batchNextS, batchNextASV])[1].argMax(1), this.actionNum),
+                    this.targetModel.predict([batchNextS, batchNextASV])[1]
+                ).sum(1)
+                const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
+                return targets;
+            });
+        }
         return tf.tidy(() => {
             // console.log(arrayPrevS)
             let batchPrevS = tf.tensor3d(arrayPrevS)
@@ -258,12 +269,9 @@ export class DDDQN {
 
             const predictions = this.model.predict([batchPrevS, batchPrevASV]);
 
-            // const maxQ = this.targetModel.predict([batchNextS, batchNextASV])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
-            const maxQ = this.model.predict([batchNextS, predictions[0]])[1].reshape([arrayPrevS.length, this.actionNum]).max(1)
-
             const predMask = tf.oneHot(batchA, this.actionNum);
 
-            const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
+            const targets = calcTarget(batchR, batchNextS, predictions[0])
             return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions[1].sub(targets.expandDims(1)).square())
             // return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
@@ -312,12 +320,12 @@ export class DDDQN {
 
                     this.count++
 
-                    this.optimizer.learningRate = (1e-3 / this.count ** 0.5) + this.minLearningRate
+                    this.optimizer.learningRate = (1e-4 / this.count ** 0.5) + this.minLearningRate
 
-                    // if (this.count >= this.updateTargetStep) {
-                    //     // this.targetModel.setWeights(this.model.getWeights())
-                    //     this.count = 0
-                    // }
+                    if (this.count % this.updateTargetStep == 0) {
+                        this.targetModel.setWeights(this.model.getWeights())
+                        // this.count = 0
+                    }
                 })
             }
             if (this.memory.length != 0) {
@@ -364,7 +372,7 @@ export function dddqn({
     outputInner = [32, 32],
     actionNum = 8,
     memorySize = 1000,
-    // updateTargetStep = 20,
+    updateTargetStep = 20,
     minLearningRate = 1e-3
 }) {
     return new DDDQN({
@@ -375,7 +383,7 @@ export function dddqn({
         outputInner,
         actionNum,
         memorySize,
-        // updateTargetStep,
+        updateTargetStep,
         minLearningRate
     })
 }
