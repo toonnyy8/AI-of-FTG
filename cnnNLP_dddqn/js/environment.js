@@ -481,11 +481,12 @@ export class Environment {
                     return last.concat(v)
                 }
             }, [])
-                .map((v) => {
-                    return v ?
-                        v * Environment.getPoint(player["actor"]) :
-                        -1 * v * Environment.getPoint(player["actor"])
-                }))
+                // .map((v) => {
+                //     return v ?
+                //         v * Environment.getPoint(player["actor"]) :
+                //         -1 * v * Environment.getPoint(player["actor"])
+                // })
+            )
     }
 
     static getMask() {
