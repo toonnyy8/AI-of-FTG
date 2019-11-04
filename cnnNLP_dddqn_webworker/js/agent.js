@@ -20,15 +20,11 @@ let dddqnModel = dddqn({
 let preArchive = {
     "player1": {
         state: null,
-        ASV: tf.fill([actionNum], 1e-5, "float32"),
-        preASV: tf.fill([actionNum], 1e-5, "float32"),
         action: null,
         expired: true
     },
     "player2": {
         state: null,
-        ASV: tf.fill([actionNum], 1e-5, "float32"),
-        preASV: tf.fill([actionNum], 1e-5, "float32"),
         action: null,
         expired: true
     }
@@ -45,32 +41,24 @@ tf.ready().then(() => {
                 }
                 case 'ctrl': {
                     if (Object.keys(e.data.args.archive).length != 0) {
-                        let ASVsAndActions = dddqnModel
+                        let outputActions = dddqnModel
                             .model
-                            .predict([
+                            .predict(
                                 tf.tensor(
                                     Object.values(e.data.args.archive)
                                         .map(archive => {
                                             return archive.state
                                         })
-                                ),
-                                tf.stack(
-                                    Object.keys(e.data.args.archive)
-                                        .map(playerName => {
-                                            return preArchive[playerName].ASV
-                                        })
                                 )
-                            ])
-                        // ASVsAndActions[1].sum(1).print()
-                        // ASVsAndActions[1].print()
+                            )
+                        // outputActions.sum(1).print()
+                        // outputActions.print()
 
                         let actions = []
-                        let chooseByArgMax = ASVsAndActions[1].argMax(1)
-                            // selectAction(outputs)
+                        let chooseByArgMax = outputActions.argMax(1)
                             .reshape([-1])
                             .arraySync()
-                        let chooseByMultinomial = tf.multinomial(ASVsAndActions[1], 1, null, true)
-                            // selectAction(outputs)
+                        let chooseByMultinomial = tf.multinomial(outputActions, 1, null, true)
                             .reshape([-1])
                             .arraySync()
                         e.data.args.chooseAction.forEach((chooseAction, idx) => {
@@ -87,11 +75,9 @@ tf.ready().then(() => {
                                 if (preArchive[playerName].expired == false) {
                                     dddqnModel.store(
                                         preArchive[playerName].state,
-                                        preArchive[playerName].preASV.arraySync(),
                                         preArchive[playerName].action,
                                         e.data.args.archive[playerName].reward,
                                         e.data.args.archive[playerName].state,
-                                        preArchive[playerName].ASV.arraySync()
                                     )
                                 }
                                 preArchive[playerName].expired = false
@@ -102,9 +88,6 @@ tf.ready().then(() => {
 
                         Object.keys(e.data.args.archive).forEach((playerName, idx) => {
                             preArchive[playerName].state = e.data.args.archive[playerName].state
-                            tf.dispose(preArchive[playerName].preASV)
-                            preArchive[playerName].preASV = tf.keep(preArchive[playerName].ASV)
-                            preArchive[playerName].ASV = tf.keep(tf.unstack(ASVsAndActions[0])[idx])
                             preArchive[playerName].action = actions[idx]
                         })
                         channel.postMessage({

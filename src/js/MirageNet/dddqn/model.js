@@ -67,7 +67,6 @@ export class DDDQN {
         }
     ) {
         let input = tf.input({ shape: [sequenceLen, inputNum] })
-        let preASV = tf.input({ shape: [actionNum] })
 
         let cnnLayer = tf.layers.conv1d({
             filters: filters * 2,
@@ -164,70 +163,17 @@ export class DDDQN {
         let Q = tf.layers.flatten().apply(
             tf.layers.add().apply([value, advantage])
         )
+        Q = tf.layers.softmax().apply(Q)
 
-        //Action Selection Value
-        let ASV = tf.layers.softmax().apply(Q)
-
-        //Action Activation Value
-        let AAV = tfex.layers.lambda({
-            func: (ASV, preASV) => {
-                return tf.tidy(() => {
-                    let aav = tf.sub(ASV, preASV)
-                    aav = tf.relu(aav)
-                    aav = tf.mul(aav, ASV)
-                    aav = tf.div(aav, aav.sum(1, true))
-                    return aav
-                })
-            }
-        }).apply([ASV, preASV])
-
-        // AAV = tf.layers.softmax().apply(AAV)
-
-        class WeightedAverage extends tf.layers.Layer {
-            constructor(args) {
-                super({})
-            }
-            build(inputShape) {
-                // console.log("LayerNorm build : ")
-                this.w = this.addWeight("w", [inputShape[0][inputShape.length - 1]], "float32", tf.initializers.constant({ value: 1 }), undefined, false)
-                this.built = true
-            }
-            computeOutputShape(inputShape) {
-                //console.log("LayerNorm computeOutputShape")
-                //console.log(inputShape)
-                return inputShape[0]
-            }
-            call(inputs, kwargs) {
-                //console.log("LayerNorm call")
-                this.invokeCallHook(inputs, kwargs)
-                return tf.add(
-                    tf.mul(inputs[0], this.w.read()),
-                    tf.mul(inputs[1], tf.sub(1, this.w.read()))
-                )
-            }
-
-            /*
-            * If a custom layer class is to support serialization, it must implement
-            * the `className` static getter.
-            */
-            static get className() {
-                return "WeightedAverage"
-            }
-        }
-        // registerClass
-        tf.serialization.registerClass(WeightedAverage)
-
-        let action = new WeightedAverage().apply([ASV, AAV])
-
-        return tf.model({ inputs: [input, preASV], outputs: [ASV, action] })
+        return tf.model({ inputs: [input], outputs: Q })
     }
 
-    loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV) {
-        let calcTarget = (batchR, batchNextS, batchNextASV) => {
+    loss(arrayPrevS, arrayA, arrayR, arrayNextS) {
+        let calcTarget = (batchR, batchNextS) => {
             return tf.tidy(() => {
                 const maxQ = tf.mul(
-                    tf.oneHot(this.model.predict([batchNextS, batchNextASV])[1].argMax(1), this.actionNum),
-                    this.targetModel.predict([batchNextS, batchNextASV])[1]
+                    tf.oneHot(this.model.predict(batchNextS).argMax(1), this.actionNum),
+                    this.targetModel.predict(batchNextS)
                 ).sum(1)
                 const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
                 return targets;
@@ -236,18 +182,16 @@ export class DDDQN {
         return tf.tidy(() => {
             // console.log(arrayPrevS)
             let batchPrevS = tf.tensor3d(arrayPrevS)
-            let batchPrevASV = tf.tensor2d(arrayPrevASV)
             let batchA = tf.tensor1d(arrayA, 'int32')
             let batchR = tf.tensor1d(arrayR)
             let batchNextS = tf.tensor3d(arrayNextS)
-            let batchNextASV = tf.tensor2d(arrayNextASV)
 
-            const predictions = this.model.predict([batchPrevS, batchPrevASV]);
+            const predictions = this.model.predict(batchPrevS);
 
             const predMask = tf.oneHot(batchA, this.actionNum);
 
-            const targets = calcTarget(batchR, batchNextS, predictions[0])
-            return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions[1].sub(targets.expandDims(1)).square())
+            const targets = calcTarget(batchR, batchNextS)
+            return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions.sub(targets.expandDims(1)).square())
             // return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
 
@@ -258,26 +202,22 @@ export class DDDQN {
             let train_ = (replayIdxes) => {
                 tf.tidy(() => {
                     let arrayPrevS = []
-                    let arrayPrevASV = []
                     let arrayA = []
                     let arrayR = []
                     let arrayNextS = []
-                    let arrayNextASV = []
 
                     for (let i = 0; i < replayNum; i++) {
                         let data = this.load(replayIdxes[i])
                         // console.log(data)
                         arrayPrevS.push(data[0])
-                        arrayPrevASV.push(data[1])
-                        arrayA.push(data[2])
-                        arrayR.push(data[3])
-                        arrayNextS.push(data[4])
-                        arrayNextASV.push(data[5])
+                        arrayA.push(data[1])
+                        arrayR.push(data[2])
+                        arrayNextS.push(data[3])
                     }
 
                     let grads = this.optimizer.computeGradients(
                         () => {
-                            let loss = this.loss(arrayPrevS, arrayPrevASV, arrayA, arrayR, arrayNextS, arrayNextASV)
+                            let loss = this.loss(arrayPrevS, arrayA, arrayR, arrayNextS)
                             loss.print()
                             return loss
                         }, this.model.getWeights(true)).grads
@@ -323,11 +263,11 @@ export class DDDQN {
         })
     }
 
-    store(preState, preASV, action, reward, nextState, nextASV) {
+    store(preState, action, reward, nextState) {
         if (this.memory.length == this.memorySize) {
             this.memory.pop()
         }
-        this.memory.unshift([preState, preASV, action, reward, nextState, nextASV])
+        this.memory.unshift([preState, action, reward, nextState])
     }
 
     load(index) {
