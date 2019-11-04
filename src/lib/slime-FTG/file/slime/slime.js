@@ -1431,8 +1431,8 @@ export class Actor {
     tick(debug) {
         this.perfectDefenseTime -= 1
 
-        if (this.cumulativeDamage < this.maxCumulativeDamage) {
-            this.cumulativeDamage = this.cumulativeDamage <= 0 ? 0 : this.cumulativeDamage - 1
+        if (this.cumulativeDamage < this.maxCumulativeDamage && this._state["chapter"] != "attack") {
+            this.cumulativeDamage = this.cumulativeDamage <= 0 ? 0 : Math.floor(this.cumulativeDamage * 0.99)
         }
 
         if (this.cumulativeDamage == 0) {
