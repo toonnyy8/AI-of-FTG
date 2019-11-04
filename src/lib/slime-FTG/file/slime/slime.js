@@ -1742,8 +1742,8 @@ export class Actor {
                 this.opponent.cumulativeDamage += this.cumulativeDamage
                 this.cumulativeDamage = 0
             } else {
-                this.HP -= atk / 5
-                this.cumulativeDamage += atk / 5
+                this.HP -= atk / 2
+                this.cumulativeDamage += atk / 2
             }
         } else {
             this.beInjuredObj = { atk: atk, scale: scale == "fall" ? "small" : scale, beHitVector: beHitVector }
