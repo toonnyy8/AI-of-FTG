@@ -121,7 +121,7 @@ export class DDDQN {
         }).apply(value)
         value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
-            filters: actionNum,
+            filters: 1,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
