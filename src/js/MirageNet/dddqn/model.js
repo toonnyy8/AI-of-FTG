@@ -102,29 +102,9 @@ export class DDDQN {
             }).apply(cnnLayer)
         }
 
-        cnnLayer = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(cnnLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-
-        cnnLayer = tf.layers.permute({
-            dims: [2, 1]
-        }).apply(cnnLayer)
-
-        cnnLayer = tf.layers.conv1d({
-            filters: 1,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(cnnLayer)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-
-        cnnLayer = tf.layers.permute({
-            dims: [2, 1]
-        }).apply(cnnLayer)
+        //用Global Average Pooling代替Fully Connected
+        cnnLayer = tf.layers.globalAveragePooling1d({}).apply(cnnLayer)
+        cnnLayer = tf.layers.reshape({ targetShape: [1, stateVectorLen] }).apply(cnnLayer)
 
         let value = tf.layers.conv1d({
             filters: stateVectorLen,
@@ -168,18 +148,11 @@ export class DDDQN {
             padding: "same"
         }).apply(A)
 
-        let mean = tfex.layers.lambda({
-            func: (x) => {
-                return tf.mean(x, 1, true)
-            },
-            outputShape: [1]
-        }).apply([A])
-
         let advantage = tfex.layers.lambda({
-            func: (x, y) => {
-                return tf.sub(x, y)
+            func: (x) => {
+                return tf.sub(x, tf.mean(x, 1, true))
             }
-        }).apply([A, mean])
+        }).apply([A])
 
         let Q = tf.layers.flatten().apply(
             tf.layers.add().apply([value, advantage])

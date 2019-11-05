@@ -137,6 +137,10 @@ let main = () => {
         }
     }, 3)
 
+    document.getElementById("controlPeriod").onchange = () => {
+        ctrlLoop.period = document.getElementById("controlPeriod").value
+    }
+
     game.restart = false
     let loop = () => {
         if (game.restart) {
