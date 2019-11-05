@@ -11,7 +11,7 @@ export class DDDQN {
         outputInner = [32, 32],
         actionNum = 8,
         memorySize = 1000,
-        updateTargetStep = 20,
+        updateTargetStep = 0.05,
         minLearningRate = 1e-5
     }) {
 
@@ -237,10 +237,14 @@ export class DDDQN {
 
                     this.optimizer.learningRate = (1e-4 / this.count ** 0.5) + this.minLearningRate
 
-                    if (this.count % this.updateTargetStep == 0) {
-                        this.targetModel.setWeights(this.model.getWeights())
-                        // this.count = 0
-                    }
+                    this.targetModel.setWeights(
+                        this.targetModel.getWeights().map((weight, idx) => {
+                            return tf.add(
+                                tf.mul(this.model.getWeights()[idx], this.updateTargetStep),
+                                tf.mul(weight, 1 - this.updateTargetStep),
+                            )
+                        })
+                    )
                 })
             }
             if (this.memory.length != 0) {
@@ -287,7 +291,7 @@ export function dddqn({
     outputInner = [32, 32],
     actionNum = 8,
     memorySize = 1000,
-    updateTargetStep = 20,
+    updateTargetStep = 0.05,
     minLearningRate = 1e-3
 }) {
     return new DDDQN({

@@ -14,7 +14,7 @@ let dddqnModel = dddqn({
     actionNum: actionNum,
     memorySize: 3200,
     minLearningRate: 5e-4,
-    updateTargetStep: 32
+    updateTargetStep: 0.05
 })
 
 let preArchive = {
