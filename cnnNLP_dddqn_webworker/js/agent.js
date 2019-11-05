@@ -51,6 +51,13 @@ tf.ready().then(() => {
                                         })
                                 )
                             )
+                        outputActions = tf.softmax(
+                            tf.add(
+                                outputActions,
+                                tf.mean(outputActions, 1, true)
+                            ),
+                            1
+                        )
                         // outputActions.sum(1).print()
                         // outputActions.print()
 

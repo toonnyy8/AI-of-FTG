@@ -126,6 +126,7 @@ export class DDDQN {
             activation: "selu",
             padding: "same"
         }).apply(value)
+        value = tf.layers.flatten().apply(value)
 
         let A = tf.layers.conv1d({
             filters: stateVectorLen,
@@ -147,6 +148,7 @@ export class DDDQN {
             activation: "selu",
             padding: "same"
         }).apply(A)
+        A = tf.layers.flatten().apply(A)
 
         let advantage = tfex.layers.lambda({
             func: (x) => {
@@ -154,18 +156,7 @@ export class DDDQN {
             }
         }).apply([A])
 
-        let Q = tf.layers.flatten().apply(
-            tf.layers.add().apply([value, advantage])
-        )
-
-        //讓每個動作都有基本價值
-        Q = tfex.layers.lambda({
-            func: (x) => {
-                return tf.add(x, tf.mean(x, 1, true))
-            }
-        }).apply([Q])
-
-        Q = tf.layers.softmax().apply(Q)
+        let Q = tf.layers.add().apply([value, advantage])
 
         return tf.model({ inputs: [input], outputs: Q })
     }
