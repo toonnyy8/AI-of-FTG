@@ -135,7 +135,7 @@ let main = () => {
 
             ctrlNum += 1
         }
-    }, 6)
+    }, document.getElementById("controlPeriod").value)
 
     document.getElementById("controlPeriod").onchange = () => {
         ctrlLoop.period = document.getElementById("controlPeriod").value
