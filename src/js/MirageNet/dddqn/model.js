@@ -5,9 +5,9 @@ const tfex = registerTfex(tf)
 export class DDDQN {
     constructor({
         sequenceLen = 60,
-        inputNum = 10,
+        stateVectorLen = 10,
         embInner = [32, 32, 32],
-        filters = [8, 8, 8, 8],
+        layerNum = 8,
         outputInner = [32, 32],
         actionNum = 8,
         memorySize = 1000,
@@ -26,9 +26,9 @@ export class DDDQN {
         {
             this.model = this.buildModel({
                 sequenceLen: sequenceLen,
-                inputNum: inputNum,
+                stateVectorLen: stateVectorLen,
                 embInner: embInner,
-                filters: filters,
+                layerNum: layerNum,
                 outputInner: outputInner,
                 actionNum: actionNum
             })
@@ -36,9 +36,9 @@ export class DDDQN {
 
             this.targetModel = this.buildModel({
                 sequenceLen: sequenceLen,
-                inputNum: inputNum,
+                stateVectorLen: stateVectorLen,
                 embInner: embInner,
-                filters: filters,
+                layerNum: layerNum,
                 outputInner: outputInner,
                 actionNum: actionNum
             })
@@ -61,59 +61,80 @@ export class DDDQN {
     buildModel(
         {
             sequenceLen,
-            inputNum,
-            filters = 8,
-            actionNum = 36
+            stateVectorLen,
+            layerNum = 32,
+            actionNum = 9
         }
     ) {
-        let input = tf.input({ shape: [sequenceLen, inputNum] })
+        let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
 
         let cnnLayer = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(input)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-        cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
+
+        for (let i = 0; i < layerNum; i++) {
+            cnnLayer = tf.layers.conv1d({
+                filters: stateVectorLen,
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+
+            cnnLayer = tf.layers.permute({
+                dims: [2, 1]
+            }).apply(cnnLayer)
+
+            cnnLayer = tf.layers.conv1d({
+                filters: sequenceLen,
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(cnnLayer)
+            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+
+            cnnLayer = tf.layers.permute({
+                dims: [2, 1]
+            }).apply(cnnLayer)
+        }
+
         cnnLayer = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
         cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-        cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
 
-        while (1 <= cnnLayer.shape[1] / 2) {
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [2],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
-            cnnLayer = tf.layers.conv1d({
-                filters: filters,
-                kernelSize: [2],
-                strides: [2],
-                activation: "selu",
-                padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-            cnnLayer = tf.layers.dropout({ rate: 0.05 }).apply(cnnLayer)
-        }
+        cnnLayer = tf.layers.permute({
+            dims: [2, 1]
+        }).apply(cnnLayer)
+
+        cnnLayer = tf.layers.conv1d({
+            filters: 1,
+            kernelSize: [1],
+            activation: "selu",
+            padding: "same"
+        }).apply(cnnLayer)
+        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+
+        cnnLayer = tf.layers.permute({
+            dims: [2, 1]
+        }).apply(cnnLayer)
 
         let value = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
         value = tf.layers.batchNormalization({}).apply(value)
         value = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
@@ -127,14 +148,14 @@ export class DDDQN {
         }).apply(value)
 
         let A = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
         }).apply(cnnLayer)
         A = tf.layers.batchNormalization({}).apply(A)
         A = tf.layers.conv1d({
-            filters: filters * 2,
+            filters: stateVectorLen,
             kernelSize: [1],
             activation: "selu",
             padding: "same"
@@ -163,6 +184,14 @@ export class DDDQN {
         let Q = tf.layers.flatten().apply(
             tf.layers.add().apply([value, advantage])
         )
+
+        //讓每個動作都有基本價值
+        Q = tfex.layers.lambda({
+            func: (x) => {
+                return tf.add(x, tf.mean(x, 1, true))
+            }
+        }).apply([Q])
+
         Q = tf.layers.softmax().apply(Q)
 
         return tf.model({ inputs: [input], outputs: Q })
@@ -285,9 +314,9 @@ export class DDDQN {
 
 export function dddqn({
     sequenceLen = 60,
-    inputNum = 10,
+    stateVectorLen = 10,
     embInner = [32, 32, 32],
-    filters = [8, 8, 8, 8],
+    layerNum = 8,
     outputInner = [32, 32],
     actionNum = 8,
     memorySize = 1000,
@@ -296,9 +325,9 @@ export function dddqn({
 }) {
     return new DDDQN({
         sequenceLen,
-        inputNum,
+        stateVectorLen,
         embInner,
-        filters,
+        layerNum,
         outputInner,
         actionNum,
         memorySize,
