@@ -106,7 +106,7 @@ let main = () => {
         env.load()
     }
 
-    let maxEpoch = 32
+    let maxEpoch = 50
     let epochCount = maxEpoch
     let ctrlNum = 0
 
@@ -135,7 +135,7 @@ let main = () => {
 
             ctrlNum += 1
         }
-    }, 6)
+    }, 3)
 
     game.restart = false
     let loop = () => {

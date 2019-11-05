@@ -122,7 +122,7 @@ export class DDDQN {
         value = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
-            activation: "softmax",
+            activation: "selu",
             padding: "same"
         }).apply(value)
 
@@ -143,7 +143,7 @@ export class DDDQN {
         A = tf.layers.conv1d({
             filters: actionNum,
             kernelSize: [1],
-            activation: "softmax",
+            activation: "selu",
             padding: "same"
         }).apply(A)
 
@@ -192,7 +192,7 @@ export class DDDQN {
 
             const targets = calcTarget(batchR, batchNextS)
             return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions.sub(targets.expandDims(1)).square())
-            // return tf.mul(predictions[1].sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
+            return tf.mul(predictions.sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
 
     }

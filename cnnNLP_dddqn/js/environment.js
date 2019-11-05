@@ -315,7 +315,7 @@ export class Environment {
             this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getPoint(this.players[playerName]["actor"]) * 0.1
             this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"])
             // this.players[playerName]["reward"] *= 0.5
-            // console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100}`)
+            // console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"])*4 }`)
         })
     }
 
@@ -327,7 +327,7 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            reward: (this.players[playerName]["point"] - this.players[playerName]["reward"]) * 100
+                            reward: (this.players[playerName]["point"] - this.players[playerName]["reward"]) * 4
                         }
                         return acc
                     }, {}),
@@ -498,30 +498,29 @@ export class Environment {
     }
 
     static getPoint(actor) {
-        let reward = 0
-        reward += (actor.HP / actor.maxHP) ** 2 - (actor.opponent.HP / actor.opponent.maxHP) ** 2
+        let reward = (actor.HP / actor.maxHP)
+        reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
 
-        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage) ** 2
-        reward += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage) ** 2
-
-        // let positionXreward = 0.35 - Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22
-        // reward += Math.min(positionXreward, positionXreward ** 2)
+        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
+        // reward += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
 
         reward *= (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
 
         if (actor.isPD) {
             reward += 1
         }
-        if (actor._state["chapter"] == "attack") {
-            if (actor.isHit) {
-                reward += (actor.opponent.beHitNum * 0.5)
-            }
-        }
         if (actor._state.chapter == "defense") {
             reward += 0.5
         }
         if (actor.beHitNum != 0) {
             reward -= actor.beHitNum
+        }
+        if (actor._state["chapter"] == "attack") {
+            if (actor.isHit) {
+                reward += (actor.opponent.beHitNum * 1)
+            } else {
+                reward *= 0.8
+            }
         }
 
         return reward
