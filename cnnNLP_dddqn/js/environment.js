@@ -61,7 +61,7 @@ export class Environment {
                         return last
                     }, {}),
                 memory: new Array(this.memorySize),
-                reward: 0,
+                // reward: 0,
                 point: 0,
                 keyDown: Object.keys(player["keySet"])
                     .reduce((last, actionName) => {
@@ -312,10 +312,8 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["reward"] = this.players[playerName]["reward"] * 0.9 + Environment.getPoint(this.players[playerName]["actor"]) * 0.1
-            this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"])
-            // this.players[playerName]["reward"] *= 0.5
-            // console.log(`${playerName} reward : ${(this.players[playerName]["point"] - this.players[playerName]["reward"])*4 }`)
+            this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"]) * 10
+            // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
 
@@ -327,7 +325,7 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            reward: (this.players[playerName]["point"] - this.players[playerName]["reward"]) * 4
+                            reward: this.players[playerName]["point"]
                         }
                         return acc
                     }, {}),
@@ -498,32 +496,32 @@ export class Environment {
     }
 
     static getPoint(actor) {
-        let reward = (actor.HP / actor.maxHP)
-        reward += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+        let point = (actor.HP / actor.maxHP) - 1
+        point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
 
-        reward -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
-        // reward += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+        point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
+        // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
 
-        reward *= (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
+        point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
 
-        if (actor.isPD) {
-            reward += 1
-        }
-        if (actor._state.chapter == "defense") {
-            reward += 0.5
-        }
-        if (actor.beHitNum != 0) {
-            reward -= actor.beHitNum
-        }
         if (actor._state["chapter"] == "attack") {
             if (actor.isHit) {
-                reward += (actor.opponent.beHitNum * 1)
+                point += (actor.opponent.beHitNum * Math.abs(point))
             } else {
-                reward *= 0.8
+                point -= Math.abs(point)
             }
         }
+        if (actor.beHitNum != 0) {
+            point -= actor.beHitNum * Math.abs(point)
+        }
+        if (actor.isPD) {
+            point = Math.abs(point)
+        }
+        if (actor._state.chapter == "defense") {
+            point *= 0.5
+        }
 
-        return reward
+        return point
     }
 
 }

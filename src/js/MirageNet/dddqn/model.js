@@ -68,87 +68,103 @@ export class DDDQN {
     ) {
         let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
 
-        let cnnLayer = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(input)
-        cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-
-        for (let i = 0; i < layerNum; i++) {
-            cnnLayer = tf.layers.conv1d({
-                filters: stateVectorLen,
+        let value
+        {
+            value = tf.layers.conv1d({
+                filters: stateVectorLen + actionNum,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
+            }).apply(input)
+            value = tf.layers.batchNormalization({}).apply(value)
 
-            cnnLayer = tf.layers.permute({
-                dims: [2, 1]
-            }).apply(cnnLayer)
+            for (let i = 0; i < layerNum; i++) {
+                value = tf.layers.conv1d({
+                    filters: stateVectorLen + actionNum,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(value)
+                value = tf.layers.batchNormalization({}).apply(value)
 
-            cnnLayer = tf.layers.conv1d({
-                filters: sequenceLen,
+                value = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(value)
+
+                value = tf.layers.conv1d({
+                    filters: sequenceLen,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(value)
+                value = tf.layers.batchNormalization({}).apply(value)
+
+                value = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(value)
+            }
+
+            //用Global Average Pooling代替Fully Connected
+            value = tf.layers.globalAveragePooling1d({}).apply(value)
+            value = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(value)
+
+            value = tf.layers.conv1d({
+                filters: 1,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
-            }).apply(cnnLayer)
-            cnnLayer = tf.layers.batchNormalization({}).apply(cnnLayer)
-
-            cnnLayer = tf.layers.permute({
-                dims: [2, 1]
-            }).apply(cnnLayer)
+            }).apply(value)
+            value = tf.layers.flatten().apply(value)
         }
 
-        //用Global Average Pooling代替Fully Connected
-        cnnLayer = tf.layers.globalAveragePooling1d({}).apply(cnnLayer)
-        cnnLayer = tf.layers.reshape({ targetShape: [1, stateVectorLen] }).apply(cnnLayer)
+        let A
+        {
+            A = tf.layers.conv1d({
+                filters: stateVectorLen + actionNum,
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(input)
+            A = tf.layers.batchNormalization({}).apply(A)
 
-        let value = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(cnnLayer)
-        value = tf.layers.batchNormalization({}).apply(value)
-        value = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(value)
-        value = tf.layers.batchNormalization({}).apply(value)
-        value = tf.layers.conv1d({
-            filters: 1,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(value)
-        value = tf.layers.flatten().apply(value)
+            for (let i = 0; i < layerNum; i++) {
+                A = tf.layers.conv1d({
+                    filters: stateVectorLen + actionNum,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(A)
+                A = tf.layers.batchNormalization({}).apply(A)
 
-        let A = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(cnnLayer)
-        A = tf.layers.batchNormalization({}).apply(A)
-        A = tf.layers.conv1d({
-            filters: stateVectorLen,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(A)
-        A = tf.layers.batchNormalization({}).apply(A)
-        A = tf.layers.conv1d({
-            filters: actionNum,
-            kernelSize: [1],
-            activation: "selu",
-            padding: "same"
-        }).apply(A)
-        A = tf.layers.flatten().apply(A)
+                A = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(A)
+
+                A = tf.layers.conv1d({
+                    filters: sequenceLen,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(A)
+                A = tf.layers.batchNormalization({}).apply(A)
+
+                A = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(A)
+            }
+
+            //用Global Average Pooling代替Fully Connected
+            A = tf.layers.globalAveragePooling1d({}).apply(A)
+            A = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(A)
+
+            A = tf.layers.conv1d({
+                filters: actionNum,
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(A)
+            A = tf.layers.flatten().apply(A)
+        }
 
         let advantage = tfex.layers.lambda({
             func: (x) => {
@@ -184,7 +200,7 @@ export class DDDQN {
             const predMask = tf.oneHot(batchA, this.actionNum);
 
             const targets = calcTarget(batchR, batchNextS)
-            return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions.sub(targets.expandDims(1)).square())
+            // return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions.sub(targets.expandDims(1)).square())
             return tf.mul(predictions.sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
         })
 

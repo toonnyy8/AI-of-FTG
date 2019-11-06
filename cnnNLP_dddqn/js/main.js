@@ -46,7 +46,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], canvas, 5000, 64)
+    }], canvas, 5000, 16)
 
     document.getElementById("player1").onclick = () => {
         if (document.getElementById("player1").innerText == "off") {
