@@ -66,43 +66,44 @@ export class DDDQN {
             actionNum = 9
         }
     ) {
-        let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
-
-        let value
-        {
-            value = tf.layers.conv1d({
-                filters: stateVectorLen + actionNum,
+        let stateSeqNet = (inputLayer, stateVectorLen, sequenceLen) => {
+            stateSeqLayer = tf.layers.conv1d({
+                filters: stateVectorLen,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
-            }).apply(input)
-            value = tf.layers.batchNormalization({}).apply(value)
+            }).apply(inputLayer)
+            stateSeqLayer = tf.layers.batchNormalization({}).apply(stateSeqLayer)
 
-            for (let i = 0; i < layerNum; i++) {
-                value = tf.layers.conv1d({
-                    filters: stateVectorLen + actionNum,
-                    kernelSize: [1],
-                    activation: "selu",
-                    padding: "same"
-                }).apply(value)
-                value = tf.layers.batchNormalization({}).apply(value)
+            stateSeqLayer = tf.layers.permute({
+                dims: [2, 1]
+            }).apply(stateSeqLayer)
 
-                value = tf.layers.permute({
-                    dims: [2, 1]
-                }).apply(value)
+            stateSeqLayer = tf.layers.conv1d({
+                filters: sequenceLen,
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(stateSeqLayer)
+            stateSeqLayer = tf.layers.batchNormalization({}).apply(stateSeqLayer)
 
-                value = tf.layers.conv1d({
-                    filters: sequenceLen,
-                    kernelSize: [1],
-                    activation: "selu",
-                    padding: "same"
-                }).apply(value)
-                value = tf.layers.batchNormalization({}).apply(value)
+            stateSeqLayer = tf.layers.permute({
+                dims: [2, 1]
+            }).apply(stateSeqLayer)
 
-                value = tf.layers.permute({
-                    dims: [2, 1]
-                }).apply(value)
-            }
+            return stateSeqLayer
+        }
+        let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
+
+        let stateSeqLayer = input
+
+        for (let i = 0; i < layerNum; i++) {
+            stateSeqLayer = stateSeqNet(stateSeqLayer, stateVectorLen + actionNum, sequenceLen)
+        }
+
+        let value = stateSeqLayer
+        {
+            value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
 
             //用Global Average Pooling代替Fully Connected
             value = tf.layers.globalAveragePooling1d({}).apply(value)
@@ -117,41 +118,9 @@ export class DDDQN {
             value = tf.layers.flatten().apply(value)
         }
 
-        let A
+        let A = stateSeqLayer
         {
-            A = tf.layers.conv1d({
-                filters: stateVectorLen + actionNum,
-                kernelSize: [1],
-                activation: "selu",
-                padding: "same"
-            }).apply(input)
-            A = tf.layers.batchNormalization({}).apply(A)
-
-            for (let i = 0; i < layerNum; i++) {
-                A = tf.layers.conv1d({
-                    filters: stateVectorLen + actionNum,
-                    kernelSize: [1],
-                    activation: "selu",
-                    padding: "same"
-                }).apply(A)
-                A = tf.layers.batchNormalization({}).apply(A)
-
-                A = tf.layers.permute({
-                    dims: [2, 1]
-                }).apply(A)
-
-                A = tf.layers.conv1d({
-                    filters: sequenceLen,
-                    kernelSize: [1],
-                    activation: "selu",
-                    padding: "same"
-                }).apply(A)
-                A = tf.layers.batchNormalization({}).apply(A)
-
-                A = tf.layers.permute({
-                    dims: [2, 1]
-                }).apply(A)
-            }
+            A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
 
             //用Global Average Pooling代替Fully Connected
             A = tf.layers.globalAveragePooling1d({}).apply(A)

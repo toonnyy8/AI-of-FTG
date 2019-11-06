@@ -166,28 +166,24 @@ export class Environment {
         switch (action) {
             case 0:
                 {
+                    if (this.players[actorName].keyDown.left) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    }
                     break;
                 }
             case 1:
                 {
-                    // // console.log(this.players[actorName].keySet["left"].keydown.key)
-                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                    if (this.players[actorName].keyDown.right) {
                         document.dispatchEvent(
                             this.players[actorName].keySet["right"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keydown
                         )
                     } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keyup
-                        )
                         document.dispatchEvent(
                             this.players[actorName].keySet["right"].keydown
                         )
@@ -196,108 +192,71 @@ export class Environment {
                 }
             case 2:
                 {
-                    // // console.log(this.players[actorName].keySet["right"].keydown.key)
-                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                    if (this.players[actorName].keyDown.jump) {
                         document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keydown
+                            this.players[actorName].keySet["jump"].keyup
                         )
                     } else {
                         document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keydown
+                            this.players[actorName].keySet["jump"].keydown
                         )
                     }
                     break;
                 }
             case 3:
                 {
-                    // // console.log(this.players[actorName].keySet["jump"].keydown.key)
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keydown
-                    )
+                    if (this.players[actorName].keyDown.squat) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["squat"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["squat"].keydown
+                        )
+                    }
                     break;
                 }
             case 4:
                 {
-                    // // console.log(this.players[actorName].keySet["squat"].keydown.key)
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keydown
-                    )
+                    if (this.players[actorName].keyDown.attack.small) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keydown
+                        )
+                    }
                     break;
                 }
             case 5:
                 {
-                    // // console.log(this.players[actorName].keySet.attack["small"].keydown.key)
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
-                    )
+                    if (this.players[actorName].keyDown.attack.medium) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keydown
+                        )
+                    }
                     break;
                 }
             case 6:
                 {
-                    // // console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
-                    )
+                    if (this.players[actorName].keyDown.attack.large) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keydown
+                        )
+                    }
                     break;
                 }
             case 7:
                 {
-                    // // console.log(this.players[actorName].keySet.attack["large"].keydown.key)
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keydown
-                    )
-                    break;
-                }
-            case 8:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
                     break;
                 }
         }
@@ -312,7 +271,7 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"]) * 10
+            this.players[playerName]["point"] = Environment.getPoint(this.players[playerName]["actor"])
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
@@ -479,11 +438,12 @@ export class Environment {
                     return last.concat(v)
                 }
             }, [])
-                // .map((v) => {
-                //     return v ?
-                //         v * Environment.getPoint(player["actor"]) :
-                //         -1 * v * Environment.getPoint(player["actor"])
-                // })
+                .map((v) => {
+                    let faceTo = player["actor"]._faceTo == "left" ? -1 : 1
+                    return v ?
+                        faceTo :
+                        -1 * faceTo
+                })
             )
     }
 
