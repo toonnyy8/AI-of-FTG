@@ -150,7 +150,13 @@ export class DDDQN {
         let calcTarget = (batchR, batchNextS) => {
             return tf.tidy(() => {
                 const maxQ = tf.mul(
-                    tf.oneHot(this.model.predict(batchNextS).argMax(1), this.actionNum),
+                    tf.oneHot(
+                        tf.argMax(
+                            this.model.predict(batchNextS),
+                            1
+                        ),
+                        this.actionNum
+                    ),
                     this.targetModel.predict(batchNextS)
                 ).sum(1)
                 const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
@@ -164,13 +170,23 @@ export class DDDQN {
             let batchR = tf.tensor1d(arrayR)
             let batchNextS = tf.tensor3d(arrayNextS)
 
-            const predictions = this.model.predict(batchPrevS);
+            const Qs = tf.tidy(() => {
+                return tf.mul(
+                    tf.oneHot(batchA, this.actionNum),
+                    this.model.predict(batchPrevS)
+                ).sum(1)
+            })
 
-            const predMask = tf.oneHot(batchA, this.actionNum);
+            const targetQs = calcTarget(batchR, batchNextS)
 
-            const targets = calcTarget(batchR, batchNextS)
-            // return tf.losses.softmaxCrossEntropy(predMask.asType('float32'), predictions.sub(targets.expandDims(1)).square())
-            return tf.mul(predictions.sub(targets.expandDims(1)).square(), predMask.asType('float32')).mean();
+            return tf.mean(
+                tf.square(
+                    tf.sub(
+                        Qs,
+                        targetQs
+                    )
+                )
+            )
         })
 
     }
