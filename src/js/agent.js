@@ -16,22 +16,25 @@ tf.ready().then(() => {
         tf.tidy(() => {
             switch (e.data.instruction) {
                 case 'ctrl': {
-                    let outputs = transformerXL.modelFn(
-                        tf.unstack(tf.stack(e.data.args.inps.map(val => tf.tensor(val)), 2), 0),
-                        tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
-                        e.data.args.nToken,
-                        e.data.args.FLAGS,
-                        e.data.args.FLAGS.init == "normal" ?
-                            tf.initializers.randomNormal({
+                    let outputs = transformerXL.predict(
+                        {
+                            inp: tf.unstack(tf.stack(e.data.args.inps.map(val => tf.tensor(val)), 2), 0),
+                            tgt: tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
+                            nToken: e.data.args.nToken,
+                            FLAGS: e.data.args.FLAGS,
+                            initializer: e.data.args.FLAGS.init == "normal" ?
+                                tf.initializers.randomNormal({
+                                    stddev: e.data.args.FLAGS.initStd
+                                }) :
+                                tf.initializers.randomUniform({
+                                    minval: -1 * e.data.args.FLAGS.initRange,
+                                    maxval: e.data.args.FLAGS.initRange
+                                }),
+                            projInitializer: tf.initializers.randomNormal({
                                 stddev: e.data.args.FLAGS.initStd
-                            }) :
-                            tf.initializers.randomUniform({
-                                minval: -1 * e.data.args.FLAGS.initRange,
-                                maxval: e.data.args.FLAGS.initRange
                             }),
-                        tf.initializers.randomNormal({
-                            stddev: e.data.args.FLAGS.initStd
-                        })
+                            isTraining: true
+                        }
                     )
                     outputs.forEach((output) => {
                         // console.log(output.shape)

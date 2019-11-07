@@ -5,6 +5,57 @@ import { transformer } from "./model"
 
 let optimizer = tf.train.adam(0.0005)
 
+export function predict({ inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true }) {
+    return tf.tidy(() => {
+        let outputs = []
+        let mems = null
+
+        for (let i = 0; i < inp.length; i++) {
+            tf.tidy(() => {
+                let [output, newMems] = transformer({
+                    decInp: inp[i],
+                    target: tgt[i],
+                    mems: mems,
+                    nToken: nToken, //1384
+                    nLayer: FLAGS.nLayer,
+                    dModel: FLAGS.dModel,
+                    dEmbed: FLAGS.dEmbed,
+                    nHead: FLAGS.nHead,
+                    dHead: FLAGS.dHead,
+                    dInner: FLAGS.dInner,
+                    dropout: FLAGS.dropout,
+                    dropatt: FLAGS.dropatt,
+                    initializer: initializer,
+                    projInitializer: projInitializer,
+                    isTraining: isTraining,
+                    memLen: FLAGS.memLen,
+                    cutoffs: [],
+                    divVal: FLAGS.divVal,
+                    tieProjs: [],
+                    inputPerms: null,
+                    targetPerms: null,
+                    headTarget: null,
+                    sameLength: FLAGS.sameLength,
+                    clampLen: FLAGS.clampLen,
+                    useTpu: false,
+                    untieR: FLAGS.untieR,
+                    projSameDim: FLAGS.projSameDim
+                },
+                    tfex.scope.variableScope("transformerXL")
+                )
+
+                tf.dispose(mems)
+                mems = tf.keep(newMems)
+                outputs.push(tf.keep(output))
+            })
+        }
+
+        tf.dispose(mems)
+
+        return outputs
+    })
+}
+
 export function modelFn(inp, tgt, nToken, FLAGS, initializer, projInitializer, isTraining = true) {
     return tf.tidy(() => {
         let outputs = []
