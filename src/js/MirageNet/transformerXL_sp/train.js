@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../../lib/tfjs-extensions/src"
-import { transformer } from "./model"
 const tfex = registerTfex(tf)
+import { transformer } from "./model"
 
 let optimizer = tf.train.adam(0.0005)
 
