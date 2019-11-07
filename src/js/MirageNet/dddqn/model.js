@@ -146,9 +146,16 @@ export class DDDQN {
         return tf.model({ inputs: [input], outputs: Q })
     }
 
-    loss(arrayPrevS, arrayA, arrayR, arrayNextS) {
-        let calcTarget = (batchR, batchNextS) => {
-            return tf.tidy(() => {
+    TDerror(batchPrevS, batchA, batchR, batchNextS) {
+        return tf.tidy(() => {
+            const Qs = tf.tidy(() => {
+                return tf.mul(
+                    tf.oneHot(batchA, this.actionNum),
+                    this.model.predict(batchPrevS)
+                ).sum(1)
+            })
+
+            const targetQs = tf.tidy(() => {
                 const maxQ = tf.mul(
                     tf.oneHot(
                         tf.argMax(
@@ -161,57 +168,61 @@ export class DDDQN {
                 ).sum(1)
                 const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
                 return targets;
-            });
-        }
-        return tf.tidy(() => {
-            // console.log(arrayPrevS)
-            let batchPrevS = tf.tensor3d(arrayPrevS)
-            let batchA = tf.tensor1d(arrayA, 'int32')
-            let batchR = tf.tensor1d(arrayR)
-            let batchNextS = tf.tensor3d(arrayNextS)
-
-            const Qs = tf.tidy(() => {
-                return tf.mul(
-                    tf.oneHot(batchA, this.actionNum),
-                    this.model.predict(batchPrevS)
-                ).sum(1)
             })
 
-            const targetQs = calcTarget(batchR, batchNextS)
+            return tf.sub(targetQs, Qs)
+        })
+    }
 
+    loss(TDerror) {
+        return tf.tidy(() => {
             return tf.mean(
-                tf.square(
-                    tf.sub(
-                        Qs,
-                        targetQs
-                    )
-                )
+                tf.square(TDerror)
             )
         })
-
     }
 
     train(replayNum = 100, loadIdxes = [null], usePrioritizedReplay = false) {
         tf.tidy(() => {
             let train_ = (replayIdxes) => {
                 tf.tidy(() => {
+                    let replayIdxes_ = replayIdxes.slice()
+
                     let arrayPrevS = []
                     let arrayA = []
                     let arrayR = []
                     let arrayNextS = []
 
                     for (let i = 0; i < replayNum; i++) {
-                        let data = this.load(replayIdxes[i])
+                        if (replayIdxes_[i] == null || replayIdxes_[i] >= this.memory.length) {
+                            replayIdxes_[i] = Math.floor(Math.random() * this.memory.length);
+                        }
+                        let data = this.memory[replayIdxes_[i]]
                         // console.log(data)
-                        arrayPrevS.push(data[0])
-                        arrayA.push(data[1])
-                        arrayR.push(data[2])
-                        arrayNextS.push(data[3])
+                        arrayPrevS.push(data.prevS)
+                        arrayA.push(data.a)
+                        arrayR.push(data.r)
+                        arrayNextS.push(data.nextS)
                     }
+
+                    let batchPrevS = tf.tensor3d(arrayPrevS)
+                    let batchA = tf.tensor1d(arrayA, 'int32')
+                    let batchR = tf.tensor1d(arrayR)
+                    let batchNextS = tf.tensor3d(arrayNextS)
 
                     let grads = this.optimizer.computeGradients(
                         () => {
-                            let loss = this.loss(arrayPrevS, arrayA, arrayR, arrayNextS)
+                            let TDerror = this.TDerror(
+                                batchPrevS,
+                                batchA,
+                                batchR,
+                                batchNextS
+                            )
+                            tf.abs(TDerror).arraySync()
+                                .forEach((absTD, idx) => {
+                                    this.memory[replayIdxes_[idx]].p = absTD
+                                })
+                            let loss = this.loss(TDerror)
                             loss.print()
                             return loss
                         }, this.model.getWeights(true)).grads
@@ -244,11 +255,10 @@ export class DDDQN {
             if (this.memory.length != 0) {
                 if (usePrioritizedReplay) {
                     let prioritizedReplayBuffer = tf.tidy(() => {
-                        let e = tf.tensor(this.memory.map(mem => mem[2]))
-                        e = tf.abs(e.sub(e.mean()))
-                        e = e.div(e.sum(0, true))
-                        // e.print()
-                        return tf.multinomial(e, replayNum, null, true).arraySync()
+                        let prioritys = tf.tensor(this.memory.map(mem => mem.p))
+                        prioritys = tf.softmax(prioritys)
+                        // prioritys.print()
+                        return tf.multinomial(prioritys, replayNum, null, true).arraySync()
                     })
                     // console.log(prioritizedReplayBuffer)
                     train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
@@ -265,7 +275,13 @@ export class DDDQN {
         if (this.memory.length == this.memorySize) {
             this.memory.pop()
         }
-        this.memory.unshift([preState, action, reward, nextState])
+        this.memory.unshift({
+            prevS: preState,
+            a: action,
+            r: reward,
+            nextS: nextState,
+            p: 1
+        })
     }
 
     load(index) {
