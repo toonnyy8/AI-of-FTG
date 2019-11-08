@@ -724,6 +724,10 @@ export class Environment {
         }
         if (actor.beHitNum != 0) {
             point -= actor.beHitNum * Math.abs(point)
+        } else {
+            if (actor.opponent._state["chapter"] == "attack") {
+                point += Math.abs(point) * 2
+            }
         }
         if (actor.isPD) {
             point = Math.abs(point)
