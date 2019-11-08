@@ -146,7 +146,7 @@ export class DDDQN {
         return tf.model({ inputs: [input], outputs: Q })
     }
 
-    TDerror(batchPrevS, batchA, batchR, batchNextS) {
+    tQandQ(batchPrevS, batchA, batchR, batchNextS) {
         return tf.tidy(() => {
             const Qs = tf.tidy(() => {
                 return tf.mul(
@@ -170,15 +170,7 @@ export class DDDQN {
                 return targets;
             })
 
-            return tf.sub(targetQs, Qs)
-        })
-    }
-
-    loss(TDerror) {
-        return tf.tidy(() => {
-            return tf.mean(
-                tf.square(TDerror)
-            )
+            return [targetQs, Qs]
         })
     }
 
@@ -212,17 +204,17 @@ export class DDDQN {
 
                     let grads = this.optimizer.computeGradients(
                         () => {
-                            let TDerror = this.TDerror(
+                            let [targetQs, Qs] = this.tQandQ(
                                 batchPrevS,
                                 batchA,
                                 batchR,
                                 batchNextS
                             )
-                            tf.abs(TDerror).arraySync()
+                            tf.abs(tf.sub(targetQs, Qs)).arraySync()
                                 .forEach((absTD, idx) => {
                                     this.memory[replayIdxes_[idx]].p = absTD
                                 })
-                            let loss = this.loss(TDerror)
+                            let loss = tf.losses.huberLoss(targetQs, Qs)
                             loss.print()
                             return loss
                         }, this.model.getWeights(true)).grads
