@@ -64,20 +64,6 @@ let main = () => {
             env.trigger("player2", -1)
         }
     }
-    document.getElementById("player1ChooseAction").onclick = () => {
-        if (document.getElementById("player1ChooseAction").innerText == "argMax") {
-            document.getElementById("player1ChooseAction").innerText = "multinomial"
-        } else {
-            document.getElementById("player1ChooseAction").innerText = "argMax"
-        }
-    }
-    document.getElementById("player2ChooseAction").onclick = () => {
-        if (document.getElementById("player2ChooseAction").innerText == "argMax") {
-            document.getElementById("player2ChooseAction").innerText = "multinomial"
-        } else {
-            document.getElementById("player2ChooseAction").innerText = "argMax"
-        }
-    }
     document.getElementById("reduceHP").onclick = () => {
         if (document.getElementById("reduceHP").innerText == "off") {
             document.getElementById("reduceHP").innerText = "on"
@@ -158,7 +144,7 @@ let main = () => {
                 }
             }
         } else {
-            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum / 32))
+            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))
             // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {

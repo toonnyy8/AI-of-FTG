@@ -12,6 +12,7 @@ export class DDDQN {
         actionsNum = [3, 3, 4],
         memorySize = 1000,
         updateTargetStep = 0.05,
+        initLearningRate = 1e-3,
         minLearningRate = 1e-5
     }) {
 
@@ -53,7 +54,8 @@ export class DDDQN {
 
         {
             this.minLearningRate = minLearningRate
-            this.optimizer = tf.train.adam(1e-3)
+            this.initLearningRate = initLearningRate
+            this.optimizer = tf.train.adam(this.initLearningRate)
         }
 
     }
@@ -73,7 +75,6 @@ export class DDDQN {
                 activation: "selu",
                 padding: "same"
             }).apply(inputLayer)
-            stateSeqLayer = tf.layers.batchNormalization({}).apply(stateSeqLayer)
 
             stateSeqLayer = tf.layers.permute({
                 dims: [2, 1]
@@ -85,7 +86,6 @@ export class DDDQN {
                 activation: "selu",
                 padding: "same"
             }).apply(stateSeqLayer)
-            stateSeqLayer = tf.layers.batchNormalization({}).apply(stateSeqLayer)
 
             stateSeqLayer = tf.layers.permute({
                 dims: [2, 1]
@@ -101,15 +101,23 @@ export class DDDQN {
             stateSeqLayer = stateSeqNet(stateSeqLayer, stateVectorLen + actionsNum.reduce((a, b) => a + b, 0), sequenceLen)
         }
 
+        stateSeqLayer = tf.layers.permute({
+            dims: [2, 1]
+        }).apply(stateSeqLayer)
+
         let outputs = actionsNum.map(actionNum => {
             let value = stateSeqLayer
             {
-                value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
-                value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
+                value = tf.layers.conv1d({
+                    filters: 1,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(value)
 
-                //用Global Average Pooling代替Fully Connected
-                value = tf.layers.globalAveragePooling1d({}).apply(value)
-                value = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(value)
+                value = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(value)
 
                 value = tf.layers.conv1d({
                     filters: 1,
@@ -122,12 +130,16 @@ export class DDDQN {
 
             let A = stateSeqLayer
             {
-                A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
-                A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
+                A = tf.layers.conv1d({
+                    filters: 1,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(A)
 
-                //用Global Average Pooling代替Fully Connected
-                A = tf.layers.globalAveragePooling1d({}).apply(A)
-                A = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(A)
+                A = tf.layers.permute({
+                    dims: [2, 1]
+                }).apply(A)
 
                 A = tf.layers.conv1d({
                     filters: actionNum,
@@ -155,6 +167,9 @@ export class DDDQN {
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
             let predictions = this.model.predict(batchPrevS)
+            if (this.actionsNum.length == 1) {
+                predictions = [predictions]
+            }
             const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
                     tf.oneHot(
@@ -166,6 +181,9 @@ export class DDDQN {
             })
 
             let targetPredictions = this.targetModel.predict(batchNextS)
+            if (this.actionsNum.length == 1) {
+                targetPredictions = [targetPredictions]
+            }
             const targetQs = this.actionsNum.map((actionNum, actionType) => {
                 const maxQ = tf.mul(
                     tf.oneHot(
@@ -258,7 +276,7 @@ export class DDDQN {
 
                     this.count++
 
-                    this.optimizer.learningRate = (1e-4 / this.count ** 0.5) + this.minLearningRate
+                    this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
 
                     this.targetModel.setWeights(
                         this.targetModel.getWeights().map((weight, idx) => {
@@ -274,7 +292,7 @@ export class DDDQN {
                 if (usePrioritizedReplay) {
                     let prioritizedReplayBuffer = tf.tidy(() => {
                         let prioritys = tf.tensor(this.memory.map(mem => mem.p))
-                        prioritys = tf.softmax(prioritys)
+                        prioritys = tf.div(prioritys, tf.sum(prioritys, 0, true))
                         // prioritys.print()
                         return tf.multinomial(prioritys, replayNum, null, true).arraySync()
                     })

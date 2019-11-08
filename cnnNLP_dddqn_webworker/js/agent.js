@@ -5,7 +5,7 @@ const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 
-let actionsNum = [3, 3, 4]
+let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
     sequenceLen: 16,
@@ -13,7 +13,8 @@ let dddqnModel = dddqn({
     layerNum: 16,
     actionsNum: actionsNum,
     memorySize: 3200,
-    minLearningRate: 5e-4,
+    minLearningRate: 1e-4,
+    initLearningRate: 1e-3,
     updateTargetStep: 0.1
 })
 
@@ -51,6 +52,9 @@ tf.ready().then(() => {
                                         })
                                 )
                             )
+                        if (actionsNum.length == 1) {
+                            outputActions = [outputActions]
+                        }
                         outputActions = outputActions.map(outputAction => {
                             outputAction = tf.softmax(outputAction, 1)
                             outputAction = tf.div(
