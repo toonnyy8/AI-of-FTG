@@ -69,14 +69,13 @@ tf.ready().then(() => {
                         let chooseByMultinomial = tf.multinomial(outputActions, 1, null, true)
                             .reshape([-1])
                             .arraySync()
-                        e.data.args.chooseAction.forEach((chooseAction, idx) => {
-                            if (chooseAction == "argMax") {
-                                actions[idx] = chooseByArgMax[idx]
-                            } else if (chooseAction == "multinomial") {
+                        e.data.args.chooseActionRandomValue.forEach((chooseActionRandomValue, idx) => {
+                            if (Math.random() < chooseActionRandomValue) {
                                 actions[idx] = chooseByMultinomial[idx]
+                            } else {
+                                actions[idx] = chooseByArgMax[idx]
                             }
                         })
-
 
                         Object.keys(preArchive).forEach((playerName) => {
                             if (Object.keys(e.data.args.archive).find(name => name === playerName) !== undefined) {

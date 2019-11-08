@@ -276,7 +276,7 @@ export class Environment {
         })
     }
 
-    control(playerNames, chooseAction) {
+    control(playerNames, chooseActionRandomValue) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
@@ -288,7 +288,7 @@ export class Environment {
                         }
                         return acc
                     }, {}),
-                chooseAction: chooseAction
+                chooseActionRandomValue: chooseActionRandomValue
             }
         })
         // console.log("ctrl")

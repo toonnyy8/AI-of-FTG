@@ -64,20 +64,6 @@ let main = () => {
             env.trigger("player2", -1)
         }
     }
-    document.getElementById("player1ChooseAction").onclick = () => {
-        if (document.getElementById("player1ChooseAction").innerText == "argMax") {
-            document.getElementById("player1ChooseAction").innerText = "multinomial"
-        } else {
-            document.getElementById("player1ChooseAction").innerText = "argMax"
-        }
-    }
-    document.getElementById("player2ChooseAction").onclick = () => {
-        if (document.getElementById("player2ChooseAction").innerText == "argMax") {
-            document.getElementById("player2ChooseAction").innerText = "multinomial"
-        } else {
-            document.getElementById("player2ChooseAction").innerText = "argMax"
-        }
-    }
     document.getElementById("reduceHP").onclick = () => {
         if (document.getElementById("reduceHP").innerText == "off") {
             document.getElementById("reduceHP").innerText = "on"
@@ -119,16 +105,16 @@ let main = () => {
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
             let players = []
-            let chooseAction = []
+            let chooseActionRandomValue = []
             if (document.getElementById("player1").innerText == "on") {
                 players.push("player1")
-                chooseAction.push(document.getElementById("player1ChooseAction").innerText)
+                chooseActionRandomValue.push(document.getElementById("player1ChooseActionRandomValue").value)
             }
             if (document.getElementById("player2").innerText == "on") {
                 players.push("player2")
-                chooseAction.push(document.getElementById("player2ChooseAction").innerText)
+                chooseActionRandomValue.push(document.getElementById("player2ChooseActionRandomValue").value)
             }
-            env.control(players, chooseAction)
+            env.control(players, chooseActionRandomValue)
             trainLoop.run()
 
             env.isReturnCtrl = false
