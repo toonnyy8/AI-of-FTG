@@ -122,7 +122,7 @@ export class Environment {
                         {
                             this.isReturnCtrl = true
                             Object.keys(e.data.args.archive).forEach((playerName) => {
-                                this.trigger(playerName, e.data.args.archive[playerName].action)
+                                this.trigger(playerName, e.data.args.archive[playerName].actions)
                             })
                             console.log("ctrl")
                             break
@@ -161,10 +161,15 @@ export class Environment {
         }
     }
 
-    trigger(actorName, action) {
-        // // console.log(action)
-        switch (action) {
+    trigger(actorName, actions) {
+        // console.log(actions)
+
+        switch (actions[0]) {
             case 0:
+                {
+                    break;
+                }
+            case 1:
                 {
                     if (this.players[actorName].keyDown.left) {
                         document.dispatchEvent(
@@ -177,7 +182,7 @@ export class Environment {
                     }
                     break;
                 }
-            case 1:
+            case 2:
                 {
                     if (this.players[actorName].keyDown.right) {
                         document.dispatchEvent(
@@ -190,7 +195,13 @@ export class Environment {
                     }
                     break;
                 }
-            case 2:
+        }
+        switch (actions[1]) {
+            case 0:
+                {
+                    break;
+                }
+            case 1:
                 {
                     if (this.players[actorName].keyDown.jump) {
                         document.dispatchEvent(
@@ -203,7 +214,7 @@ export class Environment {
                     }
                     break;
                 }
-            case 3:
+            case 2:
                 {
                     if (this.players[actorName].keyDown.squat) {
                         document.dispatchEvent(
@@ -216,7 +227,13 @@ export class Environment {
                     }
                     break;
                 }
-            case 4:
+        }
+        switch (actions[2]) {
+            case 0:
+                {
+                    break;
+                }
+            case 1:
                 {
                     if (this.players[actorName].keyDown.attack.small) {
                         document.dispatchEvent(
@@ -229,7 +246,7 @@ export class Environment {
                     }
                     break;
                 }
-            case 5:
+            case 2:
                 {
                     if (this.players[actorName].keyDown.attack.medium) {
                         document.dispatchEvent(
@@ -242,7 +259,7 @@ export class Environment {
                     }
                     break;
                 }
-            case 6:
+            case 3:
                 {
                     if (this.players[actorName].keyDown.attack.large) {
                         document.dispatchEvent(
@@ -253,10 +270,6 @@ export class Environment {
                             this.players[actorName].keySet.attack["large"].keydown
                         )
                     }
-                    break;
-                }
-            case 7:
-                {
                     break;
                 }
         }
@@ -284,7 +297,11 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            reward: this.players[playerName]["point"]
+                            rewards: [
+                                this.players[playerName]["point"],
+                                this.players[playerName]["point"],
+                                this.players[playerName]["point"]
+                            ]
                         }
                         return acc
                     }, {}),

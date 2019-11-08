@@ -5,13 +5,13 @@ const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 
-let actionNum = 8
+let actionsNum = [3, 3, 4]
 
 let dddqnModel = dddqn({
     sequenceLen: 16,
     stateVectorLen: 55,
     layerNum: 16,
-    actionNum: actionNum,
+    actionsNum: actionsNum,
     memorySize: 3200,
     minLearningRate: 5e-4,
     updateTargetStep: 0.1
@@ -20,12 +20,12 @@ let dddqnModel = dddqn({
 let preArchive = {
     "player1": {
         state: null,
-        action: null,
+        actions: null,
         expired: true
     },
     "player2": {
         state: null,
-        action: null,
+        actions: null,
         expired: true
     }
 }
@@ -51,29 +51,42 @@ tf.ready().then(() => {
                                         })
                                 )
                             )
-                        outputActions = tf.softmax(outputActions, 1)
-                        outputActions = tf.div(
-                            tf.add(
-                                outputActions,
-                                1 / outputActions.shape[1]
-                            ),
-                            2
-                        )
-                        // outputActions.sum(1).print()
-                        outputActions.print()
+                        outputActions = outputActions.map(outputAction => {
+                            outputAction = tf.softmax(outputAction, 1)
+                            outputAction = tf.div(
+                                tf.add(
+                                    outputAction,
+                                    1 / outputAction.shape[1]
+                                ),
+                                2
+                            )
+                            // outputAction.sum(1).print()
+                            // outputAction.print()
+                            return outputAction
+                        })
 
                         let actions = []
-                        let chooseByArgMax = outputActions.argMax(1)
-                            .reshape([-1])
-                            .arraySync()
-                        let chooseByMultinomial = tf.multinomial(outputActions, 1, null, true)
-                            .reshape([-1])
-                            .arraySync()
+                        let chooseByArgMax = outputActions.map(outputAction => {
+                            return outputAction
+                                .argMax(1)
+                                .reshape([-1])
+                                .arraySync()
+                        })
+
+                        let chooseByMultinomial = outputActions.map(outputAction => {
+                            return tf.multinomial(outputAction, 1, null, true)
+                                .reshape([-1])
+                                .arraySync()
+                        })
                         e.data.args.chooseActionRandomValue.forEach((chooseActionRandomValue, idx) => {
                             if (Math.random() < chooseActionRandomValue) {
-                                actions[idx] = chooseByMultinomial[idx]
+                                actions[idx] = actionsNum.map((value, actionType) => {
+                                    return chooseByMultinomial[actionType][idx]
+                                })
                             } else {
-                                actions[idx] = chooseByArgMax[idx]
+                                actions[idx] = actionsNum.map((value, actionType) => {
+                                    return chooseByArgMax[actionType][idx]
+                                })
                             }
                         })
 
@@ -82,8 +95,8 @@ tf.ready().then(() => {
                                 if (preArchive[playerName].expired == false) {
                                     dddqnModel.store(
                                         preArchive[playerName].state,
-                                        preArchive[playerName].action,
-                                        e.data.args.archive[playerName].reward,
+                                        preArchive[playerName].actions,
+                                        e.data.args.archive[playerName].rewards,
                                         e.data.args.archive[playerName].state,
                                     )
                                 }
@@ -95,14 +108,14 @@ tf.ready().then(() => {
 
                         Object.keys(e.data.args.archive).forEach((playerName, idx) => {
                             preArchive[playerName].state = e.data.args.archive[playerName].state
-                            preArchive[playerName].action = actions[idx]
+                            preArchive[playerName].actions = actions[idx]
                         })
                         channel.postMessage({
                             instruction: "ctrl",
                             args: {
                                 archive: Object.keys(e.data.args.archive).reduce((acc, name, idx) => {
                                     acc[name] = {
-                                        action: actions[idx]
+                                        actions: actions[idx]
                                     }
                                     return acc
                                 }, {})

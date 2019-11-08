@@ -9,7 +9,7 @@ export class DDDQN {
         embInner = [32, 32, 32],
         layerNum = 8,
         outputInner = [32, 32],
-        actionNum = 8,
+        actionsNum = [3, 3, 4],
         memorySize = 1000,
         updateTargetStep = 0.05,
         minLearningRate = 1e-5
@@ -20,7 +20,7 @@ export class DDDQN {
 
             this.count = 0
 
-            this.actionNum = actionNum
+            this.actionsNum = actionsNum
         }
 
         {
@@ -30,7 +30,7 @@ export class DDDQN {
                 embInner: embInner,
                 layerNum: layerNum,
                 outputInner: outputInner,
-                actionNum: actionNum
+                actionsNum: actionsNum
             })
             this.model.summary()
 
@@ -40,7 +40,7 @@ export class DDDQN {
                 embInner: embInner,
                 layerNum: layerNum,
                 outputInner: outputInner,
-                actionNum: actionNum
+                actionsNum: actionsNum
             })
 
             this.targetModel.setWeights(this.model.getWeights())
@@ -63,7 +63,7 @@ export class DDDQN {
             sequenceLen,
             stateVectorLen,
             layerNum = 32,
-            actionNum = 9
+            actionsNum = [3, 3, 4]
         }
     ) {
         let stateSeqNet = (inputLayer, stateVectorLen, sequenceLen) => {
@@ -98,78 +98,88 @@ export class DDDQN {
         let stateSeqLayer = input
 
         for (let i = 0; i < layerNum; i++) {
-            stateSeqLayer = stateSeqNet(stateSeqLayer, stateVectorLen + actionNum, sequenceLen)
+            stateSeqLayer = stateSeqNet(stateSeqLayer, stateVectorLen + actionsNum.reduce((a, b) => a + b, 0), sequenceLen)
         }
 
-        let value = stateSeqLayer
-        {
-            value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
+        let outputs = actionsNum.map(actionNum => {
+            let value = stateSeqLayer
+            {
+                value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
+                value = stateSeqNet(value, stateVectorLen + actionNum, sequenceLen)
 
-            //用Global Average Pooling代替Fully Connected
-            value = tf.layers.globalAveragePooling1d({}).apply(value)
-            value = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(value)
+                //用Global Average Pooling代替Fully Connected
+                value = tf.layers.globalAveragePooling1d({}).apply(value)
+                value = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(value)
 
-            value = tf.layers.conv1d({
-                filters: 1,
-                kernelSize: [1],
-                activation: "selu",
-                padding: "same"
-            }).apply(value)
-            value = tf.layers.flatten().apply(value)
-        }
-
-        let A = stateSeqLayer
-        {
-            A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
-
-            //用Global Average Pooling代替Fully Connected
-            A = tf.layers.globalAveragePooling1d({}).apply(A)
-            A = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(A)
-
-            A = tf.layers.conv1d({
-                filters: actionNum,
-                kernelSize: [1],
-                activation: "selu",
-                padding: "same"
-            }).apply(A)
-            A = tf.layers.flatten().apply(A)
-        }
-
-        let advantage = tfex.layers.lambda({
-            func: (x) => {
-                return tf.sub(x, tf.mean(x, 1, true))
+                value = tf.layers.conv1d({
+                    filters: 1,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(value)
+                value = tf.layers.flatten().apply(value)
             }
-        }).apply([A])
 
-        let Q = tf.layers.add().apply([value, advantage])
+            let A = stateSeqLayer
+            {
+                A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
+                A = stateSeqNet(A, stateVectorLen + actionNum, sequenceLen)
 
-        return tf.model({ inputs: [input], outputs: Q })
+                //用Global Average Pooling代替Fully Connected
+                A = tf.layers.globalAveragePooling1d({}).apply(A)
+                A = tf.layers.reshape({ targetShape: [1, stateVectorLen + actionNum] }).apply(A)
+
+                A = tf.layers.conv1d({
+                    filters: actionNum,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(A)
+                A = tf.layers.flatten().apply(A)
+
+                A = tfex.layers.lambda({
+                    func: (x) => {
+                        return tf.sub(x, tf.mean(x, 1, true))
+                    }
+                }).apply([A])
+            }
+
+            let Q = tf.layers.add().apply([value, A])
+
+            return Q
+        })
+
+        return tf.model({ inputs: [input], outputs: outputs })
     }
 
-    tQandQ(batchPrevS, batchA, batchR, batchNextS) {
+    tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            const Qs = tf.tidy(() => {
+            let predictions = this.model.predict(batchPrevS)
+            const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
-                    tf.oneHot(batchA, this.actionNum),
-                    this.model.predict(batchPrevS)
+                    tf.oneHot(
+                        batchAs[actionType],
+                        actionNum
+                    ),
+                    predictions[actionType]
                 ).sum(1)
             })
 
-            const targetQs = tf.tidy(() => {
+            let targetPredictions = this.targetModel.predict(batchNextS)
+            const targetQs = this.actionsNum.map((actionNum, actionType) => {
                 const maxQ = tf.mul(
                     tf.oneHot(
                         tf.argMax(
-                            this.model.predict(batchNextS),
+                            predictions[actionType],
                             1
                         ),
-                        this.actionNum
+                        actionNum
                     ),
-                    this.targetModel.predict(batchNextS)
+                    targetPredictions[actionType]
                 ).sum(1)
-                const targets = batchR.add(maxQ.mul(tf.scalar(0.99)));
+                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(0.99)));
                 return targets;
             })
-
             return [targetQs, Qs]
         })
     }
@@ -181,8 +191,8 @@ export class DDDQN {
                     let replayIdxes_ = replayIdxes.slice()
 
                     let arrayPrevS = []
-                    let arrayA = []
-                    let arrayR = []
+                    let arrayAs = new Array(this.actionsNum.length).fill([])
+                    let arrayRs = new Array(this.actionsNum.length).fill([])
                     let arrayNextS = []
 
                     for (let i = 0; i < replayNum; i++) {
@@ -192,29 +202,45 @@ export class DDDQN {
                         let data = this.memory[replayIdxes_[i]]
                         // console.log(data)
                         arrayPrevS.push(data.prevS)
-                        arrayA.push(data.a)
-                        arrayR.push(data.r)
+                        for (let j = 0; j < this.actionsNum.length; j++) {
+                            arrayAs[j][i] = data.As[j]
+                            arrayRs[j][i] = data.Rs[j]
+                        }
                         arrayNextS.push(data.nextS)
                     }
 
                     let batchPrevS = tf.tensor3d(arrayPrevS)
-                    let batchA = tf.tensor1d(arrayA, 'int32')
-                    let batchR = tf.tensor1d(arrayR)
+                    let batchAs = arrayAs.map((arrayA) => {
+                        return tf.tensor1d(arrayA, 'int32')
+                    })
+                    let batchRs = arrayRs.map((arrayR) => {
+                        return tf.tensor1d(arrayR, 'int32')
+                    })
                     let batchNextS = tf.tensor3d(arrayNextS)
 
                     let grads = this.optimizer.computeGradients(
                         () => {
                             let [targetQs, Qs] = this.tQandQ(
                                 batchPrevS,
-                                batchA,
-                                batchR,
+                                batchAs,
+                                batchRs,
                                 batchNextS
                             )
-                            tf.abs(tf.sub(targetQs, Qs)).arraySync()
+                            tf.addN(
+                                this.actionsNum.map((actionNum, actionType) => {
+                                    return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                                })
+                            ).arraySync()
                                 .forEach((absTD, idx) => {
                                     this.memory[replayIdxes_[idx]].p = absTD
                                 })
-                            let loss = tf.losses.huberLoss(targetQs, Qs)
+                            let loss = tf.mean(
+                                tf.stack(
+                                    this.actionsNum.map((actionNum, actionType) => {
+                                        return tf.losses.huberLoss(targetQs[actionType], Qs[actionType])
+                                    })
+                                )
+                            )
                             loss.print()
                             return loss
                         }, this.model.getWeights(true)).grads
@@ -263,14 +289,14 @@ export class DDDQN {
         })
     }
 
-    store(preState, action, reward, nextState) {
+    store(preState, actions, rewards, nextState) {
         if (this.memory.length == this.memorySize) {
             this.memory.pop()
         }
         this.memory.unshift({
             prevS: preState,
-            a: action,
-            r: reward,
+            As: actions,
+            Rs: rewards,
             nextS: nextState,
             p: 1e+9
         })
@@ -291,7 +317,7 @@ export function dddqn({
     embInner = [32, 32, 32],
     layerNum = 8,
     outputInner = [32, 32],
-    actionNum = 8,
+    actionsNum = [3, 3, 4],
     memorySize = 1000,
     updateTargetStep = 0.05,
     minLearningRate = 1e-3
@@ -302,7 +328,7 @@ export function dddqn({
         embInner,
         layerNum,
         outputInner,
-        actionNum,
+        actionsNum,
         memorySize,
         updateTargetStep,
         minLearningRate
