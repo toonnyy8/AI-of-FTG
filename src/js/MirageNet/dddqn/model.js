@@ -272,7 +272,7 @@ export class DDDQN {
             a: action,
             r: reward,
             nextS: nextState,
-            p: 1
+            p: 1e+9
         })
     }
 

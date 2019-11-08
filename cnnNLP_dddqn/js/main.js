@@ -92,7 +92,7 @@ let main = () => {
         env.load()
     }
 
-    let maxEpoch = 50
+    let maxEpoch = 100
     let epochCount = maxEpoch
     let ctrlNum = 0
 
@@ -144,7 +144,7 @@ let main = () => {
                 }
             }
         } else {
-            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum / 32))
+            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))
             // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {

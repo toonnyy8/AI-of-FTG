@@ -106,7 +106,7 @@ let main = () => {
         env.load()
     }
 
-    let maxEpoch = 50
+    let maxEpoch = 100
     let epochCount = maxEpoch
     let ctrlNum = 0
 
