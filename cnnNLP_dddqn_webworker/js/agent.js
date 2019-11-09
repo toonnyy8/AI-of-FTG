@@ -10,7 +10,7 @@ let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 let dddqnModel = dddqn({
     sequenceLen: 16,
     stateVectorLen: 55,
-    layerNum: 16,
+    layerNum: 32,
     actionsNum: actionsNum,
     memorySize: 3200,
     minLearningRate: 1e-4,
@@ -18,15 +18,13 @@ let dddqnModel = dddqn({
     updateTargetStep: 0.1
 })
 
-let preArchive = {
+let preArchives = {
     "player1": {
         state: null,
-        actions: null,
         expired: true
     },
     "player2": {
         state: null,
-        actions: null,
         expired: true
     }
 }
@@ -41,12 +39,12 @@ tf.ready().then(() => {
                     break
                 }
                 case 'ctrl': {
-                    if (Object.keys(e.data.args.archive).length != 0) {
+                    if (Object.keys(e.data.args.archives).length != 0) {
                         let outputActions = dddqnModel
                             .model
                             .predict(
                                 tf.tensor(
-                                    Object.values(e.data.args.archive)
+                                    Object.values(e.data.args.archives)
                                         .map(archive => {
                                             return archive.state
                                         })
@@ -69,57 +67,53 @@ tf.ready().then(() => {
                             return outputAction
                         })
 
-                        let actions = []
-                        let chooseByArgMax = outputActions.map(outputAction => {
-                            return outputAction
-                                .argMax(1)
-                                .reshape([-1])
-                                .arraySync()
-                        })
+                        let actions = {}
+                        let chooseByArgMax = tf.concat(outputActions)
+                            .argMax(1)
+                            .reshape([outputActions.length, -1])
+                            .transpose([1, 0])
+                            .arraySync()
 
-                        let chooseByMultinomial = outputActions.map(outputAction => {
-                            return tf.multinomial(outputAction, 1, null, true)
-                                .reshape([-1])
-                                .arraySync()
-                        })
-                        e.data.args.chooseActionRandomValue.forEach((chooseActionRandomValue, idx) => {
-                            if (Math.random() < chooseActionRandomValue) {
-                                actions[idx] = actionsNum.map((value, actionType) => {
-                                    return chooseByMultinomial[actionType][idx]
-                                })
-                            } else {
-                                actions[idx] = actionsNum.map((value, actionType) => {
-                                    return chooseByArgMax[actionType][idx]
-                                })
-                            }
-                        })
+                        let chooseByMultinomial = tf.multinomial(tf.concat(outputActions), 1, null, true)
+                            .reshape([outputActions.length, -1])
+                            .transpose([1, 0])
+                            .arraySync()
 
-                        Object.keys(preArchive).forEach((playerName) => {
-                            if (Object.keys(e.data.args.archive).find(name => name === playerName) !== undefined) {
-                                if (preArchive[playerName].expired == false) {
+                        Object.keys(e.data.args.archives)
+                            .forEach((playerName, idx) => {
+                                if (Math.random() < e.data.args.archives[playerName].chooseActionRandomValue) {
+                                    actions[playerName] = chooseByMultinomial[idx]
+                                } else {
+                                    actions[playerName] = chooseByArgMax[idx]
+                                }
+                            })
+
+                        Object.keys(preArchives).forEach((playerName) => {
+                            if (Object.keys(e.data.args.archives).find(name => name === playerName) !== undefined) {
+                                if (preArchives[playerName].expired == false) {
                                     dddqnModel.store(
-                                        preArchive[playerName].state,
-                                        preArchive[playerName].actions,
-                                        e.data.args.archive[playerName].rewards,
-                                        e.data.args.archive[playerName].state,
+                                        preArchives[playerName].state,
+                                        e.data.args.archives[playerName].actions,
+                                        e.data.args.archives[playerName].rewards,
+                                        e.data.args.archives[playerName].state,
                                     )
                                 }
-                                preArchive[playerName].expired = false
+                                preArchives[playerName].expired = false
                             } else {
-                                preArchive[playerName].expired = true
+                                preArchives[playerName].expired = true
                             }
                         })
 
-                        Object.keys(e.data.args.archive).forEach((playerName, idx) => {
-                            preArchive[playerName].state = e.data.args.archive[playerName].state
-                            preArchive[playerName].actions = actions[idx]
+                        Object.keys(e.data.args.archives).forEach((playerName, idx) => {
+                            preArchives[playerName].state = e.data.args.archives[playerName].state
                         })
                         channel.postMessage({
                             instruction: "ctrl",
                             args: {
-                                archive: Object.keys(e.data.args.archive).reduce((acc, name, idx) => {
-                                    acc[name] = {
-                                        actions: actions[idx]
+                                archives: Object.keys(e.data.args.archives).reduce((acc, playerName) => {
+                                    acc[playerName] = {
+                                        actions: actions[playerName],
+                                        aiCtrl: e.data.args.archives[playerName].aiCtrl
                                     }
                                     return acc
                                 }, {})

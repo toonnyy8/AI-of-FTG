@@ -104,17 +104,18 @@ let main = () => {
 
     let ctrlLoop = new tool.Loop(() => {
         if (env.isReturnCtrl) {
-            let players = []
-            let chooseActionRandomValue = []
-            if (document.getElementById("player1").innerText == "on") {
-                players.push("player1")
-                chooseActionRandomValue.push(document.getElementById("player1ChooseActionRandomValue").value)
+            let ctrlDatas = {
+                player1: {
+                    chooseActionRandomValue: document.getElementById("player1ChooseActionRandomValue").value,
+                    aiCtrl: document.getElementById("player1").innerText == "on"
+                },
+                player2: {
+                    chooseActionRandomValue: document.getElementById("player2ChooseActionRandomValue").value,
+                    aiCtrl: document.getElementById("player2").innerText == "on"
+                }
             }
-            if (document.getElementById("player2").innerText == "on") {
-                players.push("player2")
-                chooseActionRandomValue.push(document.getElementById("player2ChooseActionRandomValue").value)
-            }
-            env.control(players, chooseActionRandomValue)
+
+            env.control(ctrlDatas)
             trainLoop.run()
 
             env.isReturnCtrl = false

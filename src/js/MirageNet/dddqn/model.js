@@ -95,10 +95,10 @@ export class DDDQN {
         }
         let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
 
-        let stateSeqLayer = input
+        let stateSeqLayer = stateSeqNet(input, stateVectorLen * 2, sequenceLen)
 
         for (let i = 0; i < layerNum; i++) {
-            stateSeqLayer = stateSeqNet(stateSeqLayer, stateVectorLen + actionsNum.reduce((a, b) => a + b, 0), sequenceLen)
+            stateSeqLayer = stateSeqNet(stateSeqLayer, actionsNum.reduce((a, b) => a + b, 0) * 2, sequenceLen)
         }
 
         stateSeqLayer = tf.layers.permute({

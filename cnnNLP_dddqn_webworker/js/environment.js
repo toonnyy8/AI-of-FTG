@@ -62,53 +62,9 @@ export class Environment {
                     }, {}),
                 memory: new Array(this.memorySize),
                 // reward: 0,
-                point: 0,
-                keyDown: Object.keys(player["keySet"])
-                    .reduce((last, actionName) => {
-                        if (actionName == "attack") {
-                            last[actionName] = Object.keys(player["keySet"]["attack"])
-                                .reduce((last, attackName) => {
-                                    last[attackName] = false
-                                    return last
-                                }, {})
-                        } else {
-                            last[actionName] = false
-                        }
-                        return last
-                    }, {})
+                point: 0
             }
             last[player["name"]]["memory"].fill(Environment.getState(last[player["name"]]))
-            document.addEventListener('keydown', (event) => {
-                Object.keys(player["keySet"]).forEach((actionName) => {
-                    if (actionName == "attack") {
-                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
-                            if (player["keySet"]["attack"][actionName] == event.key) {
-                                last[player["name"]]["keyDown"]["attack"][actionName] = true
-                            }
-                        })
-                    } else {
-                        if (player["keySet"][actionName] == event.key) {
-                            last[player["name"]]["keyDown"][actionName] = true
-                        }
-                    }
-                })
-            })
-            document.addEventListener('keyup', (event) => {
-                // last[player["name"]]["action"] = "null"
-                Object.keys(player["keySet"]).forEach((actionName) => {
-                    if (actionName == "attack") {
-                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
-                            if (player["keySet"]["attack"][actionName] == event.key) {
-                                last[player["name"]]["keyDown"]["attack"][actionName] = false
-                            }
-                        })
-                    } else {
-                        if (player["keySet"][actionName] == event.key) {
-                            last[player["name"]]["keyDown"][actionName] = false
-                        }
-                    }
-                })
-            })
             return last
         }, {})
 
@@ -121,8 +77,10 @@ export class Environment {
                     case "ctrl":
                         {
                             this.isReturnCtrl = true
-                            Object.keys(e.data.args.archive).forEach((playerName) => {
-                                this.trigger(playerName, e.data.args.archive[playerName].actions)
+                            Object.keys(e.data.args.archives).forEach((playerName) => {
+                                if (e.data.args.archives[playerName].aiCtrl) {
+                                    this.trigger(playerName, e.data.args.archives[playerName].actions)
+                                }
                             })
                             console.log("ctrl")
                             break
@@ -161,220 +119,6 @@ export class Environment {
         })
     }
 
-    // trigger(actorName, actions) {
-    //     // console.log(actions)
-
-    //     switch (actions[0]) {
-    //         case 0:
-    //             {
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 if (this.players[actorName].keyDown.left) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].keyDown.right) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //     }
-    //     switch (actions[1]) {
-    //         case 0:
-    //             {
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 if (this.players[actorName].keyDown.jump) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["jump"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["jump"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].keyDown.squat) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["squat"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["squat"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //     }
-    //     switch (actions[2]) {
-    //         case 0:
-    //             {
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.small) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["small"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["small"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.medium) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["medium"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["medium"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 3:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.large) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["large"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["large"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //     }
-    // }
-    // trigger(actorName, actions) {
-    //     // console.log(actions)
-
-    //     switch (actions[0]) {
-    //         case 0:
-    //             {
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 if (this.players[actorName].keyDown.left) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].keyDown.right) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 3:
-    //             {
-    //                 if (this.players[actorName].keyDown.jump) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["jump"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["jump"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 4:
-    //             {
-    //                 if (this.players[actorName].keyDown.squat) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["squat"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["squat"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 5:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.small) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["small"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["small"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 6:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.medium) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["medium"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["medium"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 7:
-    //             {
-    //                 if (this.players[actorName].keyDown.attack.large) {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["large"].keyup
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet.attack["large"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //     }
-    // }
     trigger(actorName, actions) {
         // console.log(actions)
 
@@ -382,37 +126,12 @@ export class Environment {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
-                    break;
-                }
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    break;
-                }
-        }
-        switch (actions[1]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
+                        this.players[actorName].keySet["jump"].keyup
                     )
                     break;
                 }
 
             case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    break;
-                }
-        }
-        switch (actions[2]) {
-            case 0:
                 {
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keydown
@@ -420,25 +139,9 @@ export class Environment {
                     break;
                 }
 
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
-                    )
-                    break;
-                }
-
         }
-        switch (actions[3]) {
+        switch (actions[1]) {
             case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keydown
-                    )
-                    break;
-                }
-
-            case 1:
                 {
                     document.dispatchEvent(
                         this.players[actorName].keySet["squat"].keyup
@@ -446,12 +149,36 @@ export class Environment {
                     break;
                 }
 
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["squat"].keydown
+                    )
+                    break;
+                }
+
         }
-        switch (actions[4]) {
+        switch (actions[2]) {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
+                        this.players[actorName].keySet["left"].keyup
+                    )
+                    break;
+                }
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["left"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[3]) {
+            case 0:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keyup
                     )
                     break;
                 }
@@ -459,7 +186,24 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[4]) {
+            case 0:
+                {
+                    document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    break;
+                }
+
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keydown
                     )
                     break;
                 }
@@ -469,7 +213,7 @@ export class Environment {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
+                        this.players[actorName].keySet.attack["medium"].keyup
                     )
                     break;
                 }
@@ -477,7 +221,7 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
+                        this.players[actorName].keySet.attack["medium"].keydown
                     )
                     break;
                 }
@@ -487,7 +231,7 @@ export class Environment {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keydown
+                        this.players[actorName].keySet.attack["large"].keyup
                     )
                     break;
                 }
@@ -495,7 +239,7 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
+                        this.players[actorName].keySet.attack["large"].keydown
                     )
                     break;
                 }
@@ -527,22 +271,31 @@ export class Environment {
         })
     }
 
-    control(playerNames, chooseActionRandomValue) {
+    control(ctrlDatas) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
-                archive: playerNames.reduce(
+                archives: Object.keys(ctrlDatas).reduce(
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            rewards: this.players[playerName]["point"]
+                            rewards: this.players[playerName]["point"],
+                            actions: Object.values(this.players[playerName]["actor"].keyDown)
+                                .reduce((last, v) => {
+                                    if (Object.values(v).length != 0) {
+                                        return last.concat(Object.values(v))
+                                    } else {
+                                        return last.concat(v)
+                                    }
+                                }, []),
+                            chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
+                            aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
+
                         return acc
                     }, {}),
-                chooseActionRandomValue: chooseActionRandomValue
             }
         })
-        // console.log("ctrl")
     }
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
@@ -682,7 +435,7 @@ export class Environment {
 
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
-            .concat(Object.values(player["keyDown"]).reduce((last, v) => {
+            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
                 if (Object.values(v).length != 0) {
                     return last.concat(Object.values(v))
                 } else {
@@ -734,56 +487,6 @@ export class Environment {
         }
         if (actor._state.chapter == "defense") {
             point *= 0.5
-        }
-
-        return point
-    }
-    static getMovePoint(actor) {
-        let point = (actor.HP / actor.maxHP) - 1
-        point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
-
-        point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
-        // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
-
-        point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
-
-        if (actor.isPD) {
-            point = Math.abs(point)
-        }
-        if (actor._state.chapter == "defense") {
-            point *= 0.5
-        }
-        if (actor.beHitNum != 0) {
-            point -= actor.beHitNum * Math.abs(point)
-        }
-
-        return point
-    }
-
-    static getJumpPoint(actor) {
-        let point = (actor.HP / actor.maxHP) - 1
-        point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
-
-        point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
-        // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
-
-        point *= 1 - (Math.abs(actor.mesh.position.y - actor.opponent.mesh.position.y) / 10)
-
-        return point
-    }
-
-    static getAttackPoint(actor) {
-        let point = -1 * ((actor.cumulativeDamage / actor.maxCumulativeDamage) - (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage))
-
-        if (actor._state["chapter"] == "attack") {
-            if (actor.isHit) {
-                point += (actor.opponent.beHitNum * Math.abs(point))
-            } else {
-                point -= Math.abs(point)
-            }
-        }
-        if (actor.beHitNum != 0) {
-            point -= actor.beHitNum * Math.abs(point)
         }
 
         return point
