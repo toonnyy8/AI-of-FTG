@@ -135,7 +135,7 @@ export class DDDQN {
                 value = tf.layers.flatten().apply(value)
             }
 
-            let A = stateSeqLayer
+            let A = actionSeqLayer
             {
                 A = tf.layers.conv1d({
                     filters: 1,
