@@ -78,8 +78,9 @@ export function registerLayers(tf_ = tf) {
     // registerClass
     tf_.serialization.registerClass(LayerNormalization)
 
-
-
+    /*
+     * outputShape:batch的位置記得自己設null
+     */
     class Lambda extends tf_.layers.Layer {
         constructor({ func = () => { }, outputShape = null }) {
             super({})
@@ -105,7 +106,7 @@ export function registerLayers(tf_ = tf) {
                     return inputShape
                 }
             } else {
-                return [null].concat(this.customOutputShape)
+                return this.customOutputShape
             }
         }
 

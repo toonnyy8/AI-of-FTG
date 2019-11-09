@@ -12,10 +12,11 @@ let dddqnModel = dddqn({
     stateVectorLen: 55,
     layerNum: 32,
     actionsNum: actionsNum,
-    memorySize: 3200,
+    memorySize: 6400,
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
-    updateTargetStep: 0.1
+    updateTargetStep: 0.1,
+    discount: 0.9
 })
 
 let preArchives = {

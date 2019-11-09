@@ -13,11 +13,14 @@ export class DDDQN {
         memorySize = 1000,
         updateTargetStep = 0.05,
         initLearningRate = 1e-3,
-        minLearningRate = 1e-5
+        minLearningRate = 1e-5,
+        discount = 0.99
     }) {
 
         {
             this.updateTargetStep = updateTargetStep
+
+            this.discount = discount
 
             this.count = 0
 
@@ -202,7 +205,7 @@ export class DDDQN {
                     ),
                     targetPredictions[actionType]
                 ).sum(1)
-                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(0.99)));
+                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discount)));
                 return targets;
             })
             return [targetQs, Qs]
@@ -345,7 +348,8 @@ export function dddqn({
     actionsNum = [3, 3, 4],
     memorySize = 1000,
     updateTargetStep = 0.05,
-    minLearningRate = 1e-3
+    minLearningRate = 1e-3,
+    discount = 0.99
 }) {
     return new DDDQN({
         sequenceLen,
@@ -356,6 +360,7 @@ export function dddqn({
         actionsNum,
         memorySize,
         updateTargetStep,
-        minLearningRate
+        minLearningRate,
+        discount
     })
 }

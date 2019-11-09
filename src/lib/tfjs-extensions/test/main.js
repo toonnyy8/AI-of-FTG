@@ -69,7 +69,7 @@ console.log(tf.memory())
 // console.log(load)
 // console.log(tfex.scope.variableScope("test").load(load))
 
-let subLayer = tfex_.layers.lambda({ func: (a, b) => { return tf.sub(a, b) }, outputShape: [1] })
+let subLayer = tfex_.layers.lambda({ func: (a, b) => { return tf.sub(a, b) }, outputShape: [null, 1] })
 console.log(subLayer.apply([tf.input({ shape: [1] }), tf.input({ shape: [1] })]))
 subLayer.apply([tf.tensor([1]), tf.tensor([10])]).print()
 
