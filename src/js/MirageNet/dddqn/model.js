@@ -101,12 +101,19 @@ export class DDDQN {
             stateSeqLayer = stateSeqNet(stateSeqLayer, actionsNum.reduce((a, b) => a + b, 0) * 2, sequenceLen)
         }
 
-        stateSeqLayer = tf.layers.permute({
-            dims: [2, 1]
-        }).apply(stateSeqLayer)
-
         let outputs = actionsNum.map(actionNum => {
-            let value = stateSeqLayer
+            let actionSeqLayer = stateSeqNet(stateSeqLayer, actionsNum.reduce((a, b) => a + b, 0) * 2, sequenceLen)
+
+            for (let i = 0; i < Math.ceil(layerNum ** 0.5); i++) {
+                actionSeqLayer = stateSeqNet(actionSeqLayer, actionsNum.reduce((a, b) => a + b, 0), sequenceLen)
+            }
+
+            actionSeqLayer = tf.layers.permute({
+                dims: [2, 1]
+            }).apply(actionSeqLayer)
+
+
+            let value = actionSeqLayer
             {
                 value = tf.layers.conv1d({
                     filters: 1,
