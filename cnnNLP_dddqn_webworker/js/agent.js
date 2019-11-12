@@ -8,9 +8,9 @@ tf.setBackend("webgl")
 let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
-    sequenceLen: 16,
+    sequenceLen: 4,
     stateVectorLen: 55,
-    layerNum: 32,
+    layerNum: 16,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,
@@ -163,6 +163,10 @@ tf.ready().then(() => {
                     )
                     channel.postMessage({ instruction: "load" })
                     break
+                }
+                case "updatePrioritys": {
+                    dddqnModel.updatePrioritys()
+                    channel.postMessage({ instruction: "updatePrioritys" })
                 }
             }
         })

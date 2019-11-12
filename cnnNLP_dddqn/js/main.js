@@ -46,55 +46,65 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], canvas, 5000, 16)
+    }], canvas, 5000, 4)
 
-    document.getElementById("player1").onclick = () => {
-        if (document.getElementById("player1").innerText == "off") {
-            document.getElementById("player1").innerText = "on"
-        } else {
-            document.getElementById("player1").innerText = "off"
-            env.trigger("player1", -1)
+    {
+        document.getElementById("player1").onclick = () => {
+            if (document.getElementById("player1").innerText == "off") {
+                document.getElementById("player1").innerText = "on"
+            } else {
+                document.getElementById("player1").innerText = "off"
+                env.trigger("player1", -1)
+            }
         }
-    }
-    document.getElementById("player2").onclick = () => {
-        if (document.getElementById("player2").innerText == "off") {
-            document.getElementById("player2").innerText = "on"
-        } else {
-            document.getElementById("player2").innerText = "off"
-            env.trigger("player2", -1)
+        document.getElementById("player2").onclick = () => {
+            if (document.getElementById("player2").innerText == "off") {
+                document.getElementById("player2").innerText = "on"
+            } else {
+                document.getElementById("player2").innerText = "off"
+                env.trigger("player2", -1)
+            }
         }
-    }
-    document.getElementById("reduceHP").onclick = () => {
-        if (document.getElementById("reduceHP").innerText == "off") {
-            document.getElementById("reduceHP").innerText = "on"
-        } else {
-            document.getElementById("reduceHP").innerText = "off"
+        document.getElementById("reduceHP").onclick = () => {
+            if (document.getElementById("reduceHP").innerText == "off") {
+                document.getElementById("reduceHP").innerText = "on"
+            } else {
+                document.getElementById("reduceHP").innerText = "off"
+            }
         }
-    }
-    document.getElementById("trainAtFrame").onclick = () => {
-        if (document.getElementById("trainAtFrame").innerText == "off") {
-            document.getElementById("trainAtFrame").innerText = "on"
-        } else {
-            document.getElementById("trainAtFrame").innerText = "off"
+        document.getElementById("trainAtFrame").onclick = () => {
+            if (document.getElementById("trainAtFrame").innerText == "off") {
+                document.getElementById("trainAtFrame").innerText = "on"
+            } else {
+                document.getElementById("trainAtFrame").innerText = "off"
+            }
         }
-    }
-    document.getElementById("trainAtEnd").onclick = () => {
-        if (document.getElementById("trainAtEnd").innerText == "off") {
-            document.getElementById("trainAtEnd").innerText = "on"
-        } else {
-            document.getElementById("trainAtEnd").innerText = "off"
+        document.getElementById("trainAtEnd").onclick = () => {
+            if (document.getElementById("trainAtEnd").innerText == "off") {
+                document.getElementById("trainAtEnd").innerText = "on"
+            } else {
+                document.getElementById("trainAtEnd").innerText = "off"
+            }
         }
-    }
-    document.getElementById("save").onclick = () => {
-        env.save()
-    }
-    document.getElementById("load").onclick = () => {
-        env.load()
+        document.getElementById("save").onclick = () => {
+            env.save()
+        }
+        document.getElementById("load").onclick = () => {
+            env.load()
+        }
     }
 
     let maxEpoch = 100
     let epochCount = maxEpoch
     let ctrlNum = 0
+
+    let getLastState = () => {
+        return [
+            `${game.player1._state["chapter"]}:${game.player1._state["section"]}:${game.player1._state["subsection"]}:${game.player1._state["subsubsection"]}`,
+            `${game.player2._state["chapter"]}:${game.player2._state["section"]}:${game.player2._state["subsection"]}:${game.player2._state["subsubsection"]}`
+        ]
+    }
+    let lastState = getLastState()
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
@@ -103,25 +113,31 @@ let main = () => {
     }, 32)
 
     let ctrlLoop = new tool.Loop(() => {
-        if (env.isReturnCtrl) {
-            let ctrlDatas = {
-                player1: {
-                    chooseActionRandomValue: document.getElementById("player1ChooseActionRandomValue").value,
-                    aiCtrl: document.getElementById("player1").innerText == "on"
-                },
-                player2: {
-                    chooseActionRandomValue: document.getElementById("player2ChooseActionRandomValue").value,
-                    aiCtrl: document.getElementById("player2").innerText == "on"
+        if (
+            lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
+            getLastState().find((s, idx) => s.split(":")[0] == "normal") != undefined
+        ) {
+            if (env.isReturnCtrl) {
+                let ctrlDatas = {
+                    player1: {
+                        chooseActionRandomValue: document.getElementById("player1ChooseActionRandomValue").value,
+                        aiCtrl: document.getElementById("player1").innerText == "on"
+                    },
+                    player2: {
+                        chooseActionRandomValue: document.getElementById("player2ChooseActionRandomValue").value,
+                        aiCtrl: document.getElementById("player2").innerText == "on"
+                    }
                 }
+
+                env.control(ctrlDatas)
+                trainLoop.run()
+
+                env.isReturnCtrl = false
+
+                ctrlNum += 1
             }
-
-            env.control(ctrlDatas)
-            trainLoop.run()
-
-            env.isReturnCtrl = false
-
-            ctrlNum += 1
         }
+        lastState = getLastState()
     }, document.getElementById("controlPeriod").value)
 
     document.getElementById("controlPeriod").onchange = () => {
@@ -135,7 +151,12 @@ let main = () => {
                 game.restart = false
                 env.init()
             } else if (env.isReturnCtrl && env.isReturnTrain) {
-                env.train(64, [], true)
+                if (epochCount == Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))) {
+                    env.updatePrioritys()
+                } else {
+                    env.train(64, [], true)
+                }
+
                 env.isReturnTrain = false
                 epochCount -= 1
                 if (epochCount == 0) {

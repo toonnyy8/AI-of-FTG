@@ -112,6 +112,12 @@ export class Environment {
                             console.log("load")
                             break
                         }
+                    case "updatePrioritys":
+                        {
+                            this.isReturnTrain = true
+                            console.log("updatePrioritys")
+                            break
+                        }
                     default:
                         break;
                 }
@@ -352,6 +358,11 @@ export class Environment {
             };
 
             load.click()
+        })
+    }
+    updatePrioritys() {
+        this.channel.postMessage({
+            instruction: "updatePrioritys"
         })
     }
 

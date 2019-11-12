@@ -254,14 +254,14 @@ export class DDDQN {
                                 batchRs,
                                 batchNextS
                             )
-                            tf.addN(
-                                this.actionsNum.map((actionNum, actionType) => {
-                                    return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                                })
-                            ).arraySync()
-                                .forEach((absTD, idx) => {
-                                    this.memory[replayIdxes_[idx]].p = absTD
-                                })
+                            // tf.addN(
+                            //     this.actionsNum.map((actionNum, actionType) => {
+                            //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                            //     })
+                            // ).arraySync()
+                            //     .forEach((absTD, idx) => {
+                            //         this.memory[replayIdxes_[idx]].p = absTD
+                            //     })
                             let loss = tf.mean(
                                 tf.stack(
                                     this.actionsNum.map((actionNum, actionType) => {
@@ -335,6 +335,55 @@ export class DDDQN {
             index = Math.floor(Math.random() * this.memory.length);
         }
         return this.memory[index]
+    }
+
+    updatePrioritys(bsz = 64) {
+
+        if (this.memory.length != 0) {
+            for (let begin = 0; begin < this.memory.length; begin += bsz) {
+                tf.tidy(() => {
+                    let arrayPrevS = []
+                    let arrayAs = new Array(this.actionsNum.length).fill([])
+                    let arrayRs = new Array(this.actionsNum.length).fill([])
+                    let arrayNextS = []
+
+                    for (let i = begin; i < Math.min(this.memory.length, begin + bsz); i++) {
+                        let data = this.memory[i]
+                        arrayPrevS.push(data.prevS)
+                        for (let j = 0; j < this.actionsNum.length; j++) {
+                            arrayAs[j][i - begin] = data.As[j]
+                            arrayRs[j][i - begin] = data.Rs[j]
+                        }
+                        arrayNextS.push(data.nextS)
+                    }
+
+                    let batchPrevS = tf.tensor3d(arrayPrevS)
+                    let batchAs = arrayAs.map((arrayA) => {
+                        return tf.tensor1d(arrayA, 'int32')
+                    })
+                    let batchRs = arrayRs.map((arrayR) => {
+                        return tf.tensor1d(arrayR, 'int32')
+                    })
+                    let batchNextS = tf.tensor3d(arrayNextS)
+
+                    let [targetQs, Qs] = this.tQandQ(
+                        batchPrevS,
+                        batchAs,
+                        batchRs,
+                        batchNextS
+                    )
+                    tf.addN(
+                        this.actionsNum.map((actionNum, actionType) => {
+                            return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                        })
+                    ).arraySync()
+                        .forEach((absTD, idx) => {
+                            this.memory[begin + idx].p = absTD
+                        })
+
+                })
+            }
+        }
     }
 
 }
