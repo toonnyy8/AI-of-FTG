@@ -470,35 +470,51 @@ export class Environment {
         return getM().concat(getM())
     }
 
+    // static getPoint(actor) {
+    //     let point = (actor.HP / actor.maxHP) - 1
+    //     point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+
+    //     point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
+    //     // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+
+    //     point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
+
+    //     if (actor._state["chapter"] == "attack") {
+    //         if (actor.isHit) {
+    //             point += (actor.opponent.beHitNum * Math.abs(point))
+    //         } else {
+    //             point -= Math.abs(point)
+    //         }
+    //     }
+    //     if (actor.beHitNum != 0) {
+    //         point -= actor.beHitNum * Math.abs(point)
+    //     } else {
+    //         if (actor.opponent._state["chapter"] == "attack") {
+    //             point += Math.abs(point) * 2
+    //         }
+    //     }
+    //     if (actor.isPD) {
+    //         point = Math.abs(point)
+    //     }
+    //     if (actor._state.chapter == "defense") {
+    //         point *= 0.5
+    //     }
+
+    //     return point
+    // }
+
     static getPoint(actor) {
         let point = (actor.HP / actor.maxHP) - 1
         point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
 
-        point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
-        // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
 
-        point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
+        if (actor._state["chapter"] == "hitRecover") {
+            point -= (actor.cumulativeDamage / actor.maxCumulativeDamage) * 10
+        }
+        else if (actor.opponent._state["chapter"] == "hitRecover") {
+            point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage) * 10
+        }
 
-        if (actor._state["chapter"] == "attack") {
-            if (actor.isHit) {
-                point += (actor.opponent.beHitNum * Math.abs(point))
-            } else {
-                point -= Math.abs(point)
-            }
-        }
-        if (actor.beHitNum != 0) {
-            point -= actor.beHitNum * Math.abs(point)
-        } else {
-            if (actor.opponent._state["chapter"] == "attack") {
-                point += Math.abs(point) * 2
-            }
-        }
-        if (actor.isPD) {
-            point = Math.abs(point)
-        }
-        if (actor._state.chapter == "defense") {
-            point *= 0.5
-        }
 
         return point
     }

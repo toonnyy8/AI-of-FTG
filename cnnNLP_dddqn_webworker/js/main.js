@@ -113,31 +113,31 @@ let main = () => {
     }, 32)
 
     let ctrlLoop = new tool.Loop(() => {
-        if (
-            lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
-            getLastState().find((s, idx) => s.split(":")[0] == "normal") != undefined
-        ) {
-            if (env.isReturnCtrl) {
-                let ctrlDatas = {
-                    player1: {
-                        chooseActionRandomValue: document.getElementById("player1ChooseActionRandomValue").value,
-                        aiCtrl: document.getElementById("player1").innerText == "on"
-                    },
-                    player2: {
-                        chooseActionRandomValue: document.getElementById("player2ChooseActionRandomValue").value,
-                        aiCtrl: document.getElementById("player2").innerText == "on"
-                    }
+        // if (
+        //     lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
+        //     getLastState().find((s, idx) => s.split(":")[0] == "normal") != undefined
+        // ) {
+        if (env.isReturnCtrl) {
+            let ctrlDatas = {
+                player1: {
+                    chooseActionRandomValue: document.getElementById("player1ChooseActionRandomValue").value,
+                    aiCtrl: document.getElementById("player1").innerText == "on"
+                },
+                player2: {
+                    chooseActionRandomValue: document.getElementById("player2ChooseActionRandomValue").value,
+                    aiCtrl: document.getElementById("player2").innerText == "on"
                 }
-
-                env.control(ctrlDatas)
-                trainLoop.run()
-
-                env.isReturnCtrl = false
-
-                ctrlNum += 1
             }
+
+            env.control(ctrlDatas)
+            trainLoop.run()
+
+            env.isReturnCtrl = false
+
+            ctrlNum += 1
         }
-        lastState = getLastState()
+        // }
+        // lastState = getLastState()
     }, document.getElementById("controlPeriod").value)
 
     document.getElementById("controlPeriod").onchange = () => {
