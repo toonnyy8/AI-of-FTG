@@ -371,9 +371,15 @@ export class Environment {
         let getActorState = (actor) => {
             let HP = actor.HP / actor.maxHP
             let cumulativeDamage = actor.cumulativeDamage / actor.maxCumulativeDamage
-            let x = actor.mesh.position.x / 22
-            let y = actor.mesh.position.y / 11
+            let position = {
+                x: actor.mesh.position.x / 11,
+                y: actor.mesh.position.y / 11
+            }
             let faceTo = actor._faceTo == "left" ? -1 : 1
+            let vector = {
+                x: actor.vector.x,
+                y: actor.vector.y
+            }
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
@@ -437,7 +443,7 @@ export class Environment {
             let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
             subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
 
-            return [HP, cumulativeDamage, x, y, faceTo]
+            return [HP, cumulativeDamage, position.x, position.y, faceTo, vector.x, vector.y]
                 .concat(chapter)
                 .concat(section)
                 .concat(subsection)
