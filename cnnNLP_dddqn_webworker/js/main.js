@@ -46,7 +46,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], canvas, 5000, 1)
+    }], canvas, 5000, 4)
 
     {
         document.getElementById("player1").onclick = () => {
