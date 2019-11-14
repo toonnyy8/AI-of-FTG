@@ -397,7 +397,8 @@ export function dddqn({
     actionsNum = [3, 3, 4],
     memorySize = 1000,
     updateTargetStep = 0.05,
-    minLearningRate = 1e-3,
+    initLearningRate = 1e-3,
+    minLearningRate = 1e-5,
     discount = 0.99
 }) {
     return new DDDQN({
@@ -409,6 +410,7 @@ export function dddqn({
         actionsNum,
         memorySize,
         updateTargetStep,
+        initLearningRate,
         minLearningRate,
         discount
     })
