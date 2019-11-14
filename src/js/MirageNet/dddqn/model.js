@@ -288,14 +288,20 @@ export class DDDQN {
 
                     this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
 
-                    this.targetModel.setWeights(
-                        this.targetModel.getWeights().map((weight, idx) => {
-                            return tf.add(
-                                tf.mul(this.model.getWeights()[idx], this.updateTargetStep),
-                                tf.mul(weight, 1 - this.updateTargetStep),
-                            )
-                        })
-                    )
+                    if (this.updateTargetStep < 1) {
+                        this.targetModel.setWeights(
+                            this.targetModel.getWeights().map((weight, idx) => {
+                                return tf.add(
+                                    tf.mul(this.model.getWeights()[idx], this.updateTargetStep),
+                                    tf.mul(weight, 1 - this.updateTargetStep),
+                                )
+                            })
+                        )
+                    } else {
+                        if (this.count % Math.round(this.updateTargetStep) == 0) {
+                            this.targetModel.setWeights(this.model.getWeights())
+                        }
+                    }
                 })
             }
             if (this.memory.length != 0) {
