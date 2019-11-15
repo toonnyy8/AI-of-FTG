@@ -15,7 +15,7 @@ let dddqnModel = dddqn({
     memorySize: 6400,
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
-    updateTargetStep: 0.1,
+    updateTargetStep: 320,//0.1,
     discount: 0.9
 })
 
