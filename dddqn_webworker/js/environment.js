@@ -394,7 +394,7 @@ export class Environment {
                 }
             }
 
-            let section = new Array(4).fill(-1 * actor._state["frame"])
+            let section = new Array(4).fill(0 * actor._state["frame"])
             switch (actor._state["section"]) {
                 case "stand": {
                     section[0] = actor._state["frame"]
@@ -410,8 +410,22 @@ export class Environment {
                     break
                 }
             }
+            if (actor.lastAttack != null) {
+                switch (actor.lastAttack.split(":")[0]) {
+                    case "stand": {
+                        section[0] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "jump": {
+                        section[1] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "squat": {
+                        section[2] = (0.1 + cumulativeDamage) * -1
+                        break
+                    }
+                }
+            }
 
-            let subsection = new Array(7).fill(-1 * actor._state["frame"])
+            let subsection = new Array(7).fill(0 * actor._state["frame"])
             switch (actor._state["subsection"]) {
                 case "main": {
                     subsection[0] = actor._state["frame"]
@@ -436,6 +450,21 @@ export class Environment {
                     break
                 }
             }
+            if (actor.lastAttack != null) {
+                switch (actor.lastAttack.split(":")[1]) {
+                    case "small": {
+                        subsection[3] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "medium": {
+                        subsection[4] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "large": {
+                        subsection[5] = (0.1 + cumulativeDamage) * -1
+                        break
+                    }
+                }
+            }
+
             let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
             subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
 
@@ -499,6 +528,7 @@ export class Environment {
 
     static getPoint(actor) {
         let point = (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP) * 2
+        point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= (actor.cumulativeDamage / actor.maxCumulativeDamage) * 10
