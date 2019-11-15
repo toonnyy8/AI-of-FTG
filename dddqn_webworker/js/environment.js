@@ -375,7 +375,7 @@ export class Environment {
                 x: actor.mesh.position.x / 11,
                 y: actor.mesh.position.y / 11
             }
-            let faceTo = actor._faceTo == "left" ? -1 : 1
+            let faceTo = actor._faceTo == actor.shouldFaceTo ? 10 : -10
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
@@ -456,20 +456,12 @@ export class Environment {
                 }
             }, [])
                 .map((v) => {
-                    let faceTo = player["actor"]._faceTo == "left" ? -1 : 1
+                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
                     return v ?
                         faceTo :
                         -1 * faceTo
                 })
             )
-    }
-
-    static getMask() {
-        let getM = () => {
-            return [-1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30]
-        }
-
-        return getM().concat(getM())
     }
 
     // static getPoint(actor) {
