@@ -464,14 +464,6 @@ export class Environment {
             )
     }
 
-    static getMask() {
-        let getM = () => {
-            return [-1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30, -1e30]
-        }
-
-        return getM().concat(getM())
-    }
-
     // static getPoint(actor) {
     //     let point = (actor.HP / actor.maxHP) - 1
     //     point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
@@ -506,9 +498,7 @@ export class Environment {
     // }
 
     static getPoint(actor) {
-        let point = (actor.HP / actor.maxHP) - 1
-        point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
-
+        let point = (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP) * 2
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= (actor.cumulativeDamage / actor.maxCumulativeDamage) * 10
@@ -516,7 +506,6 @@ export class Environment {
         else if (actor.opponent._state["chapter"] == "hitRecover") {
             point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage) * 10
         }
-
 
         return point
     }
