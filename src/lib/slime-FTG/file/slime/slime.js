@@ -668,7 +668,7 @@ export class Actor {
                                             }
                                             if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                 this.lastAttackRepeatNum += 1
-                                                this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                                this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                             } else {
                                                 this.lastAttackRepeatNum = 0
                                             }
@@ -691,7 +691,7 @@ export class Actor {
                                                     // this.isHit = false
                                                     if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                         this.lastAttackRepeatNum += 1
-                                                        this.cumulativeDamage += 30 * this.lastAttackRepeatNum
+                                                        this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                                     } else {
                                                         this.lastAttackRepeatNum = 0
                                                     }
@@ -756,7 +756,7 @@ export class Actor {
                                             }
                                             if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                 this.lastAttackRepeatNum += 1
-                                                this.cumulativeDamage += 35 * this.lastAttackRepeatNum
+                                                this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                             } else {
                                                 this.lastAttackRepeatNum = 0
                                             }
@@ -779,7 +779,7 @@ export class Actor {
                                                     // this.isHit = false
                                                     if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                         this.lastAttackRepeatNum += 1
-                                                        this.cumulativeDamage += 35 * this.lastAttackRepeatNum
+                                                        this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                                     } else {
                                                         this.lastAttackRepeatNum = 0
                                                     }
@@ -835,7 +835,7 @@ export class Actor {
                                             }
                                             if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                 this.lastAttackRepeatNum += 1
-                                                this.cumulativeDamage += 40 * this.lastAttackRepeatNum
+                                                this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                             } else {
                                                 this.lastAttackRepeatNum = 0
                                             }
@@ -862,7 +862,7 @@ export class Actor {
                                                     // this.isHit = false
                                                     if (this.lastAttack == `${this._state.section}:${this._state.subsection}`) {
                                                         this.lastAttackRepeatNum += 1
-                                                        this.cumulativeDamage += 40 * this.lastAttackRepeatNum
+                                                        this.cumulativeDamage += Math.max(40, this.cumulativeDamage * (1 - (1 / this.lastAttackRepeatNum)))
                                                     } else {
                                                         this.lastAttackRepeatNum = 0
                                                     }
