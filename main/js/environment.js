@@ -1,181 +1,35 @@
 import { Game } from "../../src/lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
-import * as FLAGS from "../../src/param/flags.json"
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 // tf.enableProdMode()
 
-export function getStatement(actor, actorName = "player1" || "player2", action) {
-    //stateA
-    let player = actorName == "player1" ? 0 : 500
-
-    let faceTo = actor._faceTo == "left" ? 0 : 250
-
-    let x = Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x)
-    if (x < 1) {
-        x = 0
-    } else if (x < 2.5) {
-        x = 50
-    } else if (x < 4.5) {
-        x = 100
-    } else if (x < 7) {
-        x = 150
-    } else {
-        x = 200
-    }
-
-    let y = actor.mesh.position.y
-    if (y < 2) {
-        y = 0
-    } else if (y < 4) {
-        y = 10
-    } else if (y < 6) {
-        y = 20
-    } else if (y < 8) {
-        y = 30
-    } else {
-        y = 40
-    }
-
-    let hp = actor.HP
-    if (hp < 300) {
-        hp = 1
-    } else if (hp < 600) {
-        hp = 2
-    } else if (hp < 900) {
-        hp = 3
-    } else if (hp < 1200) {
-        hp = 4
-    } else if (hp < 1500) {
-        hp = 5
-    } else if (hp < 1800) {
-        hp = 6
-    } else if (hp < 2100) {
-        hp = 7
-    } else if (hp < 2400) {
-        hp = 8
-    } else if (hp < 2700) {
-        hp = 9
-    } else {
-        hp = 10
-    }
-
-    //stateB
-    let chapter = actor._state["chapter"]
-    if (chapter == "normal") {
-        chapter = 0
-    } else if (chapter == "attack") {
-        chapter = 112
-    } else if (chapter == "defense") {
-        chapter = 112 * 2
-    } else if (chapter == "hitRecover") {
-        chapter = 112 * 3
-    }
-
-    let section = actor._state["section"]
-    if (section == "stand") {
-        section = 0
-    } else if (section == "jump") {
-        section = 28
-    } else if (section == "squat") {
-        section = 28 * 2
-    } else if (section == "reStand") {
-        section = 28 * 3
-    }
-
-    let subsection = actor._state["subsection"]
-    if (subsection == "main") {
-        subsection = 0
-    } else if (subsection == "forward") {
-        subsection = 4
-    } else if (subsection == "backward") {
-        subsection = 8
-    } else if (subsection == "small") {
-        subsection = 12
-    } else if (subsection == "medium") {
-        subsection = 16
-    } else if (subsection == "large") {
-        subsection = 20
-    } else if (subsection == "fall") {
-        subsection = 24
-    }
-
-    let subsubsection = actor._state["subsubsection"]
-    if (subsubsection == "0") {
-        subsubsection = 1
-    } else if (subsubsection == "1") {
-        subsubsection = 2
-    } else if (subsubsection == "2") {
-        subsubsection = 3
-    } else if (subsubsection == "3") {
-        subsubsection = 4
-    }
-
-    //actions
-    let leftOrRight = action["left"] ? 0 : action["right"] ? 12 : 24
-    let jumpOrSquat = action["jump"] ? 0 : action["squat"] ? 4 : 8
-    let attack = action["small"] ? 1 : action["medium"] ? 2 : action["large"] ? 3 : 4
-
-    return [player + faceTo + x + y + hp, 1000 + chapter + section + subsection + subsubsection, 1448 + leftOrRight + jumpOrSquat + attack]
-}
-
-export function actionDecoder(encodeAction) {
-    let lr = Math.ceil(encodeAction / 12) - 1
-    let js = Math.ceil((encodeAction - (12 * lr)) / 4) - 1
-    let atk = encodeAction - lr * 12 - js * 4
-    return [lr, js, atk]
-}
-
-export function getReward(actor) {
-    let reward = Math.round((actor.HP - actor.opponent.HP) / 1500)
-    if (actor.isPD) {
-        reward += 5
-    }
-    if (actor.isHit) {
-        reward += actor.opponent.beHitNum
-    }
-    if (actor._state.chapter == "defense") {
-        reward += 3
-    }
-    if (actor.beHitNum != 0) {
-        reward -= actor.beHitNum
-    }
-
-    reward = Math.min(Math.max(reward, -5), 5)
-
-    return reward
-}
-
-export function maskAction(statement) {
-    let cloneS = statement.slice()
-    let opStart = cloneS.indexOf(tokenSet.tokens["<op>"])
-    let opEnd = cloneS.indexOf(tokenSet.tokens["</op>"])
-    for (let i = opStart + 1; i < opEnd; i++) {
-        cloneS[i] = tokenSet.tokens["mask"]
-    }
-    return cloneS
-}
-
-
 export class Environment {
-    constructor(players = [{
-        name: "player1",
-        actor: new Game().player1,
-        keySet: {
-            jump: "w",
-            squat: "s",
-            left: "a",
-            right: "d",
-            attack: {
-                small: "j",
-                medium: "k",
-                large: "l"
+    constructor(
+        players = [{
+            name: "player1",
+            actor: new Game().player1,
+            keySet: {
+                jump: "w",
+                squat: "s",
+                left: "a",
+                right: "d",
+                attack: {
+                    small: "j",
+                    medium: "k",
+                    large: "l"
+                }
             }
-        }
-    }], memorySize = 256, ctrlLength = 5) {
+        }],
+        canvas,
+        memorySize = 256,
+        ctrlLength = 5
+    ) {
         this.memorySize = memorySize
         this.ctrlLength = ctrlLength
+        this.canvas = canvas
         this.players = players.reduce((last, player) => {
             last[player["name"]] = {
                 actor: player["actor"],
@@ -206,48 +60,11 @@ export class Environment {
                         }
                         return last
                     }, {}),
-                memory: [],
-                rewardMemory: [],
-                action: {
-                    jump: false,
-                    squat: false,
-                    left: false,
-                    right: false,
-                    small: false,
-                    medium: false,
-                    large: false
-                }
+                memory: new Array(this.memorySize),
+                // reward: 0,
+                point: 0
             }
-            document.addEventListener('keydown', (event) => {
-                Object.keys(player["keySet"]).forEach((actionName) => {
-                    if (actionName == "attack") {
-                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
-                            if (player["keySet"]["attack"][actionName] == event.key) {
-                                last[player["name"]]["action"][actionName] = true
-                            }
-                        })
-                    } else {
-                        if (player["keySet"][actionName] == event.key) {
-                            last[player["name"]]["action"][actionName] = true
-                        }
-                    }
-                })
-            })
-            document.addEventListener('keyup', (event) => {
-                Object.keys(player["keySet"]).forEach((actionName) => {
-                    if (actionName == "attack") {
-                        Object.keys(player["keySet"]["attack"]).forEach((actionName) => {
-                            if (player["keySet"]["attack"][actionName] == event.key) {
-                                last[player["name"]]["action"][actionName] = false
-                            }
-                        })
-                    } else {
-                        if (player["keySet"][actionName] == event.key) {
-                            last[player["name"]]["action"][actionName] = false
-                        }
-                    }
-                })
-            })
+            last[player["name"]]["memory"].fill(Environment.getState(last[player["name"]]))
             return last
         }, {})
 
@@ -260,40 +77,45 @@ export class Environment {
                     case "ctrl":
                         {
                             this.isReturnCtrl = true
-                            // console.log(e.data.output)
-                            let output = e.data.output.pop()
-                            let outputTensor = tf.tensor([
-                                output[0].slice(1449, 1449 + 36),
-                                output[1].slice(1449, 1449 + 36)
-                            ])
-                            outputTensor.sum(1, true).print()
-                            outputTensor = tf.div(outputTensor, outputTensor.sum(1, true))
-                            let action = tf.tidy(() => tf.multinomial(outputTensor, 1, null, true).add(1))
-                            // let action = tf.tidy(() => tf.argMax(outputTensor, 1).add(1))
-                            action.print()
-                            action.array()
-                                .then((aEnb) => {
-                                    this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
-                                    this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                                    tf.dispose(outputTensor)
-                                })
-                            // tf.argMax(outputTensor, 1).add(1).print()
-                            // tf.max(outputTensor, 1).print()
-                            let { values, indices } = tf.topk(outputTensor, 36);
-                            values.print();
-                            indices.add(1).print();
-                            // tf.argMax(outputTensor, 1).add(1).print()
-                            // tf.argMax(outputTensor, 1).add(1).array()
-                            //     .then((aEnb) => {
-                            //         this.trigger(Object.keys(this.players)[0], actionDecoder(aEnb[0]))
-                            //         this.trigger(Object.keys(this.players)[1], actionDecoder(aEnb[1]))
-                            //         console.log(aEnb)
-                            //     })
+                            Object.keys(e.data.args.archives).forEach((playerName) => {
+                                if (e.data.args.archives[playerName].aiCtrl) {
+                                    this.trigger(playerName, e.data.args.archives[playerName].actions)
+                                }
+                            })
+                            console.log("ctrl")
                             break
                         }
                     case "train":
                         {
                             this.isReturnTrain = true
+                            console.log("train")
+                            break
+                        }
+                    case "save":
+                        {
+                            tf.tidy(() => {
+                                let blob = new Blob([e.data.args.weightsBuffer]);
+                                let a = document.createElement("a");
+                                let url = window.URL.createObjectURL(blob);
+                                let filename = "w.bin";
+                                a.href = url;
+                                a.download = filename;
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                            })
+                            console.log("save")
+                            break
+                        }
+                    case "load":
+                        {
+                            alert("load")
+                            console.log("load")
+                            break
+                        }
+                    case "updatePrioritys":
+                        {
+                            this.isReturnTrain = true
+                            console.log("updatePrioritys")
                             break
                         }
                     default:
@@ -303,255 +125,427 @@ export class Environment {
         }
     }
 
-    trigger(actorName, decodeAction) {
-        switch (decodeAction[0]) {
+    trigger(actorName, actions) {
+        // console.log(actions)
+
+        switch (actions[0]) {
             case 0:
                 {
-                    console.log(this.players[actorName].keySet["left"].keydown.key)
-
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
-                    break;
-                }
-            case 1:
-                {
-                    console.log(this.players[actorName].keySet["right"].keydown.key)
-
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
-                    )
-                    break;
-                }
-            default:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    break;
-                }
-        }
-        switch (decodeAction[1]) {
-            case 0:
-                {
-                    console.log(this.players[actorName].keySet["jump"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keyup
                     )
+                    break;
+                }
+
+            case 1:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keydown
                     )
                     break;
                 }
-            case 1:
+
+        }
+        switch (actions[1]) {
+            case 0:
                 {
-                    console.log(this.players[actorName].keySet["squat"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet["squat"].keyup
                     )
+                    break;
+                }
+
+            case 1:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet["squat"].keydown
                     )
                     break;
                 }
-            default:
+
+        }
+        switch (actions[2]) {
+            case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keyup
+                        this.players[actorName].keySet["left"].keyup
                     )
+                    break;
+                }
+            case 1:
+                {
                     document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
+                        this.players[actorName].keySet["left"].keydown
                     )
                     break;
                 }
         }
-        switch (decodeAction[2]) {
+        switch (actions[3]) {
+            case 0:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keyup
+                    )
+                    break;
+                }
+
             case 1:
                 {
-                    console.log(this.players[actorName].keySet.attack["small"].keydown.key)
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[4]) {
+            case 0:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keyup
                     )
+                    break;
+                }
+
+            case 1:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keydown
                     )
                     break;
                 }
-            case 2:
+
+        }
+        switch (actions[5]) {
+            case 0:
                 {
-                    console.log(this.players[actorName].keySet.attack["medium"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
+                    break;
+                }
+
+            case 1:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keydown
                     )
                     break;
                 }
-            case 3:
+
+        }
+        switch (actions[6]) {
+            case 0:
                 {
-                    console.log(this.players[actorName].keySet.attack["large"].keydown.key)
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
+                    break;
+                }
+
+            case 1:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
                     )
                     break;
                 }
-            default:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
-                    break;
-                }
         }
-    }
-
-    fetchUpReward() {
-        Object.keys(this.players).forEach((playerName) => {
-            this.players[playerName]["rewardMemory"].push(getReward(this.players[playerName]["actor"]))
-            if (this.players[playerName]["rewardMemory"].length > this.memorySize) {
-                this.players[playerName]["rewardMemory"].shift()
-            }
-        })
     }
 
     nextStep() {
         Object.keys(this.players).forEach((playerName) => {
-            this.players[playerName]["memory"].push(
-                getStatement(
-                    this.players[playerName]["actor"],
-                    playerName,
-                    this.players[playerName]["action"]
-                )
+            this.players[playerName]["memory"].unshift(
+                Environment.getState(this.players[playerName])
             )
             if (this.players[playerName]["memory"].length > this.memorySize) {
-                this.players[playerName]["memory"].shift()
+                this.players[playerName]["memory"].pop()
             }
 
+            this.players[playerName]["point"] = [
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]) + Environment.getMovePoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"])
+                // Environment.getMovePoint(this.players[playerName]["actor"]),
+                // Environment.getJumpPoint(this.players[playerName]["actor"]),
+                // Environment.getAttackPoint(this.players[playerName]["actor"])
+            ]
+            // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
 
-    control(playersName) {
-        let inps = playersName.map((playerName) => {
-            let pReward = Math.min(Math.round(this.predictReward(playerName) + 1), 5)
-            let newStatement = getStatement(this.players[playerName]["actor"], playerName, this.players[playerName]["action"])
-            newStatement[2] = 1484 + 6 + pReward
-
-            let [inp, _] = this.mergeMemory(playerName, this.ctrlLength)
-            inp.push(newStatement)
-            inp = inp.flat()
-            if (inp.length > 3) {
-                inp.shift()
-                inp.shift()
-                inp.shift()
-            }
-            return [inp]
-        })
-        console.log(inps)
+    control(ctrlDatas) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
-                inps: inps,
-                tgts: inps,
-                nToken: 1496,
-                FLAGS: FLAGS
+                archives: Object.keys(ctrlDatas).reduce(
+                    (acc, playerName) => {
+                        acc[playerName] = {
+                            state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
+                            rewards: this.players[playerName]["point"],
+                            actions: Object.values(this.players[playerName]["actor"].keyDown)
+                                .reduce((last, v) => {
+                                    if (Object.values(v).length != 0) {
+                                        return last.concat(Object.values(v))
+                                    } else {
+                                        return last.concat(v)
+                                    }
+                                }, []),
+                            chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
+                            aiCtrl: ctrlDatas[playerName].aiCtrl
+                        }
+
+                        return acc
+                    }, {}),
             }
         })
-        console.log("ctrl")
     }
 
-    mergeMemory(mainPlayerName, mergeLength, end = this.players[mainPlayerName]["memory"].length - 1) {
-        let mergeMem = []
-        let mergeRewardMem = []
-        end = end <= this.players[mainPlayerName]["memory"].length - 1 ? end : this.players[mainPlayerName]["memory"].length - 1
-        mergeLength = end - mergeLength >= 0 ? mergeLength : end
-        for (let i = end - mergeLength + 1; i <= end; i++) {
-            mergeMem.push(this.players[mainPlayerName]["memory"][i].slice())
-            mergeRewardMem.push(this.players[mainPlayerName]["rewardMemory"][i])
-            Object.keys(this.players).forEach((playerName) => {
-                if (playerName != mainPlayerName) {
-                    mergeMem.push(this.players[playerName]["memory"][i])
-                    mergeRewardMem.push(this.players[playerName]["rewardMemory"][i])
-                }
-            })
-        }
-        return [mergeMem, mergeRewardMem]
-    }
-
-    predictReward(playerName) {
-        return this.players[playerName]["rewardMemory"].reduce((pReward, reward) => {
-            return (pReward + reward) * 0.5
-        }, 0)
-    }
-
-    train(simulationBsz = 1, bsz = 1) {
-        let rewards = []
-        let origins = []
-        for (let i = 0; i < simulationBsz; i++) {
-            origins = origins.concat(
-                Object.keys(this.players).map((playerName) => {
-                    let end = Math.round(Math.random() * (this.memorySize - this.ctrlLength - 1) + this.ctrlLength)
-                    let [origin, reward] = this.mergeMemory(playerName, this.ctrlLength + 1, end)
-                    origin = origin.slice(1, origin.length - 1)
-                    reward = reward.slice(1, origin.length - 1)
-                    rewards.push(reward.map(r => r + 6 + 1484))
-                    return [origin.flat()]
-                })
-            )
-        }
-        // console.log(origins)
-        let inps = origins.map((origin, originIdx) => {
-            return [origin.map((words) => {
-                let inp = []
-                for (let i = 0; i < words.length; i++) {
-                    inp.push(words[i])
-                }
-                inp.pop()
-                inp.push(rewards[originIdx][rewards[originIdx].length - 1])
-                return inp
-            }).flat()]
-        })
-        // console.log(inps)
-        let tgts = origins.map((origin, originIdx) => {
-            return [origin.map((words) => {
-                let tgt = []
-                for (let i = 0; i < words.length; i++) {
-                    tgt.push(words[i])
-                }
-                tgt.pop()
-                tgt.push(words[words.length - 1])
-                return tgt
-            }).flat()]
-        })
-        // console.log(tgts)
+    train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
         this.channel.postMessage({
             instruction: "train",
             args: {
-                inps: inps,
-                tgts: tgts,
-                nToken: 1496,
-                FLAGS: FLAGS,
-                bsz: bsz
+                bsz: bsz,
+                replayIdxes: replayIdxes,
+                usePrioritizedReplay: usePrioritizedReplay
             }
         })
-        console.log("train")
+        // console.log("train")
+    }
+
+    init() {
+        Object.keys(this.players).forEach((playerName) => {
+            this.trigger(playerName, 8)
+        })
+        Object.values(this.players).forEach((player) => {
+            player.memory = new Array(this.memorySize).fill(Environment.getState(player))
+            player.reward = 0
+            player.action = "null"
+        })
+
+        console.log("init")
+    }
+    save() {
+        this.channel.postMessage({
+            instruction: "save",
+            args: {}
+        })
+        // console.log("save")
+    }
+    load() {
+        tf.tidy(() => {
+            let load = document.createElement("input")
+            load.type = "file"
+            load.accept = ".bin"
+
+            load.onchange = event => {
+                const files = load.files
+                // console.log(files[0])
+                var reader = new FileReader()
+                reader.addEventListener("loadend", () => {
+                    this.channel.postMessage({
+                        instruction: "load",
+                        args: {
+                            weightsBuffer: new Uint8Array(reader.result)
+                        }
+                    })
+                    // console.log("load")
+                });
+                reader.readAsArrayBuffer(files[0])
+            };
+
+            load.click()
+        })
+    }
+    updatePrioritys() {
+        this.channel.postMessage({
+            instruction: "updatePrioritys"
+        })
+    }
+
+    static getState(player) {
+        //actorA state
+        let getActorState = (actor) => {
+            let HP = actor.HP / actor.maxHP
+            let cumulativeDamage = actor.cumulativeDamage / actor.maxCumulativeDamage
+            let position = {
+                x: actor.mesh.position.x / 11,
+                y: actor.mesh.position.y / 11
+            }
+            let faceTo = actor._faceTo == actor.shouldFaceTo ? 10 : -10
+
+            let chapter = new Array(4).fill(-1 * actor._state["frame"])
+            switch (actor._state["chapter"]) {
+                case "normal": {
+                    chapter[0] = actor._state["frame"]
+                    break
+                } case "attack": {
+                    chapter[1] = actor._state["frame"]
+                    break
+                } case "defense": {
+                    chapter[2] = actor._state["frame"]
+                    break
+                } case "hitRecover": {
+                    chapter[3] = actor._state["frame"]
+                    break
+                }
+            }
+
+            let section = new Array(4).fill(0 * actor._state["frame"])
+            switch (actor._state["section"]) {
+                case "stand": {
+                    section[0] = actor._state["frame"]
+                    break
+                } case "jump": {
+                    section[1] = actor._state["frame"]
+                    break
+                } case "squat": {
+                    section[2] = actor._state["frame"]
+                    break
+                } case "reStand": {
+                    section[3] = actor._state["frame"]
+                    break
+                }
+            }
+            if (actor.lastAttack != null) {
+                switch (actor.lastAttack.split(":")[0]) {
+                    case "stand": {
+                        section[0] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "jump": {
+                        section[1] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "squat": {
+                        section[2] = (0.1 + cumulativeDamage) * -1
+                        break
+                    }
+                }
+            }
+
+            let subsection = new Array(7).fill(0 * actor._state["frame"])
+            switch (actor._state["subsection"]) {
+                case "main": {
+                    subsection[0] = actor._state["frame"]
+                    break
+                } case "forward": {
+                    subsection[1] = actor._state["frame"]
+                    break
+                } case "backward": {
+                    subsection[2] = actor._state["frame"]
+                    break
+                } case "small": {
+                    subsection[3] = actor._state["frame"]
+                    break
+                } case "medium": {
+                    subsection[4] = actor._state["frame"]
+                    break
+                } case "large": {
+                    subsection[5] = actor._state["frame"]
+                    break
+                } case "fall": {
+                    subsection[6] = actor._state["frame"]
+                    break
+                }
+            }
+            if (actor.lastAttack != null) {
+                switch (actor.lastAttack.split(":")[1]) {
+                    case "small": {
+                        subsection[3] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "medium": {
+                        subsection[4] = (0.1 + cumulativeDamage) * -1
+                        break
+                    } case "large": {
+                        subsection[5] = (0.1 + cumulativeDamage) * -1
+                        break
+                    }
+                }
+            }
+
+            let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
+            subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
+
+            return [HP, cumulativeDamage, position.x, position.y, faceTo]
+                .concat(chapter)
+                .concat(section)
+                .concat(subsection)
+                .concat(subsubsection)
+        }
+
+        return getActorState(player["actor"])
+            .concat(getActorState(player["actor"].opponent))
+            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
+                if (Object.values(v).length != 0) {
+                    return last.concat(Object.values(v))
+                } else {
+                    return last.concat(v)
+                }
+            }, [])
+                .map((v) => {
+                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
+                    return v ?
+                        faceTo :
+                        -1 * faceTo
+                })
+            )
+    }
+
+    // static getPoint(actor) {
+    //     let point = (actor.HP / actor.maxHP) - 1
+    //     point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+
+    //     point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
+    //     // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
+
+    //     point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
+
+    //     if (actor._state["chapter"] == "attack") {
+    //         if (actor.isHit) {
+    //             point += (actor.opponent.beHitNum * Math.abs(point))
+    //         } else {
+    //             point -= Math.abs(point)
+    //         }
+    //     }
+    //     if (actor.beHitNum != 0) {
+    //         point -= actor.beHitNum * Math.abs(point)
+    //     } else {
+    //         if (actor.opponent._state["chapter"] == "attack") {
+    //             point += Math.abs(point) * 2
+    //         }
+    //     }
+    //     if (actor.isPD) {
+    //         point = Math.abs(point)
+    //     }
+    //     if (actor._state.chapter == "defense") {
+    //         point *= 0.5
+    //     }
+
+    //     return point
+    // }
+
+    static getPoint(actor) {
+        let point = (actor.cumulativeDamage / actor.maxCumulativeDamage) * -2
+
+        if (actor._state["chapter"] == "hitRecover") {
+            point -= (1 - (actor.HP / actor.maxHP)) * (actor.maxHP / actor.maxCumulativeDamage)
+        }
+        else if (actor.opponent._state["chapter"] == "hitRecover") {
+            point += (1 - (actor.opponent.HP / actor.opponent.maxHP)) * (actor.maxHP / actor.maxCumulativeDamage)
+        }
+
+        return point
+    }
+
+    static getMovePoint(actor) {
+        let point = 0
+
+        if (actor.keyDown.left == true && actor.keyDown.right == true) {
+            point = -2 * Math.abs(Environment.getPoint(actor))
+        }
+
+        return point
     }
 }

@@ -67,10 +67,14 @@ export class DDDQN {
             actionNum = 9
         }
     ) {
-        class DDDQN {
-            constructor({
-            }) {
+        class model {
+            constructor(
+                args = {
 
+                },
+                scope = tfex.scope
+            ) {
+                this.scope = scope
 
             }
             predict() {

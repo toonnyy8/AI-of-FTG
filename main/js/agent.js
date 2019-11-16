@@ -1,85 +1,174 @@
 import * as tf from "@tensorflow/tfjs"
-import * as transformerXL from "../../src/js/MirageNet/transformerXL_sp"
-import * as tfex from "../../src/lib/tfjs-extensions/src"
-
-// //載入權重
-// import * as fs from "fs"
-// let weight = fs.readFileSync(__dirname + "/../param/w.bin")
-// tfex.scope.variableScope("transformerXL").load(tfex.sl.load(weight))
-// console.log(tfex.scope.variableScope("transformerXL"))
+import { dddqn } from "../../src/js/MirageNet/transformerXL_dddqn"
+import { registerTfex } from "../../src/lib/tfjs-extensions/src"
+const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
+
+let actionsNum = [2, 2, 2, 2, 2, 2, 2]
+
+let dddqnModel = dddqn({
+    sequenceLen: 4,
+    stateVectorLen: 55,
+    layerNum: 16,
+    actionsNum: actionsNum,
+    memorySize: 6400,
+    minLearningRate: 1e-4,
+    initLearningRate: 1e-3,
+    updateTargetStep: 0.001,
+    discount: 0.9
+})
+
+let preArchives = {
+    "player1": {
+        state: null,
+        expired: true
+    },
+    "player2": {
+        state: null,
+        expired: true
+    }
+}
 
 tf.ready().then(() => {
     let channel = new BroadcastChannel('agent');
     channel.onmessage = (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {
+                case 'init': {
+                    channel.postMessage({ instruction: "init" })
+                    break
+                }
                 case 'ctrl': {
-                    let outputs = transformerXL.modelFn(
-                        tf.unstack(tf.stack(e.data.args.inps.map(val => tf.tensor(val)), 2), 0),
-                        tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
-                        e.data.args.nToken,
-                        e.data.args.FLAGS,
-                        e.data.args.FLAGS.init == "normal" ?
-                            tf.initializers.randomNormal({
-                                stddev: e.data.args.FLAGS.initStd
-                            }) :
-                            tf.initializers.randomUniform({
-                                minval: -1 * e.data.args.FLAGS.initRange,
-                                maxval: e.data.args.FLAGS.initRange
-                            }),
-                        tf.initializers.randomNormal({
-                            stddev: e.data.args.FLAGS.initStd
+                    if (Object.keys(e.data.args.archives).length != 0) {
+                        let outputActions = dddqnModel
+                            .model
+                            .predict(
+                                tf.tensor(
+                                    Object.values(e.data.args.archives)
+                                        .map(archive => {
+                                            return archive.state
+                                        })
+                                )
+                            )
+                        if (actionsNum.length == 1) {
+                            outputActions = [outputActions]
+                        }
+                        outputActions = outputActions.map(outputAction => {
+                            outputAction = tf.softmax(outputAction, 1)
+                            outputAction = tf.div(
+                                tf.add(
+                                    outputAction,
+                                    1 / outputAction.shape[1]
+                                ),
+                                2
+                            )
+                            // outputAction.sum(1).print()
+                            // outputAction.print()
+                            return outputAction
                         })
-                    )
-                    outputs.forEach((output) => {
-                        // console.log(output.shape)
-                        // output.print()
-                    })
-                    tf.stack(outputs).array().then((d) => {
-                        channel.postMessage({ instruction: "ctrl", output: d[d.length - 1] })
-                        tf.dispose(outputs)
-                    })
+
+                        let actions = {}
+                        let chooseByArgMax = tf.concat(outputActions)
+                            .argMax(1)
+                            .reshape([outputActions.length, -1])
+                            .transpose([1, 0])
+                            .arraySync()
+
+                        let chooseByMultinomial = tf.multinomial(tf.concat(outputActions), 1, null, true)
+                            .reshape([outputActions.length, -1])
+                            .transpose([1, 0])
+                            .arraySync()
+
+                        Object.keys(e.data.args.archives)
+                            .forEach((playerName, idx) => {
+                                if (Math.random() < e.data.args.archives[playerName].chooseActionRandomValue) {
+                                    actions[playerName] = chooseByMultinomial[idx]
+                                } else {
+                                    actions[playerName] = chooseByArgMax[idx]
+                                }
+                            })
+
+                        Object.keys(preArchives).forEach((playerName) => {
+                            if (Object.keys(e.data.args.archives).find(name => name === playerName) !== undefined) {
+                                if (preArchives[playerName].expired == false) {
+                                    dddqnModel.store(
+                                        preArchives[playerName].state,
+                                        e.data.args.archives[playerName].actions,
+                                        e.data.args.archives[playerName].rewards,
+                                        e.data.args.archives[playerName].state,
+                                    )
+                                }
+                                preArchives[playerName].expired = false
+                            } else {
+                                preArchives[playerName].expired = true
+                            }
+                        })
+
+                        Object.keys(e.data.args.archives).forEach((playerName, idx) => {
+                            preArchives[playerName].state = e.data.args.archives[playerName].state
+                        })
+                        channel.postMessage({
+                            instruction: "ctrl",
+                            args: {
+                                archives: Object.keys(e.data.args.archives).reduce((acc, playerName) => {
+                                    acc[playerName] = {
+                                        actions: actions[playerName],
+                                        aiCtrl: e.data.args.archives[playerName].aiCtrl
+                                    }
+                                    return acc
+                                }, {})
+                            }
+                        })
+                    } else {
+                        channel.postMessage({
+                            instruction: "ctrl",
+                            args: {
+                                archive: {}
+                            }
+                        })
+                    }
+                    // console.log("ctrl")
                     break
                 }
                 case 'train': {
-                    transformerXL.train(
-                        tf.unstack(tf.stack(e.data.args.inps.map(val => tf.tensor(val)), 2), 0),
-                        tf.unstack(tf.stack(e.data.args.tgts.map(val => tf.tensor(val)), 2), 0),
-                        e.data.args.nToken,
-                        e.data.args.FLAGS,
-                        e.data.args.FLAGS.init == "normal" ?
-                            tf.initializers.randomNormal({
-                                stddev: e.data.args.FLAGS.initStd
-                            }) :
-                            tf.initializers.randomUniform({
-                                minval: -1 * e.data.args.FLAGS.initRange,
-                                maxval: e.data.args.FLAGS.initRange
-                            }),
-                        tf.initializers.randomNormal({
-                            stddev: e.data.args.FLAGS.initStd
-                        }),
-                        true,
-                        e.data.args.bsz
-                    )
+                    dddqnModel.train(e.data.args.bsz, e.data.args.replayIdxes, e.data.args.usePrioritizedReplay)
                     channel.postMessage({ instruction: "train" })
                     break
+                }
+                case 'save': {
+                    tf.tidy(() => {
+                        let Ws = dddqnModel.model.getWeights()
+                        let tList = Ws.reduce((acc, w) => {
+                            acc[w.name] = w
+                            return acc
+                        }, {})
+                        channel.postMessage({
+                            instruction: "save",
+                            args: {
+                                weightsBuffer: tfex.sl.save(tList)
+                            }
+                        })
+                    })
+
+                    break
+                }
+                case 'load': {
+                    let loadWeights = tfex.sl.load(e.data.args.weightsBuffer)
+                    dddqnModel.model.getWeights().forEach((w) => {
+                        w.assign(loadWeights[w.name])
+                    })
+                    dddqnModel.targetModel.setWeights(
+                        dddqnModel.model.getWeights()
+                    )
+                    channel.postMessage({ instruction: "load" })
+                    break
+                }
+                case "updatePrioritys": {
+                    dddqnModel.updatePrioritys()
+                    channel.postMessage({ instruction: "updatePrioritys" })
                 }
             }
         })
     }
 })
-
-document.getElementById("save").onclick = () => {
-    tf.tidy(() => {
-        let blob = new Blob([tfex.sl.save(tfex.scope.variableScope("transformerXL").save())]);
-        let a = document.createElement("a");
-        let url = window.URL.createObjectURL(blob);
-        let filename = "w.bin";
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    })
-}
