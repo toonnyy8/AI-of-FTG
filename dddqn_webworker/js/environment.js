@@ -265,7 +265,7 @@ export class Environment {
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]) + Environment.getMovePoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]) + Environment.getMovePoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"])
@@ -527,13 +527,13 @@ export class Environment {
     // }
 
     static getPoint(actor) {
-        let point = (actor.cumulativeDamage / actor.maxCumulativeDamage) * -10
+        let point = (actor.cumulativeDamage / actor.maxCumulativeDamage) * -2
 
         if (actor._state["chapter"] == "hitRecover") {
-            point -= (1 - (actor.HP / actor.maxHP)) * 10
+            point -= (1 - (actor.HP / actor.maxHP)) * (actor.maxHP / actor.maxCumulativeDamage)
         }
         else if (actor.opponent._state["chapter"] == "hitRecover") {
-            point += (1 - (actor.opponent.HP / actor.opponent.maxHP)) * 10
+            point += (1 - (actor.opponent.HP / actor.opponent.maxHP)) * (actor.maxHP / actor.maxCumulativeDamage)
         }
 
         return point
