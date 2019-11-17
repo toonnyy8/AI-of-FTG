@@ -264,8 +264,8 @@ export class Environment {
             this.players[playerName]["point"] = [
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]) + Environment.getMovePoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
+                Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"]),
                 Environment.getPoint(this.players[playerName]["actor"])
