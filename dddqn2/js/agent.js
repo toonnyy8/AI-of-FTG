@@ -8,15 +8,15 @@ tf.setBackend("webgl")
 let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
-    sequenceLen: 4,
+    sequenceLen: 16,
     stateVectorLen: 55,
-    layerNum: 16,
+    layerNum: 36,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.001,
-    discount: 0.9
+    discount: 0.95
 })
 
 let preArchives = {
