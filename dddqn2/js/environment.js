@@ -4,7 +4,7 @@ import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
-// tf.enableProdMode()
+    // tf.enableProdMode()
 
 export class Environment {
     constructor(
@@ -262,18 +262,18 @@ export class Environment {
             }
 
             this.players[playerName]["point"] = [
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
-                Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"])
-                // Environment.getMovePoint(this.players[playerName]["actor"]),
-                // Environment.getJumpPoint(this.players[playerName]["actor"]),
-                // Environment.getAttackPoint(this.players[playerName]["actor"])
-            ]
-            // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
+                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"])
+                    // Environment.getMovePoint(this.players[playerName]["actor"]),
+                    // Environment.getJumpPoint(this.players[playerName]["actor"]),
+                    // Environment.getAttackPoint(this.players[playerName]["actor"])
+                ]
+                // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
 
@@ -306,14 +306,14 @@ export class Environment {
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
         this.channel.postMessage({
-            instruction: "train",
-            args: {
-                bsz: bsz,
-                replayIdxes: replayIdxes,
-                usePrioritizedReplay: usePrioritizedReplay
-            }
-        })
-        // console.log("train")
+                instruction: "train",
+                args: {
+                    bsz: bsz,
+                    replayIdxes: replayIdxes,
+                    usePrioritizedReplay: usePrioritizedReplay
+                }
+            })
+            // console.log("train")
     }
 
     init() {
@@ -330,10 +330,10 @@ export class Environment {
     }
     save() {
         this.channel.postMessage({
-            instruction: "save",
-            args: {}
-        })
-        // console.log("save")
+                instruction: "save",
+                args: {}
+            })
+            // console.log("save")
     }
     load() {
         tf.tidy(() => {
@@ -343,16 +343,16 @@ export class Environment {
 
             load.onchange = event => {
                 const files = load.files
-                // console.log(files[0])
+                    // console.log(files[0])
                 var reader = new FileReader()
                 reader.addEventListener("loadend", () => {
                     this.channel.postMessage({
-                        instruction: "load",
-                        args: {
-                            weightsBuffer: new Uint8Array(reader.result)
-                        }
-                    })
-                    // console.log("load")
+                            instruction: "load",
+                            args: {
+                                weightsBuffer: new Uint8Array(reader.result)
+                            }
+                        })
+                        // console.log("load")
                 });
                 reader.readAsArrayBuffer(files[0])
             };
@@ -379,89 +379,126 @@ export class Environment {
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
-                case "normal": {
-                    chapter[0] = actor._state["frame"]
-                    break
-                } case "attack": {
-                    chapter[1] = actor._state["frame"]
-                    break
-                } case "defense": {
-                    chapter[2] = actor._state["frame"]
-                    break
-                } case "hitRecover": {
-                    chapter[3] = actor._state["frame"]
-                    break
-                }
+                case "normal":
+                    {
+                        chapter[0] = actor._state["frame"]
+                        break
+                    }
+                case "attack":
+                    {
+                        chapter[1] = actor._state["frame"]
+                        break
+                    }
+                case "defense":
+                    {
+                        chapter[2] = actor._state["frame"]
+                        break
+                    }
+                case "hitRecover":
+                    {
+                        chapter[3] = actor._state["frame"]
+                        break
+                    }
             }
 
             let section = new Array(4).fill(0 * actor._state["frame"])
             switch (actor._state["section"]) {
-                case "stand": {
-                    section[0] = actor._state["frame"]
-                    break
-                } case "jump": {
-                    section[1] = actor._state["frame"]
-                    break
-                } case "squat": {
-                    section[2] = actor._state["frame"]
-                    break
-                } case "reStand": {
-                    section[3] = actor._state["frame"]
-                    break
-                }
+                case "stand":
+                    {
+                        section[0] = actor._state["frame"]
+                        break
+                    }
+                case "jump":
+                    {
+                        section[1] = actor._state["frame"]
+                        break
+                    }
+                case "squat":
+                    {
+                        section[2] = actor._state["frame"]
+                        break
+                    }
+                case "reStand":
+                    {
+                        section[3] = actor._state["frame"]
+                        break
+                    }
             }
             if (actor.lastAttack != null) {
                 switch (actor.lastAttack.split(":")[0]) {
-                    case "stand": {
-                        section[0] = (0.1 + cumulativeDamage) * -1
-                        break
-                    } case "jump": {
-                        section[1] = (0.1 + cumulativeDamage) * -1
-                        break
-                    } case "squat": {
-                        section[2] = (0.1 + cumulativeDamage) * -1
-                        break
-                    }
+                    case "stand":
+                        {
+                            section[0] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
+                    case "jump":
+                        {
+                            section[1] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
+                    case "squat":
+                        {
+                            section[2] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
                 }
             }
 
             let subsection = new Array(7).fill(0 * actor._state["frame"])
             switch (actor._state["subsection"]) {
-                case "main": {
-                    subsection[0] = actor._state["frame"]
-                    break
-                } case "forward": {
-                    subsection[1] = actor._state["frame"]
-                    break
-                } case "backward": {
-                    subsection[2] = actor._state["frame"]
-                    break
-                } case "small": {
-                    subsection[3] = actor._state["frame"]
-                    break
-                } case "medium": {
-                    subsection[4] = actor._state["frame"]
-                    break
-                } case "large": {
-                    subsection[5] = actor._state["frame"]
-                    break
-                } case "fall": {
-                    subsection[6] = actor._state["frame"]
-                    break
-                }
+                case "main":
+                    {
+                        subsection[0] = actor._state["frame"]
+                        break
+                    }
+                case "forward":
+                    {
+                        subsection[1] = actor._state["frame"]
+                        break
+                    }
+                case "backward":
+                    {
+                        subsection[2] = actor._state["frame"]
+                        break
+                    }
+                case "small":
+                    {
+                        subsection[3] = actor._state["frame"]
+                        break
+                    }
+                case "medium":
+                    {
+                        subsection[4] = actor._state["frame"]
+                        break
+                    }
+                case "large":
+                    {
+                        subsection[5] = actor._state["frame"]
+                        break
+                    }
+                case "fall":
+                    {
+                        subsection[6] = actor._state["frame"]
+                        break
+                    }
             }
             if (actor.lastAttack != null) {
                 switch (actor.lastAttack.split(":")[1]) {
-                    case "small": {
-                        subsection[3] = (0.1 + cumulativeDamage) * -1
-                        break
-                    } case "medium": {
-                        subsection[4] = (0.1 + cumulativeDamage) * -1
-                        break
-                    } case "large": {
-                        subsection[5] = (0.1 + cumulativeDamage) * -1
-                        break
-                    }
+                    case "small":
+                        {
+                            subsection[3] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
+                    case "medium":
+                        {
+                            subsection[4] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
+                    case "large":
+                        {
+                            subsection[5] = (0.1 + cumulativeDamage) * -1
+                            break
+                        }
                 }
             }
 
@@ -478,12 +515,12 @@ export class Environment {
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
             .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
+                    if (Object.values(v).length != 0) {
+                        return last.concat(Object.values(v))
+                    } else {
+                        return last.concat(v)
+                    }
+                }, [])
                 .map((v) => {
                     let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
                     return v ?
@@ -493,46 +530,13 @@ export class Environment {
             )
     }
 
-    // static getPoint(actor) {
-    //     let point = (actor.HP / actor.maxHP) - 1
-    //     point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
-
-    //     point -= (actor.cumulativeDamage / actor.maxCumulativeDamage)
-    //     // point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage)
-
-    //     point *= 1 - (Math.abs(actor.mesh.position.x - actor.opponent.mesh.position.x) / 22)
-
-    //     if (actor._state["chapter"] == "attack") {
-    //         if (actor.isHit) {
-    //             point += (actor.opponent.beHitNum * Math.abs(point))
-    //         } else {
-    //             point -= Math.abs(point)
-    //         }
-    //     }
-    //     if (actor.beHitNum != 0) {
-    //         point -= actor.beHitNum * Math.abs(point)
-    //     } else {
-    //         if (actor.opponent._state["chapter"] == "attack") {
-    //             point += Math.abs(point) * 2
-    //         }
-    //     }
-    //     if (actor.isPD) {
-    //         point = Math.abs(point)
-    //     }
-    //     if (actor._state.chapter == "defense") {
-    //         point *= 0.5
-    //     }
-
-    //     return point
-    // }
-
     static getPoint(actor) {
-        let point = (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP) - 0.25
+        let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= ((1 - (actor.HP / actor.maxHP)) + (actor.cumulativeDamage / actor.maxCumulativeDamage))
         }
-        else if (actor.opponent._state["chapter"] == "hitRecover") {
+        if (actor.opponent._state["chapter"] == "hitRecover") {
             point += ((1 - (actor.opponent.HP / actor.opponent.maxHP)) + (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage))
         }
 
