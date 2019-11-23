@@ -22,9 +22,17 @@ npm run build
 
 ## 線上測試
 
-### 版本2(channel通訊版)
+### 版本1(channel通訊版)
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn/agent.html)
 
-### 版本2(web worker版)
+### 版本1(web worker版)
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn_webworker/index.html)
+
+### 版本2(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn2/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn2/agent.html)
+
+### 版本3(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/agent.html)
