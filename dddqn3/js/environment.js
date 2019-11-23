@@ -4,7 +4,7 @@ import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
-    // tf.enableProdMode()
+// tf.enableProdMode()
 
 export class Environment {
     constructor(
@@ -262,18 +262,15 @@ export class Environment {
             }
 
             this.players[playerName]["point"] = [
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
-                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"])
-                    // Environment.getMovePoint(this.players[playerName]["actor"]),
-                    // Environment.getJumpPoint(this.players[playerName]["actor"]),
-                    // Environment.getAttackPoint(this.players[playerName]["actor"])
-                ]
-                // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"]),
+                Environment.getPoint(this.players[playerName]["actor"])
+            ]
+            // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
 
@@ -307,14 +304,14 @@ export class Environment {
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
         this.channel.postMessage({
-                instruction: "train",
-                args: {
-                    bsz: bsz,
-                    replayIdxes: replayIdxes,
-                    usePrioritizedReplay: usePrioritizedReplay
-                }
-            })
-            // console.log("train")
+            instruction: "train",
+            args: {
+                bsz: bsz,
+                replayIdxes: replayIdxes,
+                usePrioritizedReplay: usePrioritizedReplay
+            }
+        })
+        // console.log("train")
     }
 
     init() {
@@ -331,10 +328,10 @@ export class Environment {
     }
     save() {
         this.channel.postMessage({
-                instruction: "save",
-                args: {}
-            })
-            // console.log("save")
+            instruction: "save",
+            args: {}
+        })
+        // console.log("save")
     }
     load() {
         tf.tidy(() => {
@@ -344,16 +341,16 @@ export class Environment {
 
             load.onchange = event => {
                 const files = load.files
-                    // console.log(files[0])
+                // console.log(files[0])
                 var reader = new FileReader()
                 reader.addEventListener("loadend", () => {
                     this.channel.postMessage({
-                            instruction: "load",
-                            args: {
-                                weightsBuffer: new Uint8Array(reader.result)
-                            }
-                        })
-                        // console.log("load")
+                        instruction: "load",
+                        args: {
+                            weightsBuffer: new Uint8Array(reader.result)
+                        }
+                    })
+                    // console.log("load")
                 });
                 reader.readAsArrayBuffer(files[0])
             };
@@ -516,12 +513,12 @@ export class Environment {
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
             .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                    if (Object.values(v).length != 0) {
-                        return last.concat(Object.values(v))
-                    } else {
-                        return last.concat(v)
-                    }
-                }, [])
+                if (Object.values(v).length != 0) {
+                    return last.concat(Object.values(v))
+                } else {
+                    return last.concat(v)
+                }
+            }, [])
                 .map((v) => {
                     let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
                     return v ?
