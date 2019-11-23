@@ -532,10 +532,10 @@ export class Environment {
         let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)
 
         if (actor._state["chapter"] == "hitRecover") {
-            point -= (((1 - (actor.HP / actor.maxHP)) + (actor.cumulativeDamage / actor.maxCumulativeDamage))) * (actor.maxHP / actor.maxCumulativeDamage)
+            point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP))
         }
         if (actor.opponent._state["chapter"] == "hitRecover") {
-            point += (((1 - (actor.opponent.HP / actor.opponent.maxHP)) + (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage))) * (actor.maxHP / actor.maxCumulativeDamage)
+            point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
         }
 
         return point

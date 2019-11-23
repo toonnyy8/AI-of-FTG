@@ -105,7 +105,8 @@ export class DDDQN {
                 value = tf.layers.conv1d({
                     filters: 1,
                     kernelSize: [1],
-                    padding: "same"
+                    padding: "same",
+                    activation: "selu"
                 }).apply(value)
                 value = tf.layers.flatten().apply(value)
             }
@@ -115,7 +116,8 @@ export class DDDQN {
                 A = tf.layers.conv1d({
                     filters: actionNum,
                     kernelSize: [1],
-                    padding: "same"
+                    padding: "same",
+                    activation: "selu"
                 }).apply(A)
                 A = tf.layers.flatten().apply(A)
 
@@ -138,9 +140,18 @@ export class DDDQN {
             outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
         }).apply(actions)
 
-        outputLayer = tf.layers.dense({ units: stateVectorLen }).apply(outputLayer)
-        outputLayer = tf.layers.dense({ units: stateVectorLen }).apply(outputLayer)
-        outputLayer = tf.layers.dense({ units: actionsNum.reduce((prev, curr) => prev + curr, 0) }).apply(outputLayer)
+        outputLayer = tf.layers.dense({
+            units: stateVectorLen,
+            activation: "selu"
+        }).apply(outputLayer)
+        outputLayer = tf.layers.dense({
+            units: stateVectorLen,
+            activation: "selu"
+        }).apply(outputLayer)
+        outputLayer = tf.layers.dense({
+            units: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            activation: "selu"
+        }).apply(outputLayer)
 
         let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
