@@ -65,6 +65,13 @@ let main = () => {
                 env.trigger("player2", -1)
             }
         }
+        document.getElementById("CP").onclick = () => {
+            if (document.getElementById("CP").innerText == "off") {
+                document.getElementById("CP").innerText = "on"
+            } else {
+                document.getElementById("CP").innerText = "off"
+            }
+        }
         document.getElementById("reduceHP").onclick = () => {
             if (document.getElementById("reduceHP").innerText == "off") {
                 document.getElementById("reduceHP").innerText = "on"
@@ -128,8 +135,8 @@ let main = () => {
                     aiCtrl: document.getElementById("player2").innerText == "on"
                 }
             }
-
-            env.control(ctrlDatas)
+            let CP = document.getElementById("CP").innerText == "on"
+            env.control(ctrlDatas, CP)
             trainLoop.run()
 
             env.isReturnCtrl = false
@@ -167,7 +174,7 @@ let main = () => {
             }
         } else {
             epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))
-            // console.log(epochCount)
+                // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
                     game.player1.HP -= 0.5

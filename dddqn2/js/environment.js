@@ -277,7 +277,7 @@ export class Environment {
         })
     }
 
-    control(ctrlDatas) {
+    control(ctrlDatas, CP) {
         this.channel.postMessage({
             instruction: "ctrl",
             args: {
@@ -300,6 +300,7 @@ export class Environment {
 
                         return acc
                     }, {}),
+                CP: CP
             }
         })
     }
