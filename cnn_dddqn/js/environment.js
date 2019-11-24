@@ -262,18 +262,24 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["point"] = [
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"])
-                // Environment.getMovePoint(this.players[playerName]["actor"]),
-                // Environment.getJumpPoint(this.players[playerName]["actor"]),
-                // Environment.getAttackPoint(this.players[playerName]["actor"])
-            ]
+            if (this.players[playerName]["point"].length !== undefined) {
+                this.players[playerName]["point"] = this.players[playerName]["point"].map((point) => {
+                    return point + Environment.getPoint(this.players[playerName]["actor"])
+                })
+            } else {
+                this.players[playerName]["point"] = [
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"])
+                    // Environment.getMovePoint(this.players[playerName]["actor"]),
+                    // Environment.getJumpPoint(this.players[playerName]["actor"]),
+                    // Environment.getAttackPoint(this.players[playerName]["actor"])
+                ]
+            }
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
@@ -303,6 +309,10 @@ export class Environment {
                     }, {}),
             }
         })
+        Object.keys(ctrlDatas).forEach(
+            (playerName) => {
+                this.players[playerName]["point"] = 0
+            })
     }
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
@@ -371,7 +381,7 @@ export class Environment {
         // console.log(canvas)
         let channel = playerName == "player1" ? 0 : 2
         return tf.tidy(() => {
-            let s = tf.unstack(tf.div(tf.maxPool(tf.cast(tf.browser.fromPixels(canvas), "float32"), 60, 60, "valid"), 255), 2)[channel]
+            let s = tf.unstack(tf.div(tf.maxPool(tf.cast(tf.browser.fromPixels(canvas), "float32"), [36, 64], [36, 64], "valid"), 255), 2)[channel]
 
             return s.arraySync()
         })
@@ -419,15 +429,14 @@ export class Environment {
     // }
 
     static getPoint(actor) {
-        let point = (actor.HP / actor.maxHP) - 1
-        point += (actor.HP / actor.maxHP) - (actor.opponent.HP / actor.opponent.maxHP)
+        let point = 0
 
 
         if (actor._state["chapter"] == "hitRecover") {
-            point -= (actor.cumulativeDamage / actor.maxCumulativeDamage) * 10
+            point -= 1
         }
         else if (actor.opponent._state["chapter"] == "hitRecover") {
-            point += (actor.opponent.cumulativeDamage / actor.opponent.maxCumulativeDamage) * 10
+            point += 1
         }
 
 

@@ -67,6 +67,7 @@ export class Environment {
             last[player["name"]]["memory"].fill(Environment.getState(last[player["name"]]))
             return last
         }, {})
+        this.steps = 0
 
         this.channel = new BroadcastChannel('agent');
         this.isReturnCtrl = true
@@ -253,6 +254,7 @@ export class Environment {
     }
 
     nextStep() {
+        this.steps += 1
         Object.keys(this.players).forEach((playerName) => {
             this.players[playerName]["memory"].unshift(
                 Environment.getState(this.players[playerName])
@@ -261,15 +263,21 @@ export class Environment {
                 this.players[playerName]["memory"].pop()
             }
 
-            this.players[playerName]["point"] = [
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"]),
-                Environment.getPoint(this.players[playerName]["actor"])
-            ]
+            if (this.players[playerName]["point"].length !== undefined) {
+                this.players[playerName]["point"] = this.players[playerName]["point"].map(point => {
+                    return point + Environment.getPoint(this.players[playerName]["actor"])
+                })
+            } else {
+                this.players[playerName]["point"] = [
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"])
+                ]
+            }
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
@@ -282,7 +290,7 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            rewards: this.players[playerName]["point"],
+                            rewards: this.players[playerName]["point"].map(point => point / this.steps),
                             actions: Object.values(this.players[playerName]["actor"].keyDown)
                                 .reduce((last, v) => {
                                     if (Object.values(v).length != 0) {
@@ -294,12 +302,16 @@ export class Environment {
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
-
                         return acc
                     }, {}),
                 CP: CP
             }
         })
+        this.steps = 0
+        Object.keys(ctrlDatas).forEach(
+            (playerName) => {
+                this.players[playerName]["point"] = 0
+            })
     }
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
@@ -536,16 +548,6 @@ export class Environment {
         }
         if (actor.opponent._state["chapter"] == "hitRecover") {
             point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
-        }
-
-        return point
-    }
-
-    static getMovePoint(actor) {
-        let point = 0
-
-        if (actor.keyDown.left == true && actor.keyDown.right == true) {
-            point = -2 * Math.abs(Environment.getPoint(actor))
         }
 
         return point
