@@ -9,8 +9,8 @@ let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
     sequenceLen: 16,
-    stateVectorLen: 55,
-    layerNum: 36,
+    stateVectorLen: 59,
+    layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,

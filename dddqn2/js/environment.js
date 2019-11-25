@@ -399,6 +399,8 @@ export class Environment {
                 y: actor.mesh.position.y / 11
             }
             let faceTo = actor._faceTo == actor.shouldFaceTo ? 10 : -10
+            let jumpAttackNum = actor.jumpAttackNum
+            let jumpTimes = actor.jumpTimes
 
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
@@ -529,7 +531,7 @@ export class Environment {
             let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
             subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
 
-            return [HP, cumulativeDamage, position.x, position.y, faceTo]
+            return [HP, cumulativeDamage, position.x, position.y, faceTo, jumpAttackNum, jumpTimes]
                 .concat(chapter)
                 .concat(section)
                 .concat(subsection)
