@@ -103,19 +103,80 @@ export class DDDQN {
                 activation: "selu",
             }).apply(cnnLayer)
 
-
             return cnnLayer
         }
-        let input = tf.input({ shape: [18, 32, sequenceLen] })
+
+        let cbam = (inputLayer) => {
+            let x_mean = tf.layers.globalAveragePooling2d({}).apply(inputLayer) // (B, C)
+            x_mean = tf.layers.reshape({ targetShape: [1, 1, x_mean.shape[1]] }).apply(x_mean)
+            x_mean = tf.layers.conv2d({
+                filters: 36 / 2,
+                kernelSize: 1,
+                strides: 1,
+                activation: "selu",
+            }).apply(x_mean)  //(B, 1, 1, C // r)
+            x_mean = tf.layers.conv2d({
+                filters: 36,
+                kernelSize: 1,
+                strides: 1,
+                activation: "selu",
+            }).apply(x_mean)  //(B, 1, 1, C )
+
+            let x_max = tf.layers.globalMaxPooling2d({}).apply(inputLayer) // (B, C)
+            x_max = tf.layers.reshape({ targetShape: [1, 1, x_max.shape[1]] }).apply(x_max)
+            x_max = tf.layers.conv2d({
+                filters: 36 / 2,
+                kernelSize: 1,
+                strides: 1,
+                activation: "selu",
+            }).apply(x_max)  //(B, 1, 1, C // r)
+            x_max = tf.layers.conv2d({
+                filters: 36,
+                kernelSize: 1,
+                strides: 1,
+                activation: "selu",
+            }).apply(x_max)  //(B, 1, 1, C )
+
+            let x = tf.layers.add({}).apply([x_mean, x_max]) // (B, 1, 1, C)
+            x = tfex.layers.lambda({ func: (x) => { return tf.sigmoid(x) }, outputShape: x.shape }).apply(x) // (B, 1, 1, C)
+            x = tf.layers.multiply().apply([cnnLayer, x]) // (B, W, H, C)
+
+            let x_ = tf.layers.reshape({ targetShape: [x.shape[1] * x.shape[2], x.shape[3]] }).apply(x)
+            x_ = tf.layers.permute({
+                dims: [2, 1],
+                inputShape: [x_.shape[1], x_.shape[2]]
+            }).apply(x_)
+            // spatial attention
+            let y_mean = tf.layers.globalAveragePooling1d({}).apply(x_) // (B, W*H)
+            y_mean = tf.layers.reshape({ targetShape: [x.shape[1], x.shape[2], 1] }).apply(y_mean)// (B, W, H, 1)
+
+            let y_max = tf.layers.globalMaxPooling1d({}).apply(x_) // (B, W*H)
+            y_max = tf.layers.reshape({ targetShape: [x.shape[1], x.shape[2], 1] }).apply(y_max)// (B, W, H, 1)
+
+            let y = tfex.layers.lambda({
+                func: (y_mean, y_max) => { return tf.concat([y_mean, y_max], 3) },
+                outputShape: [null, y_max.shape[1], y_max.shape[2], 2]
+            }).apply([y_mean, y_max]) // (B, W, H, 2)
+
+            y = tf.layers.conv2d({
+                filters: 1,
+                kernelSize: 7,
+                activation: "sigmoid",
+                padding: "same"
+            }).apply(y)
+            y = tf.layers.multiply().apply([x, y]) // (B, W, H, C)
+            return y
+        }
+        let input = tf.input({ shape: [30, 30, sequenceLen] })
 
         let cnnLayer = cnnNet(input)
         cnnLayer = cnnNet(cnnLayer)
 
+        cnnLayer = cbam(cnnLayer)
 
         let outputs = actionsNum.map(actionNum => {
             let actionLayer = cnnNet(cnnLayer)
             actionLayer = tf.layers.globalAveragePooling2d({}).apply(actionLayer)
-            console.log(actionLayer)
 
             let value = actionLayer
             {
