@@ -369,7 +369,7 @@ export class DDDQN {
                         return tf.tensor1d(arrayA, 'int32')
                     })
                     let batchRs = arrayRs.map((arrayR) => {
-                        return tf.tensor1d(arrayR, 'int32')
+                        return tf.tensor1d(arrayR, 'float32')
                     })
                     let batchNextS = tf.tensor3d(arrayNextS)
 
