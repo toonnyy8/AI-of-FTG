@@ -175,9 +175,15 @@ export class Environment {
                 }
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
+                    if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -192,9 +198,15 @@ export class Environment {
 
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
-                    )
+                    if (this.players[actorName].actor._faceTo != "right" && actions[2] == 1) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -267,14 +279,12 @@ export class Environment {
                 this.players[playerName]["point"] = this.players[playerName]["point"].map(point => {
                     return point + Environment.getPoint(this.players[playerName]["actor"])
                 })
-                this.players[playerName]["point"][2] += this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0
-                this.players[playerName]["point"][3] += this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0
             } else {
                 this.players[playerName]["point"] = [
                     Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "left" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
-                    Environment.getPoint(this.players[playerName]["actor"]) + this.players[playerName]["actor"].shouldFaceTo != "right" ? Environment.getMovePoint(this.players[playerName]["actor"]) : 0,
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"])
@@ -389,6 +399,7 @@ export class Environment {
                 y: actor.mesh.position.y / 11
             }
             let faceTo = actor._faceTo == actor.shouldFaceTo ? 10 : -10
+
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
@@ -553,7 +564,7 @@ export class Environment {
             point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
         }
 
-        return point
+        return point * 2
     }
 
     static getMovePoint(actor) {

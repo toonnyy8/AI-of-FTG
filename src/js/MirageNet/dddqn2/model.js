@@ -63,14 +63,12 @@ export class DDDQN {
 
     }
 
-    buildModel(
-        {
-            sequenceLen,
-            stateVectorLen,
-            layerNum = 32,
-            actionsNum = [3, 3, 4]
-        }
-    ) {
+    buildModel({
+        sequenceLen,
+        stateVectorLen,
+        layerNum = 32,
+        actionsNum = [3, 3, 4]
+    }) {
         let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
 
         let stateSeqLayer = input
@@ -101,6 +99,7 @@ export class DDDQN {
             }
 
             let value = actionSeqLayer
+
             {
                 value = tf.layers.conv1d({
                     filters: 1,
@@ -112,6 +111,7 @@ export class DDDQN {
             }
 
             let A = actionSeqLayer
+
             {
                 A = tf.layers.conv1d({
                     filters: actionNum,
@@ -190,7 +190,7 @@ export class DDDQN {
                             replayIdxes_[i] = Math.floor(Math.random() * this.memory.length);
                         }
                         let data = this.memory[replayIdxes_[i]]
-                        // console.log(data)
+                            // console.log(data)
                         arrayPrevS.push(data.prevS)
                         for (let j = 0; j < this.actionsNum.length; j++) {
                             arrayAs[j][i] = data.As[j]
@@ -204,26 +204,26 @@ export class DDDQN {
                         return tf.tensor1d(arrayA, 'int32')
                     })
                     let batchRs = arrayRs.map((arrayR) => {
-                        return tf.tensor1d(arrayR, 'int32')
+                        return tf.tensor1d(arrayR, 'float32')
                     })
                     let batchNextS = tf.tensor3d(arrayNextS)
 
                     let grads = this.optimizer.computeGradients(
                         () => {
                             let [targetQs, Qs] = this.tQandQ(
-                                batchPrevS,
-                                batchAs,
-                                batchRs,
-                                batchNextS
-                            )
-                            // tf.addN(
-                            //     this.actionsNum.map((actionNum, actionType) => {
-                            //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                            //     })
-                            // ).arraySync()
-                            //     .forEach((absTD, idx) => {
-                            //         this.memory[replayIdxes_[idx]].p = absTD
-                            //     })
+                                    batchPrevS,
+                                    batchAs,
+                                    batchRs,
+                                    batchNextS
+                                )
+                                // tf.addN(
+                                //     this.actionsNum.map((actionNum, actionType) => {
+                                //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                                //     })
+                                // ).arraySync()
+                                //     .forEach((absTD, idx) => {
+                                //         this.memory[replayIdxes_[idx]].p = absTD
+                                //     })
                             let loss = tf.mean(
                                 tf.stack(
                                     this.actionsNum.map((actionNum, actionType) => {
@@ -241,15 +241,15 @@ export class DDDQN {
 
                     this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
                         acc[gn] = grads[idx]
-                        // if (gn == "weighted_average_WeightedAverage1/w") {
-                        //     acc[gn].print()
-                        // }
+                            // if (gn == "weighted_average_WeightedAverage1/w") {
+                            //     acc[gn].print()
+                            // }
                         return acc
                     }, {}))
 
                     this.count++
 
-                    this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
+                        this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
 
                     if (this.updateTargetStep < 1) {
                         this.targetModel.setWeights(
@@ -270,12 +270,12 @@ export class DDDQN {
             if (this.memory.length != 0) {
                 if (usePrioritizedReplay) {
                     let prioritizedReplayBuffer = tf.tidy(() => {
-                        let prioritys = tf.tensor(this.memory.map(mem => mem.p))
-                        prioritys = tf.div(prioritys, tf.sum(prioritys, 0, true))
-                        // prioritys.print()
-                        return tf.multinomial(prioritys, replayNum, null, true).arraySync()
-                    })
-                    // console.log(prioritizedReplayBuffer)
+                            let prioritys = tf.tensor(this.memory.map(mem => mem.p))
+                            prioritys = tf.div(prioritys, tf.sum(prioritys, 0, true))
+                                // prioritys.print()
+                            return tf.multinomial(prioritys, replayNum, null, true).arraySync()
+                        })
+                        // console.log(prioritizedReplayBuffer)
                     train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
                         return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
                     }))
@@ -342,10 +342,10 @@ export class DDDQN {
                         batchNextS
                     )
                     tf.addN(
-                        this.actionsNum.map((actionNum, actionType) => {
-                            return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                        })
-                    ).arraySync()
+                            this.actionsNum.map((actionNum, actionType) => {
+                                return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                            })
+                        ).arraySync()
                         .forEach((absTD, idx) => {
                             this.memory[begin + idx].p = absTD
                         })
