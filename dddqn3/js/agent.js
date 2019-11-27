@@ -1,5 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
-import { dddqn } from "../../src/js/MirageNet/dddqn2"
+import { dddqn } from "../../src/js/MirageNet/dddqn3"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
@@ -48,9 +48,9 @@ tf.ready().then(() => {
                                 .predict(
                                     tf.tensor(
                                         Object.values(e.data.args.archives)
-                                        .map(archive => {
-                                            return archive.state
-                                        })
+                                            .map(archive => {
+                                                return archive.state
+                                            })
                                     )
                                 )
                             if (actionsNum.length == 1) {
