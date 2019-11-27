@@ -4,7 +4,7 @@ import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
-// tf.enableProdMode()
+    // tf.enableProdMode()
 
 export class Environment {
     constructor(
@@ -175,9 +175,15 @@ export class Environment {
                 }
             case 1:
                 {
+                    // if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
+                    //     document.dispatchEvent(
+                    //         this.players[actorName].keySet["left"].keyup
+                    //     )
+                    // } else {
                     document.dispatchEvent(
                         this.players[actorName].keySet["left"].keydown
                     )
+                    // }
                     break;
                 }
         }
@@ -192,9 +198,15 @@ export class Environment {
 
             case 1:
                 {
+                    // if (this.players[actorName].actor._faceTo != "right" && actions[2] == 1) {
+                    //     document.dispatchEvent(
+                    //         this.players[actorName].keySet["right"].keyup
+                    //     )
+                    // } else {
                     document.dispatchEvent(
                         this.players[actorName].keySet["right"].keydown
                     )
+                    // }
                     break;
                 }
         }
@@ -302,6 +314,7 @@ export class Environment {
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
+
                         return acc
                     }, {}),
                 CP: CP
@@ -316,14 +329,14 @@ export class Environment {
 
     train(bsz = 32, replayIdxes = [null], usePrioritizedReplay = false) {
         this.channel.postMessage({
-            instruction: "train",
-            args: {
-                bsz: bsz,
-                replayIdxes: replayIdxes,
-                usePrioritizedReplay: usePrioritizedReplay
-            }
-        })
-        // console.log("train")
+                instruction: "train",
+                args: {
+                    bsz: bsz,
+                    replayIdxes: replayIdxes,
+                    usePrioritizedReplay: usePrioritizedReplay
+                }
+            })
+            // console.log("train")
     }
 
     init() {
@@ -340,10 +353,10 @@ export class Environment {
     }
     save() {
         this.channel.postMessage({
-            instruction: "save",
-            args: {}
-        })
-        // console.log("save")
+                instruction: "save",
+                args: {}
+            })
+            // console.log("save")
     }
     load() {
         tf.tidy(() => {
@@ -353,16 +366,16 @@ export class Environment {
 
             load.onchange = event => {
                 const files = load.files
-                // console.log(files[0])
+                    // console.log(files[0])
                 var reader = new FileReader()
                 reader.addEventListener("loadend", () => {
                     this.channel.postMessage({
-                        instruction: "load",
-                        args: {
-                            weightsBuffer: new Uint8Array(reader.result)
-                        }
-                    })
-                    // console.log("load")
+                            instruction: "load",
+                            args: {
+                                weightsBuffer: new Uint8Array(reader.result)
+                            }
+                        })
+                        // console.log("load")
                 });
                 reader.readAsArrayBuffer(files[0])
             };
@@ -386,6 +399,9 @@ export class Environment {
                 y: actor.mesh.position.y / 11
             }
             let faceTo = actor._faceTo == actor.shouldFaceTo ? 10 : -10
+            let jumpAttackNum = actor.jumpAttackNum
+            let jumpTimes = actor.jumpTimes
+
 
             let chapter = new Array(4).fill(-1 * actor._state["frame"])
             switch (actor._state["chapter"]) {
@@ -515,7 +531,7 @@ export class Environment {
             let subsubsection = new Array(4).fill(-1 * actor._state["frame"])
             subsubsection[actor._state["subsubsection"]] = actor._state["frame"]
 
-            return [HP, cumulativeDamage, position.x, position.y, faceTo]
+            return [HP, cumulativeDamage, position.x, position.y, faceTo, jumpAttackNum, jumpTimes]
                 .concat(chapter)
                 .concat(section)
                 .concat(subsection)
@@ -525,12 +541,12 @@ export class Environment {
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
             .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
+                    if (Object.values(v).length != 0) {
+                        return last.concat(Object.values(v))
+                    } else {
+                        return last.concat(v)
+                    }
+                }, [])
                 .map((v) => {
                     let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
                     return v ?
@@ -548,6 +564,16 @@ export class Environment {
         }
         if (actor.opponent._state["chapter"] == "hitRecover") {
             point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
+        }
+
+        return point
+    }
+
+    static getMovePoint(actor) {
+        let point = 0
+
+        if (actor.keyDown.left == true && actor.keyDown.right == true) {
+            point = -2 * Math.abs(Environment.getPoint(actor))
         }
 
         return point

@@ -1,5 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
-import { dddqn } from "../../src/js/MirageNet/dddqn3"
+import { dddqn } from "../../src/js/MirageNet/dddqn2"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
@@ -9,8 +9,8 @@ let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
     sequenceLen: 16,
-    stateVectorLen: 55,
-    layerNum: 36,
+    stateVectorLen: 59,
+    layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,
@@ -48,15 +48,14 @@ tf.ready().then(() => {
                                 .predict(
                                     tf.tensor(
                                         Object.values(e.data.args.archives)
-                                            .map(archive => {
-                                                return archive.state
-                                            })
+                                        .map(archive => {
+                                            return archive.state
+                                        })
                                     )
                                 )
                             if (actionsNum.length == 1) {
                                 outputActions = [outputActions]
                             }
-                            // tf.concat(outputActions, 1).print()
                             outputActions = outputActions.map(outputAction => {
                                 outputAction = tf.softmax(outputAction, 1)
                                 if (e.data.args.CP) { //如果有補正機率就執行這段

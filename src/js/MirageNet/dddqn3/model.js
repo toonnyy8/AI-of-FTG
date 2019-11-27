@@ -140,14 +140,12 @@ export class DDDQN {
             outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
         }).apply(actions)
 
-        outputLayer = tf.layers.dense({
+        let denseLayer = tf.layers.dense({
             units: stateVectorLen,
             activation: "selu"
-        }).apply(outputLayer)
-        outputLayer = tf.layers.dense({
-            units: stateVectorLen,
-            activation: "selu"
-        }).apply(outputLayer)
+        })
+        outputLayer = denseLayer.apply(outputLayer)
+        outputLayer = denseLayer.apply(outputLayer)
         outputLayer = tf.layers.dense({
             units: actionsNum.reduce((prev, curr) => prev + curr, 0),
             activation: "selu"
