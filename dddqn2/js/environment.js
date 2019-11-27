@@ -175,15 +175,15 @@ export class Environment {
                 }
             case 1:
                 {
-                    // if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["left"].keyup
-                    //     )
-                    // } else {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
-                    // }
+                    if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -198,15 +198,15 @@ export class Environment {
 
             case 1:
                 {
-                    // if (this.players[actorName].actor._faceTo != "right" && actions[2] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["right"].keyup
-                    //     )
-                    // } else {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
-                    )
-                    // }
+                    if (this.players[actorName].actor._faceTo != "right" && actions[2] == 1) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
         }
