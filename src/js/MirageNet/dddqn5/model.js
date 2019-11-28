@@ -127,15 +127,24 @@ export class DDDQN {
 
         let [player1Q, player2Q] = tfex.layers.lambda({
             func: (x) => {
-                return tf.split(x, 2, 0)
+                let [player1Q, player2Q] = tf.split(x, 2, 0)
+                return [player1Q, player2Q]
             },
             outputShape: [
                 [null, actionsNum.reduce((prev, curr) => prev + curr, 0)],
                 [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
             ]
-        }).apply([input])
+        }).apply([Q])
 
-        let adversarial = tf.layers.multiply({}).apply([player1Q, tf.layers.softmax({ axis: 1 }).apply(player2Q)])
+        player1Q = tf.layers.repeatVector({ n: actionsNum.reduce((prev, curr) => prev + curr, 0), inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0)] }).apply(player1Q)
+        player1Q = tf.layers.permute({
+            dims: [2, 1],
+            inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0)]
+        }).apply(player1Q)
+
+        player2Q = tf.layers.softmax({ axis: 1 }).apply(player2Q)
+
+        let adversarial = tf.layers.multiply({}).apply([player1Q, player2Q])
 
         adversarial = tf.layers.reshape({
             targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
@@ -154,7 +163,7 @@ export class DDDQN {
                 return tf.split(outputLayer, actionsNum, 1)
             },
             outputShape: actionsNum.map(actionNum => [null, actionNum])
-        }).apply([Q])
+        }).apply([adversarial])
 
 
         return tf.model({ inputs: [input], outputs: outputs })
