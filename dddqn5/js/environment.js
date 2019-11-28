@@ -141,9 +141,9 @@ export class Environment {
 
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
-                    )
+                    // document.dispatchEvent(
+                    //     this.players[actorName].keySet["jump"].keyup
+                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keydown
                     )
@@ -225,9 +225,9 @@ export class Environment {
 
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
+                    // document.dispatchEvent(
+                    //     this.players[actorName].keySet.attack["small"].keyup
+                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keydown
                     )
@@ -246,9 +246,9 @@ export class Environment {
 
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
+                    // document.dispatchEvent(
+                    //     this.players[actorName].keySet.attack["medium"].keyup
+                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keydown
                     )
@@ -267,9 +267,9 @@ export class Environment {
 
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
+                    // document.dispatchEvent(
+                    //     this.players[actorName].keySet.attack["large"].keyup
+                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
                     )
@@ -552,7 +552,35 @@ export class Environment {
         }
 
         return getActorState(player["actor"])
+            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
+                if (Object.values(v).length != 0) {
+                    return last.concat(Object.values(v))
+                } else {
+                    return last.concat(v)
+                }
+            }, [])
+                .map((v) => {
+                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
+                    return v ?
+                        faceTo :
+                        -1 * faceTo
+                })
+            )
             .concat(getActorState(player["actor"].opponent))
+            .concat(Object.values(player["actor"].opponent.keyDown).reduce((last, v) => {
+                if (Object.values(v).length != 0) {
+                    return last.concat(Object.values(v))
+                } else {
+                    return last.concat(v)
+                }
+            }, [])
+                .map((v) => {
+                    let faceTo = player["actor"].opponent._faceTo == player["actor"].opponent.shouldFaceTo ? 1 : -1
+                    return v ?
+                        faceTo :
+                        -1 * faceTo
+                })
+            )
     }
 
     static getPoint(actor) {

@@ -90,7 +90,7 @@ export class DDDQN {
         stateSeqLayer = tf.layers.conv1d({
             filters: stateVectorLen * 2,
             kernelSize: [sequenceLen],
-            activation: "softmax",
+            activation: "selu",
         }).apply(stateSeqLayer)
 
         let value = stateSeqLayer
@@ -144,11 +144,31 @@ export class DDDQN {
 
         player2Q = tf.layers.softmax({ axis: 1 }).apply(player2Q)
 
-        let adversarial = tf.layers.multiply({}).apply([player1Q, player2Q])
+        let opponentAdvantage = tf.layers.multiply({}).apply([player1Q, player2Q])// 對手優勢分析
+        let opponentDisadvantage = tf.layers.multiply({}).apply([
+            player1Q,
+            tfex.layers.lambda({
+                func: (x) => {
+                    return tf.sub(1, x)
+                },
+                outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
+            }).apply([player2Q])
+        ])// 對手劣勢分析
 
-        adversarial = tf.layers.reshape({
+        opponentAdvantage = tf.layers.reshape({
             targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
-        }).apply(adversarial)
+        }).apply(opponentAdvantage)
+
+        opponentDisadvantage = tf.layers.reshape({
+            targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
+        }).apply(opponentDisadvantage)
+
+        let adversarial = tfex.layers.lambda({
+            func: (x, y) => {
+                return tf.concat([x, y], 3)
+            },
+            outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 2]
+        }).apply([opponentAdvantage, opponentDisadvantage])
 
         adversarial = tf.layers.conv2d({
             filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
