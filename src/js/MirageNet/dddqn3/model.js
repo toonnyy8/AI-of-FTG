@@ -85,7 +85,7 @@ export class DDDQN {
         stateSeqLayer = tf.layers.conv1d({
             filters: stateVectorLen * 2,
             kernelSize: [sequenceLen],
-            activation: "selu",
+            activation: "softmax",
         }).apply(stateSeqLayer)
 
         let value = stateSeqLayer
