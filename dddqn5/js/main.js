@@ -115,7 +115,7 @@ let main = () => {
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(64, [], false)
+            env.train(2, [], false)
         }
     }, 32)
 
@@ -161,7 +161,7 @@ let main = () => {
                 if (epochCount == Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))) {
                     env.updatePrioritys()
                 } else {
-                    env.train(64, [], true)
+                    env.train(2, [], true)
                 }
 
                 env.isReturnTrain = false
@@ -174,7 +174,7 @@ let main = () => {
             }
         } else {
             epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))
-                // console.log(epochCount)
+            // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
                     game.player1.HP -= 0.5

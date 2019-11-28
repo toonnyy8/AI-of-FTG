@@ -9,7 +9,7 @@ let actionsNum = [2, 2, 2, 2, 2, 2, 2]
 
 let dddqnModel = dddqn({
     sequenceLen: 16,
-    stateVectorLen: 59,
+    stateVectorLen: 52,
     layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 6400,
@@ -45,12 +45,12 @@ tf.ready().then(() => {
                         if (Object.keys(e.data.args.archives).length != 0) {
                             let outputActions = dddqnModel
                                 .model
-                                .predict(
+                                .predictOnBatch(
                                     tf.tensor(
                                         Object.values(e.data.args.archives)
-                                        .map(archive => {
-                                            return archive.state
-                                        })
+                                            .map(archive => {
+                                                return archive.state
+                                            })
                                     )
                                 )
                             if (actionsNum.length == 1) {

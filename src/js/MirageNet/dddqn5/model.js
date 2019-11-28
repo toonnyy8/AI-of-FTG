@@ -70,8 +70,13 @@ export class DDDQN {
         actionsNum = [3, 3, 4]
     }) {
         let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
-
-        let stateSeqLayer = input
+        let stateSeqLayer = tfex.layers.lambda({
+            func: (x) => {
+                let [player1, player2] = tf.split(x, 2, 2)
+                return tf.concat([x, tf.concat([player2, player1], 2)], 0)
+            },
+            outputShape: [null, sequenceLen, stateVectorLen]
+        }).apply([input])
 
         for (let i = 0; i < layerNum; i++) {
             stateSeqLayer = tf.layers.conv1d({
@@ -118,6 +123,32 @@ export class DDDQN {
         }
 
         let Q = tf.layers.add().apply([value, A])
+
+
+        let [player1Q, player2Q] = tfex.layers.lambda({
+            func: (x) => {
+                return tf.split(x, 2, 0)
+            },
+            outputShape: [
+                [null, actionsNum.reduce((prev, curr) => prev + curr, 0)],
+                [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
+            ]
+        }).apply([input])
+
+        let adversarial = tf.layers.multiply({}).apply([player1Q, tf.layers.softmax({ axis: 1 }).apply(player2Q)])
+
+        adversarial = tf.layers.reshape({
+            targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
+        }).apply(adversarial)
+
+        adversarial = tf.layers.conv2d({
+            filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            kernelSize: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            activation: "selu"
+        }).apply(adversarial)
+
+        adversarial = tf.layers.flatten().apply(adversarial)
+
         let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
                 return tf.split(outputLayer, actionsNum, 1)
@@ -125,90 +156,13 @@ export class DDDQN {
             outputShape: actionsNum.map(actionNum => [null, actionNum])
         }).apply([Q])
 
-        // let actions = actionsNum.map(actionNum => {
-        //     let actionSeqLayer = stateSeqLayer
-
-        //     for (let i = 0; i < Math.ceil(layerNum ** 0.5); i++) {
-        //         actionSeqLayer = tf.layers.conv1d({
-        //             filters: stateVectorLen,
-        //             kernelSize: [1],
-        //             activation: "selu",
-        //             padding: "same"
-        //         }).apply(actionSeqLayer)
-        //     }
-
-        //     // let value = actionSeqLayer
-
-        //     // {
-        //     //     value = tf.layers.conv1d({
-        //     //         filters: 1,
-        //     //         kernelSize: [1],
-        //     //         padding: "same",
-        //     //         activation: "selu"
-        //     //     }).apply(value)
-        //     //     value = tf.layers.flatten().apply(value)
-        //     // }
-
-        //     let A = actionSeqLayer
-
-        //     {
-        //         A = tf.layers.conv1d({
-        //             filters: actionNum,
-        //             kernelSize: [1],
-        //             padding: "same",
-        //             activation: "selu"
-        //         }).apply(A)
-        //         A = tf.layers.flatten().apply(A)
-
-        //         A = tfex.layers.lambda({
-        //             func: (x) => {
-        //                 return tf.sub(x, tf.mean(x, 1, true))
-        //             }
-        //         }).apply([A])
-        //     }
-
-        //     let Q = tf.layers.add().apply([value, A])
-
-        //     return Q
-        // })
-
-        // let outputLayer = tfex.layers.lambda({
-        //     func: (...actions) => {
-        //         return tf.concat(actions, 1)
-        //     },
-        //     outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
-        // }).apply(actions)
-
-        // outputLayer = tf.layers.dense({
-        //     units: stateVectorLen * 2,
-        //     activation: "selu"
-        // }).apply(outputLayer)
-        // outputLayer = tf.layers.dense({
-        //     units: stateVectorLen,
-        //     activation: "selu"
-        // }).apply(outputLayer)
-        // outputLayer = tf.layers.dense({
-        //     units: stateVectorLen * 2,
-        //     activation: "selu"
-        // }).apply(outputLayer)
-        // outputLayer = tf.layers.dense({
-        //     units: actionsNum.reduce((prev, curr) => prev + curr, 0),
-        //     activation: "selu"
-        // }).apply(outputLayer)
-
-        // let outputs = tfex.layers.lambda({
-        //     func: (outputLayer) => {
-        //         return tf.split(outputLayer, actionsNum, 1)
-        //     },
-        //     outputShape: actionsNum.map(actionNum => [null, actionNum])
-        // }).apply([outputLayer])
 
         return tf.model({ inputs: [input], outputs: outputs })
     }
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            let predictions = this.model.predict(batchPrevS)
+            let predictions = this.model.predictOnBatch(batchPrevS)
             if (this.actionsNum.length == 1) {
                 predictions = [predictions]
             }
@@ -222,7 +176,7 @@ export class DDDQN {
                 ).sum(1)
             })
 
-            let targetPredictions = this.targetModel.predict(batchNextS)
+            let targetPredictions = this.targetModel.predictOnBatch(batchNextS)
             if (this.actionsNum.length == 1) {
                 targetPredictions = [targetPredictions]
             }

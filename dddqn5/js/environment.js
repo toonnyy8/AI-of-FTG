@@ -3,7 +3,8 @@ import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
-tf.setBackend("webgl")
+// tf.setBackend("webgl")
+tf.setBackend("cpu")
 // tf.enableProdMode()
 
 export class Environment {
@@ -141,6 +142,9 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
+                        this.players[actorName].keySet["jump"].keyup
+                    )
+                    document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keydown
                     )
                     break;
@@ -222,6 +226,9 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keydown
                     )
                     break;
@@ -240,6 +247,9 @@ export class Environment {
             case 1:
                 {
                     document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keyup
+                    )
+                    document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keydown
                     )
                     break;
@@ -257,6 +267,9 @@ export class Environment {
 
             case 1:
                 {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keyup
+                    )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
                     )
@@ -540,20 +553,6 @@ export class Environment {
 
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
-            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
-                .map((v) => {
-                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
-                    return v ?
-                        faceTo :
-                        -1 * faceTo
-                })
-            )
     }
 
     static getPoint(actor) {
