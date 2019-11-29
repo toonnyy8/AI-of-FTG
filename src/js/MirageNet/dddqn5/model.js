@@ -124,7 +124,6 @@ export class DDDQN {
 
         let Q = tf.layers.add().apply([value, A])
 
-
         let [player1Q, player2Q] = tfex.layers.lambda({
             func: (x) => {
                 let [player1Q, player2Q] = tf.split(x, 2, 0)
@@ -136,23 +135,24 @@ export class DDDQN {
             ]
         }).apply([Q])
 
+        Q = player1Q
+
         player1Q = tf.layers.repeatVector({ n: actionsNum.reduce((prev, curr) => prev + curr, 0), inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0)] }).apply(player1Q)
         player1Q = tf.layers.permute({
             dims: [2, 1],
             inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0)]
         }).apply(player1Q)
 
-        player2Q = tf.layers.softmax({ axis: 1 }).apply(player2Q)
-
-        let opponentAdvantage = tf.layers.multiply({}).apply([player1Q, player2Q])// 對手優勢分析
+        let opponentAdvantage = tf.layers.multiply({}).apply([
+            player1Q, tf.layers.softmax({ axis: 1 }).apply(player2Q)
+        ])// 對手優勢分析
         let opponentDisadvantage = tf.layers.multiply({}).apply([
             player1Q,
-            tfex.layers.lambda({
-                func: (x) => {
-                    return tf.sub(1, x)
-                },
-                outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0)]
-            }).apply([player2Q])
+            tf.layers.softmax({ axis: 1 }).apply(
+                tfex.layers.lambda({
+                    func: (x) => { return tf.mul(x, -1) }
+                }).apply([player2Q])
+            )
         ])// 對手劣勢分析
 
         opponentAdvantage = tf.layers.reshape({
@@ -171,19 +171,31 @@ export class DDDQN {
         }).apply([opponentAdvantage, opponentDisadvantage])
 
         adversarial = tf.layers.conv2d({
-            filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            filters: actionsNum.reduce((prev, curr) => prev + curr, 0) * 2,
             kernelSize: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            activation: "selu"
+        }).apply(adversarial)
+        adversarial = tf.layers.conv2d({
+            filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            kernelSize: 1,
             activation: "selu"
         }).apply(adversarial)
 
         adversarial = tf.layers.flatten().apply(adversarial)
 
-        let outputs = tfex.layers.lambda({
+        adversarial = tfex.layers.lambda({
+            func: (x) => {
+                return tf.sub(x, tf.mean(x, 1, true))
+            }
+        }).apply([adversarial])
+
+        let outputs = tf.layers.add({}).apply([Q, adversarial])
+        outputs = tfex.layers.lambda({
             func: (outputLayer) => {
                 return tf.split(outputLayer, actionsNum, 1)
             },
             outputShape: actionsNum.map(actionNum => [null, actionNum])
-        }).apply([adversarial])
+        }).apply([outputs])
 
 
         return tf.model({ inputs: [input], outputs: outputs })
