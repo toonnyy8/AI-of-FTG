@@ -46,7 +46,7 @@ let main = () => {
         name: "player2",
         actor: game.player2,
         keySet: keySets[1]
-    }], canvas, 5000, 16)
+    }], canvas, 5000, 4)
 
     {
         document.getElementById("player1").onclick = () => {
@@ -115,9 +115,9 @@ let main = () => {
 
     let trainLoop = new tool.Loop(() => {
         if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(2, [], false)
+            env.train(8, [], false)
         }
-    }, 32)
+    }, 8)
 
     let ctrlLoop = new tool.Loop(() => {
         // if (
@@ -161,7 +161,7 @@ let main = () => {
                 if (epochCount == Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))) {
                     env.updatePrioritys()
                 } else {
-                    env.train(2, [], true)
+                    env.train(64, [], true)
                 }
 
                 env.isReturnTrain = false
