@@ -138,15 +138,13 @@ export class DDDQN {
         }).apply(player1Q)
 
         let opponentAdvantage = tf.layers.multiply({}).apply([
-            player1Q, tf.layers.softmax({ axis: 1 }).apply(player2Q)
+            player1Q, player2Q
         ])// 對手優勢分析
         let opponentDisadvantage = tf.layers.multiply({}).apply([
             player1Q,
-            tf.layers.softmax({ axis: 1 }).apply(
-                tfex.layers.lambda({
-                    func: (x) => { return tf.mul(x, -1) }
-                }).apply([player2Q])
-            )
+            tfex.layers.lambda({
+                func: (x) => { return tf.mul(x, -1) }
+            }).apply([player2Q])
         ])// 對手劣勢分析
 
         opponentAdvantage = tf.layers.reshape({
@@ -177,19 +175,13 @@ export class DDDQN {
 
         adversarial = tf.layers.flatten().apply(adversarial)
 
-        adversarial = tfex.layers.lambda({
-            func: (x) => {
-                return tf.sub(x, tf.mean(x, 1, true))
-            }
-        }).apply([adversarial])
-
-        let outputs = tf.layers.add({}).apply([Q, adversarial])
-        outputs = tfex.layers.lambda({
+        //    outputs = tf.layers.add({}).apply([Q, adversarial])
+        let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
                 return tf.split(outputLayer, actionsNum, 1)
             },
             outputShape: actionsNum.map(actionNum => [null, actionNum])
-        }).apply([outputs])
+        }).apply([adversarial])
 
 
         return tf.model({ inputs: [input], outputs: outputs })

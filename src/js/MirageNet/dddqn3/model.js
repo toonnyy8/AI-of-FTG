@@ -69,65 +69,72 @@ export class DDDQN {
 
         for (let i = 0; i < layerNum; i++) {
             stateSeqLayer = tf.layers.conv1d({
-                filters: stateVectorLen * 2,
+                filters: stateVectorLen,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
             }).apply(stateSeqLayer)
         }
 
-        stateSeqLayer = tf.layers.conv1d({
-            filters: stateVectorLen * 2,
-            kernelSize: [sequenceLen],
-            activation: "softmax",
-        }).apply(stateSeqLayer)
+        let outputs = actionsNum.map(actionNum => {
+            let actionSeqLayer = tf.layers.conv1d({
+                filters: stateVectorLen,
+                kernelSize: [sequenceLen],
+                activation: "selu",
+            }).apply(stateSeqLayer)
 
-        let value = stateSeqLayer
-        {
-            value = tf.layers.conv1d({
-                filters: 1,
-                kernelSize: [1],
-                padding: "same",
-                activation: "selu"
-            }).apply(value)
-            value = tf.layers.flatten().apply(value)
-        }
+            for (let i = 0; i < Math.ceil(layerNum ** 0.5); i++) {
+                actionSeqLayer = tf.layers.conv1d({
+                    filters: stateVectorLen,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(actionSeqLayer)
+            }
 
-        let A = stateSeqLayer
+            let value = actionSeqLayer
 
-        {
-            A = tf.layers.conv1d({
-                filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
-                kernelSize: [1],
-                padding: "same",
-                activation: "selu"
-            }).apply(A)
-            A = tf.layers.flatten().apply(A)
+            {
+                value = tf.layers.conv1d({
+                    filters: 1,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(value)
+                value = tf.layers.flatten().apply(value)
+            }
 
-            A = tfex.layers.lambda({
-                func: (x) => {
-                    return tf.sub(x, tf.mean(x, 1, true))
-                }
-            }).apply([A])
-        }
+            let A = actionSeqLayer
 
-        let Q = tf.layers.add().apply([value, A])
-        let outputs = tfex.layers.lambda({
-            func: (outputLayer) => {
-                return tf.split(outputLayer, actionsNum, 1)
-            },
-            outputShape: actionsNum.map(actionNum => [null, actionNum])
-        }).apply([Q])
+            {
+                A = tf.layers.conv1d({
+                    filters: actionNum,
+                    kernelSize: [1],
+                    activation: "selu",
+                    padding: "same"
+                }).apply(A)
+                A = tf.layers.flatten().apply(A)
 
+                A = tfex.layers.lambda({
+                    func: (x) => {
+                        return tf.sub(x, tf.mean(x, 1, true))
+                    }
+                }).apply([A])
+            }
+
+            let Q = tf.layers.add().apply([value, A])
+
+            return Q
+        })
 
         return tf.model({ inputs: [input], outputs: outputs })
     }
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            let predictions = this.model.predict(batchPrevS)
+            let evel = this.model.predict(batchPrevS)
             if (this.actionsNum.length == 1) {
-                predictions = [predictions]
+                evel = [evel]
             }
             const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
@@ -135,10 +142,14 @@ export class DDDQN {
                         batchAs[actionType],
                         actionNum
                     ),
-                    predictions[actionType]
+                    evel[actionType]
                 ).sum(1)
             })
 
+            let predictions = this.model.predict(batchNextS)
+            if (this.actionsNum.length == 1) {
+                predictions = [predictions]
+            }
             let targetPredictions = this.targetModel.predict(batchNextS)
             if (this.actionsNum.length == 1) {
                 targetPredictions = [targetPredictions]
@@ -233,6 +244,7 @@ export class DDDQN {
                         // }
                         return acc
                     }, {}))
+                    // this.optimizer.applyGradients(grads)
 
                     this.count++
 

@@ -5,18 +5,18 @@ const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 
-let actionsNum = [2, 2, 2, 2, 2, 2, 2]
+let actionsNum = [2, 2, 3, 4]
 
 let dddqnModel = dddqn({
-    sequenceLen: 4,
+    sequenceLen: 16,
     stateVectorLen: 59,
     layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
-    updateTargetStep: 0.99,
-    discounts: [1, 1, 1, 1, 0.1, 0.1, 0.1]
+    updateTargetStep: 0.01,
+    discounts: [0.95, 0.95, 0.95, 0.1]
 })
 
 let preArchives = {
@@ -73,16 +73,18 @@ tf.ready().then(() => {
                             })
 
                             let actions = {}
-                            let chooseByArgMax = tf.concat(outputActions)
-                                .argMax(1)
-                                .reshape([outputActions.length, -1])
-                                .transpose([1, 0])
-                                .arraySync()
 
-                            let chooseByMultinomial = tf.multinomial(tf.concat(outputActions), 1, null, true)
-                                .reshape([outputActions.length, -1])
-                                .transpose([1, 0])
-                                .arraySync()
+                            let chooseByArgMax = tf.concat(
+                                outputActions.map((action) => {
+                                    return tf.argMax(action, 1).reshape([-1, 1])
+                                }), 1
+                            ).arraySync()
+
+                            let chooseByMultinomial = tf.concat(
+                                outputActions.map((action) => {
+                                    return tf.multinomial(action, 1, null, true)
+                                }), 1
+                            ).arraySync()
 
                             Object.keys(e.data.args.archives)
                                 .forEach((playerName, idx) => {
