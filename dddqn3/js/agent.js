@@ -31,7 +31,7 @@ let preArchives = {
 }
 
 tf.ready().then(() => {
-    let channel = new BroadcastChannel('agent');
+    let channel = new BroadcastChannel('dddqn3');
     channel.onmessage = (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {

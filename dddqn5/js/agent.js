@@ -16,7 +16,7 @@ let dddqnModel = dddqn({
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.99,
-    discount: 0.95
+    discounts: [1, 1, 1, 1, 0.1, 0.1, 0.1]
 })
 
 let preArchives = {
@@ -31,7 +31,7 @@ let preArchives = {
 }
 
 tf.ready().then(() => {
-    let channel = new BroadcastChannel('agent');
+    let channel = new BroadcastChannel('dddqn5');
     channel.onmessage = (e) => {
         tf.tidy(() => {
             switch (e.data.instruction) {

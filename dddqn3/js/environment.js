@@ -69,7 +69,7 @@ export class Environment {
         }, {})
         this.steps = 0
 
-        this.channel = new BroadcastChannel('agent');
+        this.channel = new BroadcastChannel('dddqn3');
         this.isReturnCtrl = true
         this.isReturnTrain = true
         this.channel.onmessage = (e) => {

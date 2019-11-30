@@ -70,7 +70,7 @@ export class Environment {
         }, {})
         this.steps = 0
 
-        this.channel = new BroadcastChannel('agent');
+        this.channel = new BroadcastChannel('dddqn5');
         this.isReturnCtrl = true
         this.isReturnTrain = true
         this.channel.onmessage = (e) => {
@@ -584,7 +584,7 @@ export class Environment {
     }
 
     static getPoint(actor) {
-        let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)
+        let point = 0
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP))

@@ -4,23 +4,21 @@ const tfex = registerTfex(tf)
 
 export class DDDQN {
     constructor({
-        sequenceLen = 60,
-        stateVectorLen = 10,
-        embInner = [32, 32, 32],
+        sequenceLen = 4,
+        stateVectorLen = 59,
         layerNum = 8,
-        outputInner = [32, 32],
-        actionsNum = [3, 3, 4],
+        actionsNum = [2, 2, 2, 2, 2, 2, 2],
         memorySize = 1000,
         updateTargetStep = 0.05,
         initLearningRate = 1e-3,
         minLearningRate = 1e-5,
-        discount = 0.99
+        discounts = [1, 1, 1, 1, 0.1, 0.1, 0.1]
     }) {
 
         {
             this.updateTargetStep = updateTargetStep
 
-            this.discount = discount
+            this.discounts = discounts
 
             this.count = 0
 
@@ -31,9 +29,7 @@ export class DDDQN {
             this.model = this.buildModel({
                 sequenceLen: sequenceLen,
                 stateVectorLen: stateVectorLen,
-                embInner: embInner,
                 layerNum: layerNum,
-                outputInner: outputInner,
                 actionsNum: actionsNum
             })
             this.model.summary()
@@ -41,9 +37,7 @@ export class DDDQN {
             this.targetModel = this.buildModel({
                 sequenceLen: sequenceLen,
                 stateVectorLen: stateVectorLen,
-                embInner: embInner,
                 layerNum: layerNum,
-                outputInner: outputInner,
                 actionsNum: actionsNum
             })
 
@@ -80,7 +74,7 @@ export class DDDQN {
 
         for (let i = 0; i < layerNum; i++) {
             stateSeqLayer = tf.layers.conv1d({
-                filters: stateVectorLen,
+                filters: stateVectorLen * 2,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
@@ -232,7 +226,7 @@ export class DDDQN {
                     ),
                     targetPredictions[actionType]
                 ).sum(1)
-                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discount)));
+                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discounts[actionType])));
                 return targets;
             })
             return [targetQs, Qs]
@@ -423,29 +417,25 @@ export class DDDQN {
 }
 
 export function dddqn({
-    sequenceLen = 60,
-    stateVectorLen = 10,
-    embInner = [32, 32, 32],
+    sequenceLen = 4,
+    stateVectorLen = 59,
     layerNum = 8,
-    outputInner = [32, 32],
-    actionsNum = [3, 3, 4],
+    actionsNum = [2, 2, 2, 2, 2, 2, 2],
     memorySize = 1000,
     updateTargetStep = 0.05,
     initLearningRate = 1e-3,
     minLearningRate = 1e-5,
-    discount = 0.99
+    discounts = [1, 1, 1, 1, 0.1, 0.1, 0.1]
 }) {
     return new DDDQN({
         sequenceLen,
         stateVectorLen,
-        embInner,
         layerNum,
-        outputInner,
         actionsNum,
         memorySize,
         updateTargetStep,
         initLearningRate,
         minLearningRate,
-        discount
+        discounts
     })
 }
