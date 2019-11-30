@@ -171,7 +171,7 @@ export class DDDQN {
                     ),
                     targetPredictions[actionType]
                 ).sum(1)
-                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discounts[actionType])));
+                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discount)));
                 return targets;
             })
             return [targetQs, Qs]
