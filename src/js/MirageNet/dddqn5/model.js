@@ -121,7 +121,7 @@ export class DDDQN {
         let [player1Q, player2Q] = tfex.layers.lambda({
             func: (x) => {
                 let [player1Q, player2Q] = tf.split(x, 2, 0)
-                return [player1Q, player2Q]
+                return [player1Q, tfex.funcs.stopGradient(player2Q)]
             },
             outputShape: [
                 [null, actionsNum.reduce((prev, curr) => prev + curr, 0)],
