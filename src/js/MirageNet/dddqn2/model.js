@@ -138,9 +138,9 @@ export class DDDQN {
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            let predictions = this.model.predict(batchPrevS)
+            let evel = this.model.predict(batchPrevS)
             if (this.actionsNum.length == 1) {
-                predictions = [predictions]
+                evel = [evel]
             }
             const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
@@ -148,10 +148,14 @@ export class DDDQN {
                         batchAs[actionType],
                         actionNum
                     ),
-                    predictions[actionType]
+                    evel[actionType]
                 ).sum(1)
             })
 
+            let predictions = this.model.predict(batchNextS)
+            if (this.actionsNum.length == 1) {
+                predictions = [predictions]
+            }
             let targetPredictions = this.targetModel.predict(batchNextS)
             if (this.actionsNum.length == 1) {
                 targetPredictions = [targetPredictions]
@@ -167,7 +171,7 @@ export class DDDQN {
                     ),
                     targetPredictions[actionType]
                 ).sum(1)
-                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discount)));
+                const targets = batchRs[actionType].add(maxQ.mul(tf.scalar(this.discounts[actionType])));
                 return targets;
             })
             return [targetQs, Qs]
@@ -190,7 +194,7 @@ export class DDDQN {
                             replayIdxes_[i] = Math.floor(Math.random() * this.memory.length);
                         }
                         let data = this.memory[replayIdxes_[i]]
-                            // console.log(data)
+                        // console.log(data)
                         arrayPrevS.push(data.prevS)
                         for (let j = 0; j < this.actionsNum.length; j++) {
                             arrayAs[j][i] = data.As[j]
@@ -211,19 +215,19 @@ export class DDDQN {
                     let grads = this.optimizer.computeGradients(
                         () => {
                             let [targetQs, Qs] = this.tQandQ(
-                                    batchPrevS,
-                                    batchAs,
-                                    batchRs,
-                                    batchNextS
-                                )
-                                // tf.addN(
-                                //     this.actionsNum.map((actionNum, actionType) => {
-                                //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                                //     })
-                                // ).arraySync()
-                                //     .forEach((absTD, idx) => {
-                                //         this.memory[replayIdxes_[idx]].p = absTD
-                                //     })
+                                batchPrevS,
+                                batchAs,
+                                batchRs,
+                                batchNextS
+                            )
+                            // tf.addN(
+                            //     this.actionsNum.map((actionNum, actionType) => {
+                            //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                            //     })
+                            // ).arraySync()
+                            //     .forEach((absTD, idx) => {
+                            //         this.memory[replayIdxes_[idx]].p = absTD
+                            //     })
                             let loss = tf.mean(
                                 tf.stack(
                                     this.actionsNum.map((actionNum, actionType) => {
@@ -241,15 +245,15 @@ export class DDDQN {
 
                     this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
                         acc[gn] = grads[idx]
-                            // if (gn == "weighted_average_WeightedAverage1/w") {
-                            //     acc[gn].print()
-                            // }
+                        // if (gn == "weighted_average_WeightedAverage1/w") {
+                        //     acc[gn].print()
+                        // }
                         return acc
                     }, {}))
 
                     this.count++
 
-                        this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
+                    this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
 
                     if (this.updateTargetStep < 1) {
                         this.targetModel.setWeights(
@@ -270,12 +274,12 @@ export class DDDQN {
             if (this.memory.length != 0) {
                 if (usePrioritizedReplay) {
                     let prioritizedReplayBuffer = tf.tidy(() => {
-                            let prioritys = tf.tensor(this.memory.map(mem => mem.p))
-                            prioritys = tf.div(prioritys, tf.sum(prioritys, 0, true))
-                                // prioritys.print()
-                            return tf.multinomial(prioritys, replayNum, null, true).arraySync()
-                        })
-                        // console.log(prioritizedReplayBuffer)
+                        let prioritys = tf.tensor(this.memory.map(mem => mem.p))
+                        prioritys = tf.div(prioritys, tf.sum(prioritys, 0, true))
+                        // prioritys.print()
+                        return tf.multinomial(prioritys, replayNum, null, true).arraySync()
+                    })
+                    // console.log(prioritizedReplayBuffer)
                     train_(prioritizedReplayBuffer.map((prioritizedReplayIdx, idx) => {
                         return loadIdxes[idx] == null || loadIdxes[idx] == undefined ? prioritizedReplayIdx : loadIdxes[idx]
                     }))
@@ -342,10 +346,10 @@ export class DDDQN {
                         batchNextS
                     )
                     tf.addN(
-                            this.actionsNum.map((actionNum, actionType) => {
-                                return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                            })
-                        ).arraySync()
+                        this.actionsNum.map((actionNum, actionType) => {
+                            return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                        })
+                    ).arraySync()
                         .forEach((absTD, idx) => {
                             this.memory[begin + idx].p = absTD
                         })
