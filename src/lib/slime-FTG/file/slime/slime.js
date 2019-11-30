@@ -1476,6 +1476,7 @@ export class Actor {
             case "normal":
                 {
                     this.isHit = false
+                    this.beHitNum = 0
                     // this.cumulativeDamage = 0
                     switch (this._state.section) {
                         case "stand":
