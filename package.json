@@ -30,6 +30,8 @@
         "build:dddqn4": "parcel build --no-content-hash  ./dddqn4/index.html ./dddqn4/agent.html --out-dir build/dddqn4 --public-url=./",
         "dev:dddqn5": "parcel ./dddqn5/index.html ./dddqn5/agent.html -p 8080 --open",
         "build:dddqn5": "parcel build --no-content-hash  ./dddqn5/index.html ./dddqn5/agent.html --out-dir build/dddqn5 --public-url=./",
+        "dev:dddqn6": "parcel ./dddqn6/index.html ./dddqn6/agent.html -p 8080 --open",
+        "build:dddqn6": "parcel build --no-content-hash  ./dddqn6/index.html ./dddqn6/agent.html --out-dir build/dddqn6 --public-url=./",
         "dev:dddqn_webworker": "parcel ./dddqn_webworker/index.html -p 8080 --open",
         "build:dddqn_webworker": "parcel build --no-content-hash  ./dddqn_webworker/index.html --out-dir build/dddqn_webworker --public-url=./",
         "dev:cnn_dddqn": "parcel ./cnn_dddqn/index.html ./cnn_dddqn/agent.html -p 8080 --open",
