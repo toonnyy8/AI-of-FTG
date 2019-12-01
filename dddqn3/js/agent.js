@@ -8,8 +8,8 @@ tf.setBackend("webgl")
 let actionsNum = [2, 2, 3, 2, 2, 2]
 
 let dddqnModel = dddqn({
-    sequenceLen: 16,
-    stateVectorLen: 59,
+    sequenceLen: 4,
+    stateVectorLen: 64,
     layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 6400,

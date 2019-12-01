@@ -69,7 +69,7 @@ export class DDDQN {
 
         for (let i = 0; i < layerNum; i++) {
             stateSeqLayer = tf.layers.conv1d({
-                filters: stateVectorLen,
+                filters: stateVectorLen * 2,
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
@@ -85,7 +85,7 @@ export class DDDQN {
 
             for (let i = 0; i < Math.ceil(layerNum ** 0.5); i++) {
                 actionSeqLayer = tf.layers.conv1d({
-                    filters: stateVectorLen,
+                    filters: stateVectorLen * 2,
                     kernelSize: [1],
                     activation: "selu",
                     padding: "same"
@@ -132,9 +132,9 @@ export class DDDQN {
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            let evel = this.model.predict(batchPrevS)
+            let evalNet = this.model.predict(batchPrevS)
             if (this.actionsNum.length == 1) {
-                evel = [evel]
+                evalNet = [evalNet]
             }
             const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
@@ -142,7 +142,7 @@ export class DDDQN {
                         batchAs[actionType],
                         actionNum
                     ),
-                    evel[actionType]
+                    evalNet[actionType]
                 ).sum(1)
             })
 

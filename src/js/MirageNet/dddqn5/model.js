@@ -138,12 +138,12 @@ export class DDDQN {
         }).apply(player1Q)
 
         let opponentAdvantage = tf.layers.multiply({}).apply([
-            player1Q, player2Q
+            player1Q, tf.layers.softmax().apply(player2Q)
         ])// 對手優勢分析
         let opponentDisadvantage = tf.layers.multiply({}).apply([
             player1Q,
             tfex.layers.lambda({
-                func: (x) => { return tf.mul(x, -1) }
+                func: (x) => { return tf.logSoftmax(x, 1) }
             }).apply([player2Q])
         ])// 對手劣勢分析
 
@@ -189,9 +189,9 @@ export class DDDQN {
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS) {
         return tf.tidy(() => {
-            let predictions = this.model.predictOnBatch(batchPrevS)
+            let evalNet = this.model.predict(batchPrevS)
             if (this.actionsNum.length == 1) {
-                predictions = [predictions]
+                evalNet = [evalNet]
             }
             const Qs = this.actionsNum.map((actionNum, actionType) => {
                 return tf.mul(
@@ -199,11 +199,15 @@ export class DDDQN {
                         batchAs[actionType],
                         actionNum
                     ),
-                    predictions[actionType]
+                    evalNet[actionType]
                 ).sum(1)
             })
 
-            let targetPredictions = this.targetModel.predictOnBatch(batchNextS)
+            let predictions = this.model.predict(batchNextS)
+            if (this.actionsNum.length == 1) {
+                predictions = [predictions]
+            }
+            let targetPredictions = this.targetModel.predict(batchNextS)
             if (this.actionsNum.length == 1) {
                 targetPredictions = [targetPredictions]
             }

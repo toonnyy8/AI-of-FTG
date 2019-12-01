@@ -141,9 +141,6 @@ export class Environment {
 
             case 1:
                 {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet["jump"].keyup
-                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet["jump"].keydown
                     )
@@ -175,19 +172,47 @@ export class Environment {
                     document.dispatchEvent(
                         this.players[actorName].keySet["left"].keyup
                     )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keyup
+                    )
                     break;
                 }
             case 1:
                 {
-                    // if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["left"].keyup
-                    //     )
-                    // } else {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
-                    // }
+                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    if (this.players[actorName].actor.shouldFaceTo == "right") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -195,22 +220,15 @@ export class Environment {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
+                        this.players[actorName].keySet.attack["small"].keyup
                     )
                     break;
                 }
-
             case 1:
                 {
-                    // if (this.players[actorName].actor._faceTo != "right" && actions[2] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["right"].keyup
-                    //     )
-                    // } else {
                     document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
+                        this.players[actorName].keySet.attack["small"].keydown
                     )
-                    // }
                     break;
                 }
         }
@@ -218,45 +236,19 @@ export class Environment {
             case 0:
                 {
                     document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    break;
-                }
-
-            case 1:
-                {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["small"].keyup
-                    // )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
-                    )
-                    break;
-                }
-
-        }
-        switch (actions[5]) {
-            case 0:
-                {
-                    document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
                     break;
                 }
-
             case 1:
                 {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["medium"].keyup
-                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keydown
                     )
                     break;
                 }
-
         }
-        switch (actions[6]) {
+        switch (actions[5]) {
             case 0:
                 {
                     document.dispatchEvent(
@@ -264,12 +256,8 @@ export class Environment {
                     )
                     break;
                 }
-
             case 1:
                 {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["large"].keyup
-                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
                     )
@@ -315,15 +303,18 @@ export class Environment {
                     (acc, playerName) => {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
-                            rewards: this.players[playerName]["point"].map(point => point / this.steps),
-                            actions: Object.values(this.players[playerName]["actor"].keyDown)
-                                .reduce((last, v) => {
-                                    if (Object.values(v).length != 0) {
-                                        return last.concat(Object.values(v))
-                                    } else {
-                                        return last.concat(v)
-                                    }
-                                }, []),
+                            rewards: this.players[playerName]["point"].map((point) => point / this.steps),
+                            actions: [
+                                this.players[playerName]["actor"].keyDown.jump,
+                                this.players[playerName]["actor"].keyDown.squat,
+                                this.players[playerName]["actor"].keyDown.left == this.players[playerName]["actor"].keyDown.right ? 0 :
+                                    (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
+                                        (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right") ? 1 : 2,
+                                ...(this.players[playerName]["actor"]._state["chapter"] != "attack" ? [0, 0, 0] :
+                                    [this.players[playerName]["actor"]._state["subsection"] == "small",
+                                    this.players[playerName]["actor"]._state["subsection"] == "medium",
+                                    this.players[playerName]["actor"]._state["subsection"] == "large"])
+                            ],
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
@@ -552,44 +543,38 @@ export class Environment {
         }
 
         return getActorState(player["actor"])
-            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
-                .map((v) => {
-                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
-                    return v ?
-                        faceTo :
-                        -1 * faceTo
-                })
-            )
+            .concat([
+                player["actor"].keyDown.jump,
+                player["actor"].keyDown.squat,
+                (player["actor"].keyDown.left && player["actor"].shouldFaceTo == "left") ||
+                (player["actor"].keyDown.right && player["actor"].shouldFaceTo == "right"),
+                (player["actor"].keyDown.left && player["actor"].shouldFaceTo == "right") ||
+                (player["actor"].keyDown.right && player["actor"].shouldFaceTo == "left"),
+                player["actor"].keyDown.attack.small,
+                player["actor"].keyDown.attack.medium,
+                player["actor"].keyDown.attack.large,
+            ])
             .concat(getActorState(player["actor"].opponent))
-            .concat(Object.values(player["actor"].opponent.keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
-                .map((v) => {
-                    let faceTo = player["actor"].opponent._faceTo == player["actor"].opponent.shouldFaceTo ? 1 : -1
-                    return v ?
-                        faceTo :
-                        -1 * faceTo
-                })
-            )
+            .concat([
+                player["actor"].opponent.keyDown.jump,
+                player["actor"].opponent.keyDown.squat,
+                (player["actor"].opponent.keyDown.left && player["actor"].opponent.shouldFaceTo == "left") ||
+                (player["actor"].opponent.keyDown.right && player["actor"].opponent.shouldFaceTo == "right"),
+                (player["actor"].opponent.keyDown.left && player["actor"].opponent.shouldFaceTo == "right") ||
+                (player["actor"].opponent.keyDown.right && player["actor"].opponent.shouldFaceTo == "left"),
+                player["actor"].opponent.keyDown.attack.small,
+                player["actor"].opponent.keyDown.attack.medium,
+                player["actor"].opponent.keyDown.attack.large,
+            ])
     }
 
     static getPoint(actor) {
-        let point = 0
+        let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP) - 0.25
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP))
         }
-        if (actor.opponent._state["chapter"] == "hitRecover") {
+        if (actor.opponent._state["chapter"] == "hitRecover" && actor._state["chapter"] == "attack") {
             point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
         }
 

@@ -185,34 +185,40 @@ export class Environment {
                 }
             case 1:
                 {
-                    // if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["left"].keyup
-                    //     )
-                    // } else {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keydown
-                    )
-                    // }
+                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
             case 2:
                 {
-                    // if (this.players[actorName].actor._faceTo != "left" && actions[3] == 1) {
-                    //     document.dispatchEvent(
-                    //         this.players[actorName].keySet["left"].keyup
-                    //     )
-                    // } else {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["left"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["right"].keydown
-                    )
-                    // }
+                    if (this.players[actorName].actor.shouldFaceTo == "right") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -307,7 +313,8 @@ export class Environment {
                                 this.players[playerName]["actor"].keyDown.jump,
                                 this.players[playerName]["actor"].keyDown.squat,
                                 this.players[playerName]["actor"].keyDown.left == this.players[playerName]["actor"].keyDown.right ? 0 :
-                                    this.players[playerName]["actor"].keyDown.left ? 1 : 2,
+                                    (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
+                                        (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right") ? 1 : 2,
                                 ...(this.players[playerName]["actor"]._state["chapter"] != "attack" ? [0, 0, 0] :
                                     [this.players[playerName]["actor"]._state["subsection"] == "small",
                                     this.players[playerName]["actor"]._state["subsection"] == "medium",
@@ -542,32 +549,33 @@ export class Environment {
 
         return getActorState(player["actor"])
             .concat(getActorState(player["actor"].opponent))
-            .concat(Object.values(player["actor"].keyDown).reduce((last, v) => {
-                if (Object.values(v).length != 0) {
-                    return last.concat(Object.values(v))
-                } else {
-                    return last.concat(v)
-                }
-            }, [])
-                .map((v) => {
-                    let faceTo = player["actor"]._faceTo == player["actor"].shouldFaceTo ? 1 : -1
-                    return v ?
-                        faceTo :
-                        -1 * faceTo
-                })
-            )
+            .concat([
+                player["actor"].keyDown.jump,
+                player["actor"].keyDown.squat,
+                (player["actor"].keyDown.left && player["actor"].shouldFaceTo == "left") ||
+                (player["actor"].keyDown.right && player["actor"].shouldFaceTo == "right"),
+                (player["actor"].keyDown.left && player["actor"].shouldFaceTo == "right") ||
+                (player["actor"].keyDown.right && player["actor"].shouldFaceTo == "left"),
+                player["actor"].keyDown.attack.small,
+                player["actor"].keyDown.attack.medium,
+                player["actor"].keyDown.attack.large,
+            ]).concat([
+                Math.random(),
+                Math.random(),
+                Math.random(),
+                Math.random(),
+                Math.random()
+            ])
     }
 
     static getPoint(actor) {
-        let point = 0
+        let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP) - 0.25
 
         if (actor._state["chapter"] == "hitRecover") {
             point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP))
         }
         if (actor.opponent._state["chapter"] == "hitRecover" && actor._state["chapter"] == "attack") {
             point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP))
-        } else if (actor._state["chapter"] == "attack") {
-            point -= actor.cumulativeDamage / actor.maxHP
         }
 
         return point
