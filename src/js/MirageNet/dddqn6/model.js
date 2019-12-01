@@ -179,7 +179,7 @@ export class DDDQN {
 
         adversarial = tf.layers.flatten().apply(adversarial)
 
-        outputs = tf.layers.add({}).apply([Q, adversarial])
+        adversarial = tf.layers.add({}).apply([Q, adversarial])
         let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
                 return tf.split(outputLayer, actionsNum, 1)
