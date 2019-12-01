@@ -222,9 +222,35 @@ export class Environment {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["small"].keyup
                     )
+                    break;
+                }
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[4]) {
+            case 0:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
+                    break;
+                }
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[5]) {
+            case 0:
+                {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
@@ -232,47 +258,6 @@ export class Environment {
                 }
             case 1:
                 {
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["small"].keyup
-                    // )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
-                    )
-                    break;
-                }
-            case 2:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["medium"].keyup
-                    // )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
-                    )
-                    break;
-                }
-            case 3:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    // document.dispatchEvent(
-                    //     this.players[actorName].keySet.attack["large"].keyup
-                    // )
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keydown
                     )
@@ -301,6 +286,8 @@ export class Environment {
                     Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"]),
                     Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"])
                 ]
             }
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
@@ -322,9 +309,10 @@ export class Environment {
                                 this.players[playerName]["actor"].keyDown.left == this.players[playerName]["actor"].keyDown.right ? 0 :
                                     (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
                                         (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right") ? 1 : 2,
-                                this.players[playerName]["actor"]._state["chapter"] != "attack" ? 0 :
-                                    this.players[playerName]["actor"]._state["subsection"] == "small" ? 1 :
-                                        this.players[playerName]["actor"]._state["subsection"] == "medium" ? 2 : 3
+                                ...(this.players[playerName]["actor"]._state["chapter"] != "attack" ? [0, 0, 0] :
+                                    [this.players[playerName]["actor"]._state["subsection"] == "small",
+                                    this.players[playerName]["actor"]._state["subsection"] == "medium",
+                                    this.players[playerName]["actor"]._state["subsection"] == "large"])
                             ],
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
