@@ -64,5 +64,5 @@ npm run build
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/agent.html)
 ```
-使用softmax並乘上正負來取出相對優劣勢
+使用max-min正規化取出相對優劣勢
 ```

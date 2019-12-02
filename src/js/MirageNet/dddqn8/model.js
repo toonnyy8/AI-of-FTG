@@ -139,21 +139,41 @@ export class DDDQN {
 
         let opponentAdvantage = tf.layers.multiply({}).apply([
             tfex.layers.lambda({
-                func: x => tf.mul(x, -1)
+                func: x => {
+                    let x_ = tf.mul(x, -1)
+                    let max = tf.max(x_, 1, true)
+                    let min = tf.min(x_, 1, true)
+                    return tf.sub(x_, min).div(tf.sub(max, min))
+                }
             }).apply([player1Q]),
-            tf.layers.softmax().apply(player2Q)
+            tfex.layers.lambda({
+                func: x => {
+                    let max = tf.max(x, 1, true)
+                    let min = tf.min(x, 1, true)
+                    return tf.sub(x, min).div(tf.sub(max, min))
+                }
+            }).apply([player2Q]),
         ])// 對手優勢分析
         opponentAdvantage = tf.layers.reshape({
             targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
         }).apply(opponentAdvantage)
 
         let opponentDisadvantage = tf.layers.multiply({}).apply([
-            player1Q,
-            tf.layers.softmax().apply(
-                tfex.layers.lambda({
-                    func: x => tf.mul(x, -1)
-                }).apply([player2Q])
-            )
+            tfex.layers.lambda({
+                func: x => {
+                    let max = tf.max(x, 1, true)
+                    let min = tf.min(x, 1, true)
+                    return tf.sub(x, min).div(tf.sub(max, min))
+                }
+            }).apply([player1Q]),
+            tfex.layers.lambda({
+                func: x => {
+                    let x_ = tf.mul(x, -1)
+                    let max = tf.max(x_, 1, true)
+                    let min = tf.min(x_, 1, true)
+                    return tf.sub(x_, min).div(tf.sub(max, min))
+                }
+            }).apply([player2Q]),
         ])// 對手劣勢分析
         opponentDisadvantage = tf.layers.reshape({
             targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
@@ -181,7 +201,11 @@ export class DDDQN {
 
         let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
-                return tf.split(outputLayer, actionsNum, 1)
+                if (actionsNum.length == 1) {
+                    return outputLayer
+                } else {
+                    return tf.split(outputLayer, actionsNum, 1)
+                }
             },
             outputShape: actionsNum.map(actionNum => [null, actionNum])
         }).apply([adversarial])

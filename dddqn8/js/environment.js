@@ -80,9 +80,16 @@ export class Environment {
                         {
                             this.isReturnCtrl = true
                             Object.keys(e.data.args.archives).forEach((playerName) => {
-                                if (e.data.args.archives[playerName].aiCtrl) {
-                                    this.trigger(playerName, e.data.args.archives[playerName].actions)
+                                let actions = []
+                                let emb = e.data.args.archives[playerName].actions[0]
+                                for (let i = 0; i < 7; i++) {
+                                    actions[i] = emb % 2
+                                    emb = Math.floor(emb / 2)
                                 }
+                                if (e.data.args.archives[playerName].aiCtrl) {
+                                    this.trigger(playerName, actions)
+                                }
+                                // console.log(e.data.args.archives[playerName].actions)
                             })
                             console.log("ctrl")
                             break
@@ -216,6 +223,7 @@ export class Environment {
                     break;
                 }
         }
+
         switch (actions[3]) {
             case 0:
                 {
@@ -226,9 +234,15 @@ export class Environment {
                 }
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
-                    )
+                    if (Math.random() > 0.9 && this.players[actorName].actor.keyDown.attack.small) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -242,9 +256,15 @@ export class Environment {
                 }
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
-                    )
+                    if (Math.random() > 0.9 && this.players[actorName].actor.keyDown.attack.medium) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -258,9 +278,15 @@ export class Environment {
                 }
             case 1:
                 {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keydown
-                    )
+                    if (Math.random() > 0.9 && this.players[actorName].actor.keyDown.attack.large) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keydown
+                        )
+                    }
                     break;
                 }
         }
@@ -283,11 +309,11 @@ export class Environment {
             } else {
                 this.players[playerName]["point"] = [
                     Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    Environment.getPoint(this.players[playerName]["actor"])
+                    // Environment.getPoint(this.players[playerName]["actor"]),
+                    // Environment.getPoint(this.players[playerName]["actor"]),
+                    // Environment.getPoint(this.players[playerName]["actor"]),
+                    // Environment.getPoint(this.players[playerName]["actor"]),
+                    // Environment.getPoint(this.players[playerName]["actor"])
                 ]
             }
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
@@ -303,17 +329,17 @@ export class Environment {
                         acc[playerName] = {
                             state: this.players[playerName]["memory"].slice(0, this.ctrlLength),
                             rewards: this.players[playerName]["point"].map((point) => point / this.steps),
-                            actions: [
+                            actions: [[
                                 this.players[playerName]["actor"].keyDown.jump,
                                 this.players[playerName]["actor"].keyDown.squat,
-                                this.players[playerName]["actor"].keyDown.left == this.players[playerName]["actor"].keyDown.right ? 0 :
-                                    (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
-                                        (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right") ? 1 : 2,
-                                ...(this.players[playerName]["actor"]._state["chapter"] != "attack" ? [0, 0, 0] :
-                                    [this.players[playerName]["actor"]._state["subsection"] == "small",
-                                    this.players[playerName]["actor"]._state["subsection"] == "medium",
-                                    this.players[playerName]["actor"]._state["subsection"] == "large"])
-                            ],
+                                this.players[playerName]["actor"].keyDown.left,
+                                this.players[playerName]["actor"].keyDown.right,
+                                this.players[playerName]["actor"].keyDown.attack.small,
+                                this.players[playerName]["actor"].keyDown.attack.medium,
+                                this.players[playerName]["actor"].keyDown.attack.large
+                            ].reduce((prev, curr, idx) => {
+                                return prev + curr * (2 ** idx)
+                            }, 0)],
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
