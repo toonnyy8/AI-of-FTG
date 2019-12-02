@@ -137,60 +137,50 @@ export class DDDQN {
             inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0)]
         }).apply(player1Q)
 
-        let opponentAdvantage = tf.layers.multiply({}).apply([
-            tfex.layers.lambda({
-                func: x => {
-                    let x_ = tf.mul(x, -1)
-                    let max = tf.max(x_, 1, true)
-                    let min = tf.min(x_, 1, true)
-                    return tf.sub(x_, min).div(tf.sub(max, min))
-                }
-            }).apply([player1Q]),
-            tfex.layers.lambda({
-                func: x => {
-                    let max = tf.max(x, 1, true)
-                    let min = tf.min(x, 1, true)
-                    return tf.sub(x, min).div(tf.sub(max, min))
-                }
-            }).apply([player2Q]),
-        ])// 對手優勢分析
-        opponentAdvantage = tf.layers.reshape({
-            targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
-        }).apply(opponentAdvantage)
-
-        let opponentDisadvantage = tf.layers.multiply({}).apply([
-            tfex.layers.lambda({
-                func: x => {
-                    let max = tf.max(x, 1, true)
-                    let min = tf.min(x, 1, true)
-                    return tf.sub(x, min).div(tf.sub(max, min))
-                }
-            }).apply([player1Q]),
-            tfex.layers.lambda({
-                func: x => {
-                    let x_ = tf.mul(x, -1)
-                    let max = tf.max(x_, 1, true)
-                    let min = tf.min(x_, 1, true)
-                    return tf.sub(x_, min).div(tf.sub(max, min))
-                }
-            }).apply([player2Q]),
-        ])// 對手劣勢分析
-        opponentDisadvantage = tf.layers.reshape({
-            targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1]
-        }).apply(opponentDisadvantage)
+        player2Q = tf.layers.repeatVector({ n: actionsNum.reduce((prev, curr) => prev + curr, 0), inputShape: [actionsNum.reduce((prev, curr) => prev + curr, 0)] }).apply(player2Q)
 
         let adversarial = tfex.layers.lambda({
             func: (x, y) => {
-                return tf.concat([x, y], 3)
+                return tf.sub(x, y)
             },
-            outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 2]
-        }).apply([opponentAdvantage, opponentDisadvantage])
+            outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0)]
+        }).apply([player1Q, player2Q])
+
+        adversarial = tf.layers.reshape({ targetShape: [actionsNum.reduce((prev, curr) => prev + curr, 0), actionsNum.reduce((prev, curr) => prev + curr, 0), 1] }).apply(adversarial)
+
+        adversarial = tfex.layers.lambda(
+            {
+                func: (x, y) => {
+                    return tf.concat([x, y], 3)
+                },
+                outputShape: [null, actionsNum.reduce((prev, curr) => prev + curr, 0), 1, Math.ceil(actionsNum.reduce((prev, curr) => prev + curr, 0) ** 0.5) * 2]
+            }
+        ).apply(
+            [
+                tf.layers.permute({
+                    dims: [2, 1, 3],
+                    inputShape: [1, actionsNum.reduce((prev, curr) => prev + curr, 0), Math.ceil(actionsNum.reduce((prev, curr) => prev + curr, 0) ** 0.5)]
+                }).apply(
+                    tf.layers.conv2d({
+                        filters: Math.ceil(actionsNum.reduce((prev, curr) => prev + curr, 0) ** 0.5),
+                        kernelSize: [actionsNum.reduce((prev, curr) => prev + curr, 0), 1],
+                        activation: "selu"
+                    }).apply(adversarial)
+                ),
+                tf.layers.conv2d({
+                    filters: Math.ceil(actionsNum.reduce((prev, curr) => prev + curr, 0) ** 0.5),
+                    kernelSize: [1, actionsNum.reduce((prev, curr) => prev + curr, 0)],
+                    activation: "selu"
+                }).apply(adversarial)
+            ]
+        )
 
         adversarial = tf.layers.conv2d({
             filters: actionsNum.reduce((prev, curr) => prev + curr, 0) * 2,
-            kernelSize: actionsNum.reduce((prev, curr) => prev + curr, 0),
+            kernelSize: [actionsNum.reduce((prev, curr) => prev + curr, 0), 1],
             activation: "selu"
         }).apply(adversarial)
+
         adversarial = tf.layers.conv2d({
             filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
             kernelSize: 1,
@@ -198,7 +188,7 @@ export class DDDQN {
         }).apply(adversarial)
 
         adversarial = tf.layers.flatten().apply(adversarial)
-
+        adversarial = tf.layers.add().apply([Q, adversarial])
         let outputs = tfex.layers.lambda({
             func: (outputLayer) => {
                 if (actionsNum.length == 1) {
