@@ -64,5 +64,6 @@ npm run build
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/agent.html)
 ```
-使用max-min正規化取出相對優劣勢
+更改相對優劣勢算法，
+算出後與原Q值相加
 ```
