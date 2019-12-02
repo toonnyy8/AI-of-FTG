@@ -36,3 +36,26 @@ npm run build
 ### 版本3(channel通訊版)
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/agent.html)
+
+### 版本5(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn5/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn5/agent.html)
+```
+使用了softmax與logSoftmax取出相對優劣勢
+```
+
+### 版本6(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn6/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn6/agent.html)
+```
+使用softmax並乘上正負來取出相對優劣勢，
+取出後與原Q值相加
+```
+
+### 版本7(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn7/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn7/agent.html)
+```
+使用softmax並乘上正負來取出相對優劣勢，
+相對優劣勢減去mean後與原Q值相加
+```
