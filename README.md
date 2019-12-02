@@ -59,3 +59,10 @@ npm run build
 使用softmax並乘上正負來取出相對優劣勢，
 相對優劣勢減去mean後與原Q值相加
 ```
+
+### 版本8(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/agent.html)
+```
+使用softmax並乘上正負來取出相對優劣勢
+```
