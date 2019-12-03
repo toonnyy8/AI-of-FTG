@@ -3,8 +3,8 @@ import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
-// tf.setBackend("webgl")
-tf.setBackend("cpu")
+tf.setBackend("webgl")
+// tf.setBackend("cpu")
 // tf.enableProdMode()
 
 export class Environment {
@@ -80,12 +80,13 @@ export class Environment {
                         {
                             this.isReturnCtrl = true
                             Object.keys(e.data.args.archives).forEach((playerName) => {
-                                let actions = []
-                                let emb = e.data.args.archives[playerName].actions[0]
-                                for (let i = 0; i < 7; i++) {
-                                    actions[i] = emb % 2
-                                    emb = Math.floor(emb / 2)
-                                }
+                                let actions = e.data.args.archives[playerName].actions
+                                // let actions = []
+                                // let emb = e.data.args.archives[playerName].actions[0]
+                                // for (let i = 0; i < 7; i++) {
+                                //     actions[i] = emb % 2
+                                //     emb = Math.floor(emb / 2)
+                                // }
                                 if (e.data.args.archives[playerName].aiCtrl) {
                                     this.trigger(playerName, actions)
                                 }
@@ -133,6 +134,231 @@ export class Environment {
         }
     }
 
+    trigger(actorName, actions) {
+        // console.log(actions)
+
+        switch (actions[0]) {
+            case 0:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["jump"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["squat"].keyup
+                    )
+                    break;
+                }
+            case 1:
+                {
+
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["squat"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["jump"].keydown
+                    )
+                    break;
+                }
+            case 2:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["jump"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["squat"].keydown
+                    )
+                    break;
+                }
+        }
+        switch (actions[1]) {
+            case 0:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["left"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet["right"].keyup
+                    )
+                    break;
+                }
+            case 1:
+                {
+                    if (this.players[actorName].actor.shouldFaceTo == "left") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    if (this.players[actorName].actor.shouldFaceTo == "right") {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keydown
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["left"].keyup
+                        )
+                        document.dispatchEvent(
+                            this.players[actorName].keySet["right"].keydown
+                        )
+                    }
+                    break;
+                }
+        }
+        switch (actions[2]) {
+            case 0:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keyup
+                    )
+                    break;
+                }
+            case 1:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keyup
+                    )
+                    if (this.players[actorName].actor.keyDown.attack.small && Math.random() < 1 / 60) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["small"].keydown
+                        )
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keyup
+                    )
+                    if (this.players[actorName].actor.keyDown.attack.medium && Math.random() < 1 / 60) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["medium"].keydown
+                        )
+                    }
+                    break;
+                }
+            case 3:
+                {
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keyup
+                    )
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keyup
+                    )
+                    if (this.players[actorName].actor.keyDown.attack.large && Math.random() < 1 / 60) {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keyup
+                        )
+                    } else {
+                        document.dispatchEvent(
+                            this.players[actorName].keySet.attack["large"].keydown
+                        )
+                    }
+                    break;
+                }
+        }
+        // switch (actions[3]) {
+        //     case 0:
+        //         {
+        //             document.dispatchEvent(
+        //                 this.players[actorName].keySet.attack["small"].keyup
+        //             )
+        //             break;
+        //         }
+        //     case 1:
+        //         {
+        //             if (this.players[actorName].actor.keyDown.attack.small && Math.random() > 0.8) {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["small"].keyup
+        //                 )
+        //             } else {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["small"].keydown
+        //                 )
+        //             }
+        //             break;
+        //         }
+        // }
+        // switch (actions[4]) {
+        //     case 0:
+        //         {
+        //             document.dispatchEvent(
+        //                 this.players[actorName].keySet.attack["medium"].keyup
+        //             )
+        //             break;
+        //         }
+        //     case 1:
+        //         {
+        //             if (this.players[actorName].actor.keyDown.attack.medium && Math.random() > 0.8) {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["medium"].keyup
+        //                 )
+        //             } else {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["medium"].keydown
+        //                 )
+        //             }
+        //             break;
+        //         }
+        // }
+        // switch (actions[5]) {
+        //     case 0:
+        //         {
+        //             document.dispatchEvent(
+        //                 this.players[actorName].keySet.attack["large"].keyup
+        //             )
+        //             break;
+        //         }
+        //     case 1:
+        //         {
+        //             if (this.players[actorName].actor.keyDown.attack.large && Math.random() > 0.8) {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["large"].keyup
+        //                 )
+        //             } else {
+        //                 document.dispatchEvent(
+        //                     this.players[actorName].keySet.attack["large"].keydown
+        //                 )
+        //             }
+        //             break;
+        //         }
+        // }
+    }
     // trigger(actorName, actions) {
     //     // console.log(actions)
 
@@ -175,46 +401,24 @@ export class Environment {
     //     switch (actions[2]) {
     //         case 0:
     //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["left"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["right"].keyup
-    //                 )
+    //                 if (this.players[actorName].actor.shouldFaceTo == "left") {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["left"].keyup
+    //                     )
+    //                 } else {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["right"].keyup
+    //                     )
+    //                 }
     //                 break;
     //             }
     //         case 1:
     //             {
     //                 if (this.players[actorName].actor.shouldFaceTo == "left") {
     //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                     document.dispatchEvent(
     //                         this.players[actorName].keySet["left"].keydown
     //                     )
     //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].actor.shouldFaceTo == "right") {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keydown
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
     //                     document.dispatchEvent(
     //                         this.players[actorName].keySet["right"].keydown
     //                     )
@@ -223,6 +427,34 @@ export class Environment {
     //             }
     //     }
     //     switch (actions[3]) {
+    //         case 0:
+    //             {
+    //                 if (this.players[actorName].actor.shouldFaceTo == "right") {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["left"].keyup
+    //                     )
+    //                 } else {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["right"].keyup
+    //                     )
+    //                 }
+    //                 break;
+    //             }
+    //         case 1:
+    //             {
+    //                 if (this.players[actorName].actor.shouldFaceTo == "right") {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["left"].keydown
+    //                     )
+    //                 } else {
+    //                     document.dispatchEvent(
+    //                         this.players[actorName].keySet["right"].keydown
+    //                     )
+    //                 }
+    //                 break;
+    //             }
+    //     }
+    //     switch (actions[4]) {
     //         case 0:
     //             {
     //                 document.dispatchEvent(
@@ -238,7 +470,7 @@ export class Environment {
     //                 break;
     //             }
     //     }
-    //     switch (actions[4]) {
+    //     switch (actions[5]) {
     //         case 0:
     //             {
     //                 document.dispatchEvent(
@@ -254,7 +486,7 @@ export class Environment {
     //                 break;
     //             }
     //     }
-    //     switch (actions[5]) {
+    //     switch (actions[6]) {
     //         case 0:
     //             {
     //                 document.dispatchEvent(
@@ -271,150 +503,6 @@ export class Environment {
     //             }
     //     }
     // }
-    trigger(actorName, actions) {
-        // console.log(actions)
-
-        switch (actions[0]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keyup
-                    )
-                    break;
-                }
-
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["jump"].keydown
-                    )
-                    break;
-                }
-
-        }
-        switch (actions[1]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keyup
-                    )
-                    break;
-                }
-
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet["squat"].keydown
-                    )
-                    break;
-                }
-
-        }
-        switch (actions[2]) {
-            case 0:
-                {
-                    if (this.players[actorName].actor.shouldFaceTo == "left") {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keyup
-                        )
-                    }
-                    break;
-                }
-            case 1:
-                {
-                    if (this.players[actorName].actor.shouldFaceTo == "left") {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keydown
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keydown
-                        )
-                    }
-                    break;
-                }
-        }
-        switch (actions[3]) {
-            case 0:
-                {
-                    if (this.players[actorName].actor.shouldFaceTo == "right") {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keyup
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keyup
-                        )
-                    }
-                    break;
-                }
-            case 1:
-                {
-                    if (this.players[actorName].actor.shouldFaceTo == "right") {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["left"].keydown
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet["right"].keydown
-                        )
-                    }
-                    break;
-                }
-        }
-        switch (actions[4]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keyup
-                    )
-                    break;
-                }
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["small"].keydown
-                    )
-                    break;
-                }
-        }
-        switch (actions[5]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keyup
-                    )
-                    break;
-                }
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["medium"].keydown
-                    )
-                    break;
-                }
-        }
-        switch (actions[6]) {
-            case 0:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keyup
-                    )
-                    break;
-                }
-            case 1:
-                {
-                    document.dispatchEvent(
-                        this.players[actorName].keySet.attack["large"].keydown
-                    )
-                    break;
-                }
-        }
-    }
 
     nextStep() {
         this.steps += 1
@@ -433,11 +521,8 @@ export class Environment {
             } else {
                 this.players[playerName]["point"] = [
                     Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"])
+                    Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"]),
                 ]
             }
             // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
@@ -472,18 +557,33 @@ export class Environment {
                             //     )
                             // ],
                             actions: [
-                                [
-                                    this.players[playerName]["actor"].keyDown.jump,
-                                    this.players[playerName]["actor"].keyDown.squat,
+                                this.players[playerName]["actor"].keyDown.jump == this.players[playerName]["actor"].keyDown.squat ?
+                                    (this.players[playerName]["actor"]._state["subsection"] == "fall" ? 2 :
+                                        this.players[playerName]["actor"]._state["section"] == "jump" ? 1 :
+                                            this.players[playerName]["actor"]._state["section"] == "squat" ? 2 : 0) :
+                                    this.players[playerName]["actor"].keyDown.jump ? 1 :
+                                        this.players[playerName]["actor"].keyDown.squat ? 2 : 0,
+                                this.players[playerName]["actor"].keyDown.left == this.players[playerName]["actor"].keyDown.right ? 0 :
                                     (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
-                                    (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right"),
-                                    (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "right") ||
-                                    (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "left"),
-                                    this.players[playerName]["actor"].keyDown.attack.small || this.players[playerName]["actor"]._state["subsection"] == "small",
-                                    this.players[playerName]["actor"].keyDown.attack.medium || this.players[playerName]["actor"]._state["subsection"] == "medium",
-                                    this.players[playerName]["actor"].keyDown.attack.large || this.players[playerName]["actor"]._state["subsection"] == "large"
-                                ].reduce((prev, curr, idx) => prev + curr * (2 ** idx), 0)
+                                        (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right") ? 1 : 2,
+                                this.players[playerName]["actor"]._state["chapter"] != "attack" ? 0 : (
+                                    this.players[playerName]["actor"]._state["subsection"] == "small" ? 1 :
+                                        this.players[playerName]["actor"]._state["subsection"] == "medium" ? 2 : 3
+                                )
                             ],
+                            // actions: [
+                            //     [
+                            //         this.players[playerName]["actor"].keyDown.jump,
+                            //         this.players[playerName]["actor"].keyDown.squat,
+                            //         (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "left") ||
+                            //         (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right"),
+                            //         (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "right") ||
+                            //         (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "left"),
+                            //         this.players[playerName]["actor"].keyDown.attack.small || this.players[playerName]["actor"]._state["subsection"] == "small",
+                            //         this.players[playerName]["actor"].keyDown.attack.medium || this.players[playerName]["actor"]._state["subsection"] == "medium",
+                            //         this.players[playerName]["actor"].keyDown.attack.large || this.players[playerName]["actor"]._state["subsection"] == "large"
+                            //     ].reduce((prev, curr, idx) => prev + curr * (2 ** idx), 0)
+                            // ],
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
@@ -741,10 +841,10 @@ export class Environment {
         let point = ((actor.HP - actor.cumulativeDamage) / actor.maxHP) - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP) - 0.25
 
         if (actor._state["chapter"] == "hitRecover") {
-            point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP)) * 5
+            point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP))
         }
         if (actor.opponent._state["chapter"] == "hitRecover" && actor._state["chapter"] == "attack") {
-            point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)) * 10
+            point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)) * 5
         }
 
         return point

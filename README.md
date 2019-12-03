@@ -64,6 +64,5 @@ npm run build
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/agent.html)
 ```
-更改相對優劣勢算法，
-算出後與原Q值相加
+普通結構，動作組[3,3,4]
 ```

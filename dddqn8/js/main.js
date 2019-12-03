@@ -124,6 +124,8 @@ let main = () => {
         //     lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
         //     getLastState().find((s, idx) => s.split(":")[0] == "normal") != undefined
         // ) {
+
+        env.nextStep()
         if (env.isReturnCtrl) {
             let ctrlDatas = {
                 player1: {
@@ -181,7 +183,6 @@ let main = () => {
                     game.player2.HP -= 0.5
                 }
                 // console.clear()
-                env.nextStep()
                 ctrlLoop.run()
             }
         }

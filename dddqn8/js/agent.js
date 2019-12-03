@@ -5,7 +5,7 @@ const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
 
-let actionsNum = [128]
+let actionsNum = [3, 3, 4]
 
 let dddqnModel = dddqn({
     sequenceLen: 4,
@@ -16,7 +16,7 @@ let dddqnModel = dddqn({
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.01,
-    discounts: [0.95]
+    discounts: [0.95, 0.95, 0.5]
 })
 
 let preArchives = {
