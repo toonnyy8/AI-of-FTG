@@ -242,15 +242,9 @@ export class Environment {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
-                    if (this.players[actorName].actor.keyDown.attack.small && Math.random() < 1 / 60) {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["small"].keyup
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["small"].keydown
-                        )
-                    }
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["small"].keydown
+                    )
                     break;
                 }
             case 2:
@@ -261,15 +255,9 @@ export class Environment {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["large"].keyup
                     )
-                    if (this.players[actorName].actor.keyDown.attack.medium && Math.random() < 1 / 60) {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["medium"].keyup
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["medium"].keydown
-                        )
-                    }
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["medium"].keydown
+                    )
                     break;
                 }
             case 3:
@@ -280,15 +268,9 @@ export class Environment {
                     document.dispatchEvent(
                         this.players[actorName].keySet.attack["medium"].keyup
                     )
-                    if (this.players[actorName].actor.keyDown.attack.large && Math.random() < 1 / 60) {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["large"].keyup
-                        )
-                    } else {
-                        document.dispatchEvent(
-                            this.players[actorName].keySet.attack["large"].keydown
-                        )
-                    }
+                    document.dispatchEvent(
+                        this.players[actorName].keySet.attack["large"].keydown
+                    )
                     break;
                 }
         }

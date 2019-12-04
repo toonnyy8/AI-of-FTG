@@ -16,7 +16,7 @@ let dddqnModel = dddqn({
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.01,
-    discounts: [0.95, 0.95, 0.5]
+    discounts: [0.63, 0.63, 0.63]
 })
 
 let preArchives = {
@@ -57,6 +57,7 @@ tf.ready().then(() => {
                                 outputActions = [outputActions]
                             }
                             outputActions = outputActions.map(outputAction => {
+                                outputAction.print()
                                 outputAction = tf.softmax(outputAction, 1)
                                 if (e.data.args.CP) { //如果有補正機率就執行這段
                                     outputAction = tf.div(
