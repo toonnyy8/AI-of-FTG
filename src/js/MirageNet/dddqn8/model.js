@@ -66,28 +66,48 @@ export class DDDQN {
         let input = tf.input({ shape: [sequenceLen, stateVectorLen] })
         let stateSeqLayer = input
 
-        for (let i = 0; i < layerNum; i++) {
+        for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
             stateSeqLayer = tf.layers.conv1d({
-                filters: stateVectorLen * 2,
+                filters: stateVectorLen + Math.ceil((stateVectorLen * 3) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4)),
                 kernelSize: [1],
                 activation: "selu",
                 padding: "same"
             }).apply(stateSeqLayer)
         }
 
-        stateSeqLayer = tf.layers.conv1d({
-            filters: stateVectorLen * 4,
-            kernelSize: [sequenceLen],
-            activation: "selu",
-        }).apply(stateSeqLayer)
+        for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
+            stateSeqLayer = tf.layers.conv1d({
+                filters: Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4)),
+                kernelSize: [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1],
+                activation: "selu",
+                padding: "same"
+            }).apply(stateSeqLayer)
+        }
+
+        for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
+            stateSeqLayer = tf.layers.conv1d({
+                filters: Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * i / Math.ceil(layerNum / 4)),
+                kernelSize: [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1],
+                activation: "selu",
+                padding: "same"
+            }).apply(stateSeqLayer)
+        }
+
+        for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
+            stateSeqLayer = tf.layers.conv1d({
+                filters: stateVectorLen + Math.ceil((stateVectorLen * 3) * (i) / Math.ceil(layerNum / 4)),
+                kernelSize: [1],
+                activation: "selu",
+                padding: "same"
+            }).apply(stateSeqLayer)
+        }
 
         let value = stateSeqLayer
         {
             value = tf.layers.conv1d({
                 filters: 1,
-                kernelSize: [1],
-                padding: "same",
-                activation: "selu"
+                kernelSize: [sequenceLen],
+                activation: "sigmoid"
             }).apply(value)
             value = tf.layers.flatten().apply(value)
         }
@@ -97,9 +117,8 @@ export class DDDQN {
         {
             A = tf.layers.conv1d({
                 filters: actionsNum.reduce((prev, curr) => prev + curr, 0),
-                kernelSize: [1],
-                padding: "same",
-                activation: "selu"
+                kernelSize: [sequenceLen],
+                activation: "sigmoid"
             }).apply(A)
             A = tf.layers.flatten().apply(A)
 

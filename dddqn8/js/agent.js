@@ -10,7 +10,7 @@ let actionsNum = [3, 3, 4]
 let dddqnModel = dddqn({
     sequenceLen: 4,
     stateVectorLen: 66,
-    layerNum: 16,
+    layerNum: 32,
     actionsNum: actionsNum,
     memorySize: 6400,
     minLearningRate: 1e-4,
@@ -57,7 +57,7 @@ tf.ready().then(() => {
                                 outputActions = [outputActions]
                             }
                             outputActions = outputActions.map(outputAction => {
-                                outputAction.print()
+                                // outputAction.print()
                                 outputAction = tf.softmax(outputAction, 1)
                                 if (e.data.args.CP) { //如果有補正機率就執行這段
                                     outputAction = tf.div(
