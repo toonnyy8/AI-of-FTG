@@ -82,130 +82,132 @@ export class DDDQN {
 
                 for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
                     outputSize = stateVectorLen + Math.ceil((stateVectorLen * 3) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_w${i}`, [1, inputSize, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`ae_w${i}`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
                     inputSize = outputSize
                 }
 
                 for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
                     outputSize = Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_w${i + Math.ceil(layerNum / 4)}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4)}`, [1, 1, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`ae_w${i + Math.ceil(layerNum / 4)}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4)}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
                     inputSize = outputSize
                 }
 
-                this.weights.push(scope.getVariable(`ae_w${Math.ceil(layerNum / 4) * 2}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                this.weights.push(scope.getVariable(`ae_w${Math.ceil(layerNum / 4) * 2}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
 
                 for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
                     outputSize = Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * i / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 2 - 1}`, [1, 1, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 2 - 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
                     inputSize = outputSize
                 }
 
                 for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
                     outputSize = stateVectorLen + Math.ceil((stateVectorLen * 3) * (i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 3 - 1}`, [1, 1, outputSize], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 3 - 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
                     inputSize = outputSize
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
 
-                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * 4, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * 4, 1], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
 
-                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * 4, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.glorotNormal({ seed: 1 })))
-                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.glorotNormal({ seed: 1 })))
+                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * 4, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({})))
                 }
                 this.weights.forEach(w => w.sum().print())
             }
 
             predict(x) {
-                let stateSeqLayer = x
+                return tf.tidy(() => {
+                    let stateSeqLayer = x
 
-                for (let i = 0; i <= Math.ceil(this.layerNum / 4) * 2; i++) {
-                    stateSeqLayer = tf.conv1d(
-                        stateSeqLayer,
-                        this.scope.getVariable(`ae_w${i}`),
-                        1,
-                        "same"
-                    )
-                    stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
-                    stateSeqLayer = tf.selu(stateSeqLayer)
-                }
+                    for (let i = 0; i <= Math.ceil(this.layerNum / 4) * 2; i++) {
+                        stateSeqLayer = tf.conv1d(
+                            stateSeqLayer,
+                            this.scope.getVariable(`ae_w${i}`),
+                            1,
+                            "same"
+                        )
+                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
+                        stateSeqLayer = tf.selu(stateSeqLayer)
+                    }
 
-                for (let i = Math.ceil(this.layerNum / 4) * 2 + 1; i < Math.ceil(this.layerNum / 4) * 4; i++) {
-                    stateSeqLayer = tf.conv1d(
-                        stateSeqLayer,
-                        tf.transpose(
-                            this.scope.getVariable(`ae_w${Math.ceil(this.layerNum / 4) * 4 - i}`),
-                            [0, 2, 1]
-                        ),
-                        1,
-                        "same"
-                    )
-                    stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
-                    stateSeqLayer = tf.selu(stateSeqLayer)
-                }
+                    for (let i = Math.ceil(this.layerNum / 4) * 2 + 1; i < Math.ceil(this.layerNum / 4) * 4; i++) {
+                        stateSeqLayer = tf.conv1d(
+                            stateSeqLayer,
+                            tf.transpose(
+                                this.scope.getVariable(`ae_w${Math.ceil(this.layerNum / 4) * 4 - i}`),
+                                [0, 2, 1]
+                            ),
+                            1,
+                            "same"
+                        )
+                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
+                        stateSeqLayer = tf.selu(stateSeqLayer)
+                    }
 
-                let value = stateSeqLayer
-                {
-                    value = tf.transpose(value, [0, 2, 1])
-                    value = tf.conv1d(
-                        value,
-                        this.scope.getVariable(`value_w1`),
-                        1, 0
-                    )
-                    value = tf.add(value, this.scope.getVariable(`value_b1`))
+                    let value = stateSeqLayer
+                    {
+                        value = tf.transpose(value, [0, 2, 1])
+                        value = tf.conv1d(
+                            value,
+                            this.scope.getVariable(`value_w1`),
+                            1, 0
+                        )
+                        value = tf.add(value, this.scope.getVariable(`value_b1`))
 
-                    value = tf.transpose(value, [0, 2, 1])
-                    value = tf.conv1d(
-                        value,
-                        this.scope.getVariable(`value_w2`),
-                        1, 0
-                    )
-                    value = tf.add(value, this.scope.getVariable(`value_b2`))
-                    value = tf.reshape(value, [-1, 1])
-                }
+                        value = tf.transpose(value, [0, 2, 1])
+                        value = tf.conv1d(
+                            value,
+                            this.scope.getVariable(`value_w2`),
+                            1, 0
+                        )
+                        value = tf.add(value, this.scope.getVariable(`value_b2`))
+                        value = tf.reshape(value, [-1, 1])
+                    }
 
-                let A = stateSeqLayer
+                    let A = stateSeqLayer
 
-                {
-                    A = tf.transpose(A, [0, 2, 1])
-                    A = tf.conv1d(
-                        A,
-                        this.scope.getVariable(`A_w1`),
-                        1, 0
-                    )
-                    A = tf.add(A, this.scope.getVariable(`A_b1`))
-                    A = tf.transpose(A, [0, 2, 1])
-                    A = tf.conv1d(
-                        A,
-                        this.scope.getVariable(`A_w2`),
-                        1, 0
-                    )
-                    A = tf.add(A, this.scope.getVariable(`A_b2`))
-                    A = tf.reshape(A, [-1, this.actionsNum.reduce((prev, curr) => prev + curr, 0)])
+                    {
+                        A = tf.transpose(A, [0, 2, 1])
+                        A = tf.conv1d(
+                            A,
+                            this.scope.getVariable(`A_w1`),
+                            1, 0
+                        )
+                        A = tf.add(A, this.scope.getVariable(`A_b1`))
+                        A = tf.transpose(A, [0, 2, 1])
+                        A = tf.conv1d(
+                            A,
+                            this.scope.getVariable(`A_w2`),
+                            1, 0
+                        )
+                        A = tf.add(A, this.scope.getVariable(`A_b2`))
+                        A = tf.reshape(A, [-1, this.actionsNum.reduce((prev, curr) => prev + curr, 0)])
 
-                    A = tf.sub(A, tf.mean(A, 1, true))
-                }
+                        A = tf.sub(A, tf.mean(A, 1, true))
+                    }
 
-                let Q = tf.add(value, A)
+                    let Q = tf.add(value, A)
 
-                let outputs
-                if (this.actionsNum.length == 1) {
-                    outputs = Q
-                } else {
-                    outputs = tf.split(Q, this.actionsNum, 1)
-                }
+                    let outputs
+                    if (this.actionsNum.length == 1) {
+                        outputs = Q
+                    } else {
+                        outputs = tf.split(Q, this.actionsNum, 1)
+                    }
 
-                return outputs
+                    return outputs
+                })
             }
 
             getWeights() {
