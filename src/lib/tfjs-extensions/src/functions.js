@@ -414,6 +414,10 @@ export function registerFuncs(tf_ = tf) {
         })
     }
 
+    function swish(x) {
+        return tf_.tidy(() => { tf_.mul(x, tf_.sigmoid(x)) })
+    }
+
     /********************************/
     return {
         einsum,
@@ -436,6 +440,8 @@ export function registerFuncs(tf_ = tf) {
 
         softmax,
 
-        softmaxCrossEntropyWithLogits
+        softmaxCrossEntropyWithLogits,
+
+        swish
     }
 }
