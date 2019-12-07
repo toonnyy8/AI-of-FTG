@@ -17,7 +17,7 @@ let dddqnModel = dddqn({
     initLearningRate: 1e-3,
     updateTargetStep: 0.01,
     discount: 0.8,
-    maxCoderSize: 4
+    maxCoderSize: 6
 })
 
 let preArchives = {

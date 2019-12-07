@@ -84,42 +84,42 @@ export class DDDQN {
 
                 let inputSize = stateVectorLen
                 let outputSize = stateVectorLen * maxCoderSize
-                this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
 
                 let coderNum = Math.ceil(layerNum / 4) * 2
                 for (let i = 1; i <= coderNum; i++) {
                     inputSize = outputSize
                     outputSize = (stateVectorLen / 2) * (i / coderNum) + stateVectorLen * maxCoderSize * (coderNum - i) / coderNum
                     outputSize = Math.ceil(outputSize)
-                    this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                 }
 
                 inputSize = outputSize
-                this.weights.push(scope.getVariable(`ae_w${coderNum + 1}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                this.weights.push(scope.getVariable(`ae_b${coderNum + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                this.weights.push(scope.getVariable(`ae_w${coderNum + 1}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`ae_b${coderNum + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
 
                 for (let i = 1; i <= coderNum; i++) {
                     outputSize = (stateVectorLen / 2) * ((coderNum - i) / coderNum) + stateVectorLen * maxCoderSize * i / coderNum
                     outputSize = Math.ceil(outputSize)
-                    this.weights.push(scope.getVariable(`ae_b${coderNum + i + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`ae_b${coderNum + i + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
 
-                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * maxCoderSize, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * maxCoderSize, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
 
-                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * maxCoderSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
-                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1 })))
+                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * maxCoderSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                 }
                 // this.weights.forEach(w => w.sum().print())
                 console.log(this.scope.variables)
