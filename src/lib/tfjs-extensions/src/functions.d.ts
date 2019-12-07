@@ -23,4 +23,6 @@ declare function registerFuncs(tf): {
     softmax(logits: tf.Tensor, dim?: Number): tf.Tensor
 
     softmaxCrossEntropyWithLogits(logits: tf.Tensor, labels: tf.Tensor, dim?: Number): tf.Tensor
+
+    swish(x: tf.Tensor): tf.Tensor
 }
