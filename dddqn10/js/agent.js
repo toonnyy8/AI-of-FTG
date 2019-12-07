@@ -10,13 +10,14 @@ let actionsNum = [128]
 let dddqnModel = dddqn({
     sequenceLen: 4,
     stateVectorLen: 59,
-    layerNum: 32,
+    layerNum: 64,
     actionsNum: actionsNum,
     memorySize: 8192,
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.01,
-    discount: 0.8
+    discount: 0.8,
+    maxCoderSize: 6
 })
 
 let preArchives = {

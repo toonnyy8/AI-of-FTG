@@ -12,7 +12,8 @@ export class DDDQN {
         updateTargetStep = 0.05,
         initLearningRate = 1e-3,
         minLearningRate = 1e-5,
-        discount = 0.63
+        discount = 0.63,
+        maxCoderSize = 4
     }) {
 
         {
@@ -30,7 +31,8 @@ export class DDDQN {
                 sequenceLen: sequenceLen,
                 stateVectorLen: stateVectorLen,
                 layerNum: layerNum,
-                actionsNum: actionsNum
+                actionsNum: actionsNum,
+                maxCoderSize: maxCoderSize
             }, tfex.scope.variableScope("eval"))
             // this.model.summary()
 
@@ -38,7 +40,8 @@ export class DDDQN {
                 sequenceLen: sequenceLen,
                 stateVectorLen: stateVectorLen,
                 layerNum: layerNum,
-                actionsNum: actionsNum
+                actionsNum: actionsNum,
+                maxCoderSize: maxCoderSize
             }, tfex.scope.variableScope("target"))
 
             this.targetModel.setWeights(this.model.getWeights())
@@ -61,14 +64,16 @@ export class DDDQN {
         sequenceLen,
         stateVectorLen,
         layerNum = 32,
-        actionsNum = [3, 3, 4]
+        actionsNum = [3, 3, 4],
+        maxCoderSize = 4
     }, scope = tfex.scope) {
         class m {
             constructor({
                 sequenceLen,
                 stateVectorLen,
                 layerNum = 32,
-                actionsNum = [3, 3, 4]
+                actionsNum = [3, 3, 4],
+                maxCoderSize = 4
             }, scope = tfex.scope) {
                 this.sequenceLen = sequenceLen
                 this.stateVectorLen = stateVectorLen
@@ -78,41 +83,34 @@ export class DDDQN {
                 this.weights = []
 
                 let inputSize = stateVectorLen
-                let outputSize = 0
+                let outputSize = stateVectorLen * maxCoderSize
+                this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
+                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
 
-                for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
-                    outputSize = stateVectorLen + Math.ceil((stateVectorLen * 3) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_w${i}`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
+                let coderNum = Math.ceil(layerNum / 4) * 2
+                for (let i = 1; i < coderNum; i++) {
+                    inputSize = outputSize
+                    outputSize = (stateVectorLen / 2) * (i / coderNum) + stateVectorLen * maxCoderSize * (coderNum - i) / coderNum
+                    outputSize = Math.ceil(outputSize)
+                    this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
                     this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
-                    inputSize = outputSize
                 }
 
-                for (let i = 0; i < Math.ceil(layerNum / 4); i++) {
-                    outputSize = Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * (Math.ceil(layerNum / 4) - i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_w${i + Math.ceil(layerNum / 4)}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4)}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
-                    inputSize = outputSize
-                }
+                inputSize = outputSize
+                this.weights.push(scope.getVariable(`ae_w${coderNum}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
+                this.weights.push(scope.getVariable(`ae_b${coderNum}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
 
-                this.weights.push(scope.getVariable(`ae_w${Math.ceil(layerNum / 4) * 2}`, [Math.ceil(sequenceLen / Math.ceil(layerNum / 4)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({})))
-
-                for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
-                    outputSize = Math.ceil(stateVectorLen / 2 + (stateVectorLen / 2) * i / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 2 - 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
-                    inputSize = outputSize
-                }
-
-                for (let i = 1; i <= Math.ceil(layerNum / 4); i++) {
-                    outputSize = stateVectorLen + Math.ceil((stateVectorLen * 3) * (i) / Math.ceil(layerNum / 4))
-                    this.weights.push(scope.getVariable(`ae_b${i + Math.ceil(layerNum / 4) * 3 - 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
-                    inputSize = outputSize
+                for (let i = 2; i <= coderNum; i++) {
+                    outputSize = (stateVectorLen / 2) * ((coderNum - i) / coderNum) + stateVectorLen * maxCoderSize * i / coderNum
+                    outputSize = Math.ceil(outputSize)
+                    this.weights.push(scope.getVariable(`ae_b${coderNum + i - 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({})))
                 }
 
                 {
                     this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({})))
                     this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
 
-                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * 4, 1], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * maxCoderSize, 1], "float32", tf.initializers.truncatedNormal({})))
                     this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
                 }
 
@@ -120,17 +118,26 @@ export class DDDQN {
                     this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({})))
                     this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({})))
 
-                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * 4, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({})))
+                    this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * maxCoderSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({})))
                     this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({})))
                 }
-                this.weights.forEach(w => w.sum().print())
+                // this.weights.forEach(w => w.sum().print())
+                console.log(this.scope.variables)
             }
 
             predict(x) {
                 return tf.tidy(() => {
-                    let stateSeqLayer = x
+                    let stateSeqLayer = tf.conv1d(
+                        x,
+                        this.scope.getVariable(`input_w`),
+                        1,
+                        "same"
+                    )
+                    stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`input_b`))
+                    stateSeqLayer = tf.selu(stateSeqLayer)
 
-                    for (let i = 0; i <= Math.ceil(this.layerNum / 4) * 2; i++) {
+                    let coderNum = Math.ceil(layerNum / 4) * 2
+                    for (let i = 1; i <= coderNum; i++) {
                         stateSeqLayer = tf.conv1d(
                             stateSeqLayer,
                             this.scope.getVariable(`ae_w${i}`),
@@ -141,17 +148,17 @@ export class DDDQN {
                         stateSeqLayer = tf.selu(stateSeqLayer)
                     }
 
-                    for (let i = Math.ceil(this.layerNum / 4) * 2 + 1; i < Math.ceil(this.layerNum / 4) * 4; i++) {
+                    for (let i = 1; i < coderNum; i++) {
                         stateSeqLayer = tf.conv1d(
                             stateSeqLayer,
                             tf.transpose(
-                                this.scope.getVariable(`ae_w${Math.ceil(this.layerNum / 4) * 4 - i}`),
+                                this.scope.getVariable(`ae_w${coderNum - i}`),
                                 [0, 2, 1]
                             ),
                             1,
                             "same"
                         )
-                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
+                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${coderNum + i}`))
                         stateSeqLayer = tf.selu(stateSeqLayer)
                     }
 
@@ -223,7 +230,8 @@ export class DDDQN {
             sequenceLen,
             stateVectorLen,
             layerNum,
-            actionsNum
+            actionsNum,
+            maxCoderSize
         }, scope)
     }
 
@@ -471,7 +479,8 @@ export function dddqn({
     updateTargetStep = 0.05,
     initLearningRate = 1e-3,
     minLearningRate = 1e-5,
-    discount = 0.63
+    discount = 0.63,
+    maxCoderSize = 4
 }) {
     return new DDDQN({
         sequenceLen,
@@ -482,6 +491,7 @@ export function dddqn({
         updateTargetStep,
         initLearningRate,
         minLearningRate,
-        discount
+        discount,
+        maxCoderSize
     })
 }
