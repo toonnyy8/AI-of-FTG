@@ -158,7 +158,7 @@ let main = () => {
                 game.restart = false
                 env.init()
             } else if (env.isReturnCtrl && env.isReturnTrain) {
-                if (epochCount == Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))) {
+                if (epochCount == Math.min(maxEpoch, Math.ceil(ctrlNum / 10))) {
                     env.updatePrioritys()
                 } else {
                     env.train(64, [], true)
@@ -173,7 +173,7 @@ let main = () => {
                 }
             }
         } else {
-            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum * 2 / 32))
+            epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum / 10))
             // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {

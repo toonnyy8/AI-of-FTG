@@ -332,14 +332,6 @@ export class DDDQN {
                                 batchNextS,
                                 batchDiscount
                             )
-                            // tf.addN(
-                            //     this.actionsNum.map((actionNum, actionType) => {
-                            //         return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
-                            //     })
-                            // ).arraySync()
-                            //     .forEach((absTD, idx) => {
-                            //         this.memory[replayIdxes_[idx]].p = absTD
-                            //     })
                             let loss = tf.mean(
                                 tf.stack(
                                     this.actionsNum.map((actionNum, actionType) => {
@@ -363,6 +355,24 @@ export class DDDQN {
                     //     return acc
                     // }, {}))
                     this.optimizer.applyGradients(grads)
+
+                    {
+                        let [targetQs, Qs] = this.tQandQ(
+                            batchPrevS,
+                            batchAs,
+                            batchRs,
+                            batchNextS,
+                            batchDiscount
+                        )
+                        tf.addN(
+                            this.actionsNum.map((actionNum, actionType) => {
+                                return tf.abs(tf.sub(targetQs[actionType], Qs[actionType]))
+                            })
+                        ).arraySync()
+                            .forEach((absTD, idx) => {
+                                this.memory[replayIdxes_[idx]].p = absTD
+                            })
+                    }
 
                     this.count++
 
