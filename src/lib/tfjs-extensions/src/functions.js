@@ -418,6 +418,10 @@ export function registerFuncs(tf_ = tf) {
         return tf_.tidy(() => tf_.mul(x, tf_.sigmoid(x)))
     }
 
+    function mish(x) {
+        return tf_.tidy(() => tf_.mul(x, tf_.tanh(tf_.softplus(x))))
+    }
+
     /********************************/
     return {
         einsum,
@@ -442,6 +446,8 @@ export function registerFuncs(tf_ = tf) {
 
         softmaxCrossEntropyWithLogits,
 
-        swish
+        swish,
+
+        mish
     }
 }
