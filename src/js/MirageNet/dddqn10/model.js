@@ -134,7 +134,7 @@ export class DDDQN {
                         "same"
                     )
                     stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`input_b`))
-                    stateSeqLayer = tfex.funcs.swish(stateSeqLayer)
+                    stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
 
                     let coderNum = Math.ceil(layerNum / 4) * 2
                     for (let i = 1; i <= coderNum; i++) {
@@ -145,7 +145,7 @@ export class DDDQN {
                             "same"
                         )
                         stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
-                        stateSeqLayer = tfex.funcs.swish(stateSeqLayer)
+                        stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
                     }
 
                     stateSeqLayer = tf.conv1d(
@@ -155,7 +155,7 @@ export class DDDQN {
                         "same"
                     )
                     stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${coderNum + 1}`))
-                    stateSeqLayer = tfex.funcs.swish(stateSeqLayer)
+                    stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
 
                     for (let i = 0; i < coderNum; i++) {
                         stateSeqLayer = tf.conv1d(
@@ -168,7 +168,7 @@ export class DDDQN {
                             "same"
                         )
                         stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${coderNum + i + 2}`))
-                        stateSeqLayer = tfex.funcs.swish(stateSeqLayer)
+                        stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
                     }
 
                     let value = stateSeqLayer
