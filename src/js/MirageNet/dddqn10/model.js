@@ -85,7 +85,10 @@ export class DDDQN {
                 let inputSize = stateVectorLen
                 let outputSize = stateVectorLen * maxCoderSize
                 this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+
+                this.weights.push(scope.getVariable(`j_w0`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`j_b0`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
                 let coderNum = Math.ceil(layerNum / 4) * 2
                 for (let i = 1; i <= coderNum; i++) {
@@ -93,33 +96,35 @@ export class DDDQN {
                     outputSize = (stateVectorLen / 2) * (i / coderNum) + stateVectorLen * maxCoderSize * (coderNum - i) / coderNum
                     outputSize = Math.ceil(outputSize)
                     this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                    this.weights.push(scope.getVariable(`j_w${i}`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`j_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
                 }
 
                 inputSize = outputSize
                 this.weights.push(scope.getVariable(`ae_w${coderNum + 1}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`ae_b${coderNum + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`ae_b${coderNum + 1}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
                 for (let i = 1; i <= coderNum; i++) {
                     outputSize = (stateVectorLen / 2) * ((coderNum - i) / coderNum) + stateVectorLen * maxCoderSize * i / coderNum
                     outputSize = Math.ceil(outputSize)
-                    this.weights.push(scope.getVariable(`ae_b${coderNum + i + 1}`, [1, 1, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`ae_b${coderNum + i + 1}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
                 }
 
                 {
                     this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
 
                     this.weights.push(scope.getVariable(`value_w2`, [1, stateVectorLen * maxCoderSize, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.zeros({})))
                 }
 
                 {
                     this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
 
                     this.weights.push(scope.getVariable(`A_w2`, [1, stateVectorLen * maxCoderSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.zeros({})))
                 }
                 // this.weights.forEach(w => w.sum().print())
                 console.log(this.scope.variables)
@@ -127,39 +132,61 @@ export class DDDQN {
 
             predict(x) {
                 return tf.tidy(() => {
-                    let stateSeqLayer = tf.conv1d(
+                    let jumperLayers = []
+                    let AELayer = tf.conv1d(
                         x,
                         this.scope.getVariable(`input_w`),
                         1,
                         "same"
                     )
-                    stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`input_b`))
-                    stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
+                    AELayer = tf.add(AELayer, this.scope.getVariable(`input_b`))
+                    AELayer = tfex.funcs.mish(AELayer)
+                    jumperLayers.push(
+                        tfex.funcs.mish(
+                            tf.conv1d(
+                                AELayer,
+                                this.scope.getVariable(`j_w0`),
+                                1,
+                                "same"
+                            ).add(this.scope.getVariable(`j_b0`))
+                        )
+                    )
 
                     let coderNum = Math.ceil(layerNum / 4) * 2
                     for (let i = 1; i <= coderNum; i++) {
-                        stateSeqLayer = tf.conv1d(
-                            stateSeqLayer,
+                        AELayer = tf.conv1d(
+                            AELayer,
                             this.scope.getVariable(`ae_w${i}`),
                             1,
                             "same"
                         )
-                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${i}`))
-                        stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
+                        AELayer = tf.add(AELayer, this.scope.getVariable(`ae_b${i}`))
+                        AELayer = tfex.funcs.mish(AELayer)
+                        jumperLayers.push(
+                            tfex.funcs.mish(
+                                tf.conv1d(
+                                    AELayer,
+                                    this.scope.getVariable(`j_w${i}`),
+                                    1,
+                                    "same"
+                                ).add(this.scope.getVariable(`j_b${i}`))
+                            )
+                        )
                     }
 
-                    stateSeqLayer = tf.conv1d(
-                        stateSeqLayer,
+                    AELayer = tf.conv1d(
+                        AELayer,
                         this.scope.getVariable(`ae_w${coderNum + 1}`),
                         1,
                         "same"
                     )
-                    stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${coderNum + 1}`))
-                    stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
+                    AELayer = tf.add(AELayer, this.scope.getVariable(`ae_b${coderNum + 1}`))
+                    AELayer = tfex.funcs.mish(AELayer)
+                    AELayer = tf.add(AELayer, jumperLayers.pop())
 
                     for (let i = 0; i < coderNum; i++) {
-                        stateSeqLayer = tf.conv1d(
-                            stateSeqLayer,
+                        AELayer = tf.conv1d(
+                            AELayer,
                             tf.transpose(
                                 this.scope.getVariable(`ae_w${coderNum - i}`),
                                 [0, 2, 1]
@@ -167,11 +194,12 @@ export class DDDQN {
                             1,
                             "same"
                         )
-                        stateSeqLayer = tf.add(stateSeqLayer, this.scope.getVariable(`ae_b${coderNum + i + 2}`))
-                        stateSeqLayer = tfex.funcs.mish(stateSeqLayer)
+                        AELayer = tf.add(AELayer, this.scope.getVariable(`ae_b${coderNum + i + 2}`))
+                        AELayer = tfex.funcs.mish(AELayer)
+                        AELayer = tf.add(AELayer, jumperLayers.pop())
                     }
 
-                    let value = stateSeqLayer
+                    let value = AELayer
                     {
                         value = tf.transpose(value, [0, 2, 1])
                         value = tf.conv1d(
@@ -191,7 +219,7 @@ export class DDDQN {
                         value = tf.reshape(value, [-1, 1])
                     }
 
-                    let A = stateSeqLayer
+                    let A = AELayer
 
                     {
                         A = tf.transpose(A, [0, 2, 1])
