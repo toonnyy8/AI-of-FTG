@@ -22,51 +22,6 @@ npm run build
 
 ## 線上測試
 
-### 版本1(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn/agent.html)
-
-### 版本1(web worker版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn_webworker/index.html)
-
-### 版本2(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn2/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn2/agent.html)
-
-### 版本3(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn3/agent.html)
-
-### 版本5(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn5/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn5/agent.html)
-```
-使用了softmax與logSoftmax取出相對優劣勢
-```
-
-### 版本6(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn6/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn6/agent.html)
-```
-使用softmax並乘上正負來取出相對優劣勢，
-取出後與原Q值相加
-```
-
-### 版本7(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn7/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn7/agent.html)
-```
-使用softmax並乘上正負來取出相對優劣勢，
-相對優劣勢減去mean後與原Q值相加
-```
-
-### 版本8(channel通訊版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/index.html)  
-[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn8/agent.html)
-```
-普通結構，動作組[3,3,4]
-```
-
 ### 版本10(channel通訊版)
 >[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10/index.html)  
 [agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10/agent.html)
@@ -74,4 +29,8 @@ npm run build
 auto encoder
 tying weight
 shortcut connection 
+number of layer:64
 ```
+
+### 版本10(webworker版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10_webworker/index.html)
