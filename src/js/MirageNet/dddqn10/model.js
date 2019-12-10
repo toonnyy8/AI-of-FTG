@@ -87,8 +87,8 @@ export class DDDQN {
                 this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                 this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
-                this.weights.push(scope.getVariable(`j_w0`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`j_b0`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                this.weights.push(scope.getVariable(`sc_w0`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.weights.push(scope.getVariable(`sc_b0`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
                 let coderNum = Math.ceil(layerNum / 4) * 2
                 for (let i = 1; i <= coderNum; i++) {
@@ -97,8 +97,8 @@ export class DDDQN {
                     outputSize = Math.ceil(outputSize)
                     this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (coderNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
                     this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
-                    this.weights.push(scope.getVariable(`j_w${i}`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`j_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                    this.weights.push(scope.getVariable(`sc_w${i}`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.weights.push(scope.getVariable(`sc_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
                 }
 
                 inputSize = outputSize
@@ -145,10 +145,10 @@ export class DDDQN {
                         tfex.funcs.mish(
                             tf.conv1d(
                                 AELayer,
-                                this.scope.getVariable(`j_w0`),
+                                this.scope.getVariable(`sc_w0`),
                                 1,
                                 "same"
-                            ).add(this.scope.getVariable(`j_b0`))
+                            ).add(this.scope.getVariable(`sc_b0`))
                         )
                     )
 
@@ -166,10 +166,10 @@ export class DDDQN {
                             tfex.funcs.mish(
                                 tf.conv1d(
                                     AELayer,
-                                    this.scope.getVariable(`j_w${i}`),
+                                    this.scope.getVariable(`sc_w${i}`),
                                     1,
                                     "same"
-                                ).add(this.scope.getVariable(`j_b${i}`))
+                                ).add(this.scope.getVariable(`sc_b${i}`))
                             )
                         )
                     }

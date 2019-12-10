@@ -66,3 +66,12 @@ npm run build
 ```
 普通結構，動作組[3,3,4]
 ```
+
+### 版本10(channel通訊版)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10/index.html)  
+[agent](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10/agent.html)
+```
+auto encoder
+tying weight
+shortcut connection 
+```
