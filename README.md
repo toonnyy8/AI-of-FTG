@@ -32,5 +32,5 @@ shortcut connection
 number of layer:64
 ```
 
-### 版本10(webworker版)
->[environment](https://toonnyy8.github.io/AI-of-FTG/build/dddqn10_webworker/index.html)
+### prod mode(模型:版本10)
+>[environment](https://toonnyy8.github.io/AI-of-FTG/build/prod_mode/index.html)
