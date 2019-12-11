@@ -5,7 +5,6 @@ const tfex = registerTfex(tf)
 import * as fs from "fs"
 let initWeights = tfex.sl.load(fs.readFileSync(__dirname + "/../w.bin"))
 
-tf.setBackend("webgl")
 tf.enableProdMode()
 
 let actionsNum = [128]

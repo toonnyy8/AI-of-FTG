@@ -3,7 +3,6 @@ import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
-tf.setBackend("webgl")
 tf.enableProdMode()
 
 export class Environment {
