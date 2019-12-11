@@ -1,6 +1,5 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
-// import "./test"
 import { Environment } from "./environment"
 import { Game } from "../../src/lib/slime-FTG/src/js"
 import * as tool from "../../src/js/tool"
@@ -35,9 +34,6 @@ let canvas = document.getElementById("bobylonCanvas")
 let game = new Game(keySets, canvas)
 
 let main = () => {
-    // game.player1.maxHP = 1000
-    // game.player2.maxHP = 1000
-
     let env = new Environment([{
         name: "player1",
         actor: game.player1,
@@ -120,10 +116,6 @@ let main = () => {
     }, 8)
 
     let ctrlLoop = new tool.Loop(() => {
-        // if (
-        //     lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
-        //     getLastState().find((s, idx) => s.split(":")[0] == "normal") != undefined
-        // ) {
         if (env.isReturnCtrl) {
             let ctrlDatas = {
                 player1: {
@@ -143,8 +135,6 @@ let main = () => {
 
             ctrlNum += 1
         }
-        // }
-        // lastState = getLastState()
     }, document.getElementById("controlPeriod").value)
 
     document.getElementById("controlPeriod").onchange = () => {
@@ -174,13 +164,11 @@ let main = () => {
             }
         } else {
             epochCount = Math.min(maxEpoch, Math.ceil(ctrlNum / 10))
-            // console.log(epochCount)
             if (env.isReturnTrain) {
                 if (document.getElementById("reduceHP").innerText == "on") {
                     game.player1.HP -= 0.5
                     game.player2.HP -= 0.5
                 }
-                // console.clear()
                 env.nextStep()
                 ctrlLoop.run()
             }

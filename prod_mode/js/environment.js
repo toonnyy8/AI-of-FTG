@@ -4,8 +4,7 @@ import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 
 tf.setBackend("webgl")
-// tf.setBackend("cpu")
-// tf.enableProdMode()
+tf.enableProdMode()
 
 export class Environment {
     constructor(
@@ -134,216 +133,7 @@ export class Environment {
         })
     }
 
-    // trigger(actorName, actions) {
-    //     // console.log(actions)
-
-    //     switch (actions[0]) {
-    //         case 0:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["jump"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["squat"].keyup
-    //                 )
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["squat"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["jump"].keydown
-    //                 )
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["jump"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["squat"].keydown
-    //                 )
-    //                 break;
-    //             }
-    //     }
-    //     switch (actions[1]) {
-    //         case 0:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["left"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet["right"].keyup
-    //                 )
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 if (this.players[actorName].actor.shouldFaceTo == "left") {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keydown
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 if (this.players[actorName].actor.shouldFaceTo == "right") {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keydown
-    //                     )
-    //                 } else {
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["left"].keyup
-    //                     )
-    //                     document.dispatchEvent(
-    //                         this.players[actorName].keySet["right"].keydown
-    //                     )
-    //                 }
-    //                 break;
-    //             }
-    //     }
-    //     switch (actions[2]) {
-    //         case 0:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["small"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["medium"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["large"].keyup
-    //                 )
-    //                 break;
-    //             }
-    //         case 1:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["medium"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["large"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["small"].keydown
-    //                 )
-    //                 break;
-    //             }
-    //         case 2:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["small"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["large"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["medium"].keydown
-    //                 )
-    //                 break;
-    //             }
-    //         case 3:
-    //             {
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["small"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["medium"].keyup
-    //                 )
-    //                 document.dispatchEvent(
-    //                     this.players[actorName].keySet.attack["large"].keydown
-    //                 )
-    //                 break;
-    //             }
-    //     }
-    //     // switch (actions[3]) {
-    //     //     case 0:
-    //     //         {
-    //     //             document.dispatchEvent(
-    //     //                 this.players[actorName].keySet.attack["small"].keyup
-    //     //             )
-    //     //             break;
-    //     //         }
-    //     //     case 1:
-    //     //         {
-    //     //             if (this.players[actorName].actor.keyDown.attack.small && Math.random() > 0.8) {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["small"].keyup
-    //     //                 )
-    //     //             } else {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["small"].keydown
-    //     //                 )
-    //     //             }
-    //     //             break;
-    //     //         }
-    //     // }
-    //     // switch (actions[4]) {
-    //     //     case 0:
-    //     //         {
-    //     //             document.dispatchEvent(
-    //     //                 this.players[actorName].keySet.attack["medium"].keyup
-    //     //             )
-    //     //             break;
-    //     //         }
-    //     //     case 1:
-    //     //         {
-    //     //             if (this.players[actorName].actor.keyDown.attack.medium && Math.random() > 0.8) {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["medium"].keyup
-    //     //                 )
-    //     //             } else {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["medium"].keydown
-    //     //                 )
-    //     //             }
-    //     //             break;
-    //     //         }
-    //     // }
-    //     // switch (actions[5]) {
-    //     //     case 0:
-    //     //         {
-    //     //             document.dispatchEvent(
-    //     //                 this.players[actorName].keySet.attack["large"].keyup
-    //     //             )
-    //     //             break;
-    //     //         }
-    //     //     case 1:
-    //     //         {
-    //     //             if (this.players[actorName].actor.keyDown.attack.large && Math.random() > 0.8) {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["large"].keyup
-    //     //                 )
-    //     //             } else {
-    //     //                 document.dispatchEvent(
-    //     //                     this.players[actorName].keySet.attack["large"].keydown
-    //     //                 )
-    //     //             }
-    //     //             break;
-    //     //         }
-    //     // }
-    // }
     trigger(actorName, actions) {
-        // console.log(actions)
-
         switch (actions[0]) {
             case 0:
                 {
@@ -502,16 +292,9 @@ export class Environment {
                 })
             } else {
                 this.players[playerName]["point"] = [
-                    Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
-                    // Environment.getPoint(this.players[playerName]["actor"]),
+                    Environment.getPoint(this.players[playerName]["actor"])
                 ]
             }
-            // console.log(`${playerName} reward : ${Math.round(this.players[playerName]["point"] * 10000) / 10000}`)
         })
     }
 
@@ -532,9 +315,9 @@ export class Environment {
                                     (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "right"),
                                     (this.players[playerName]["actor"].keyDown.left && this.players[playerName]["actor"].shouldFaceTo == "right") ||
                                     (this.players[playerName]["actor"].keyDown.right && this.players[playerName]["actor"].shouldFaceTo == "left"),
-                                    this.players[playerName]["actor"].keyDown.attack.small,//|| this.players[playerName]["actor"]._state["subsection"] == "small",
-                                    this.players[playerName]["actor"].keyDown.attack.medium,//|| this.players[playerName]["actor"]._state["subsection"] == "medium",
-                                    this.players[playerName]["actor"].keyDown.attack.large,//|| this.players[playerName]["actor"]._state["subsection"] == "large" || this.players[playerName]["actor"]._state["subsection"] == "fall"
+                                    this.players[playerName]["actor"].keyDown.attack.small,
+                                    this.players[playerName]["actor"].keyDown.attack.medium,
+                                    this.players[playerName]["actor"].keyDown.attack.large
                                 ].reduce((prev, curr, idx) => prev + curr * (2 ** idx), 0)
                             ],
                             discount: 0.6 + ((Math.abs(this.players[playerName]["actor"].mesh.position.x - this.players[playerName]["actor"].opponent.mesh.position.x) / 22) ** 0.5) * 0.39,
@@ -563,7 +346,6 @@ export class Environment {
                 usePrioritizedReplay: usePrioritizedReplay
             }
         })
-        // console.log("train")
     }
 
     init() {
@@ -583,7 +365,6 @@ export class Environment {
             instruction: "save",
             args: {}
         })
-        // console.log("save")
     }
     load() {
         tf.tidy(() => {
@@ -593,7 +374,6 @@ export class Environment {
 
             load.onchange = event => {
                 const files = load.files
-                // console.log(files[0])
                 var reader = new FileReader()
                 reader.addEventListener("loadend", () => {
                     this.channel.postMessage({
@@ -602,7 +382,6 @@ export class Environment {
                             weightsBuffer: new Uint8Array(reader.result)
                         }
                     })
-                    // console.log("load")
                 });
                 reader.readAsArrayBuffer(files[0])
             };
@@ -778,17 +557,6 @@ export class Environment {
                 player["actor"].keyDown.attack.large,
             ])
             .concat(getActorState(player["actor"].opponent))
-        // .concat([
-        //     player["actor"].opponent.keyDown.jump,
-        //     player["actor"].opponent.keyDown.squat,
-        //     (player["actor"].opponent.keyDown.left && player["actor"].opponent.shouldFaceTo == "left") ||
-        //     (player["actor"].opponent.keyDown.right && player["actor"].opponent.shouldFaceTo == "right"),
-        //     (player["actor"].opponent.keyDown.left && player["actor"].opponent.shouldFaceTo == "right") ||
-        //     (player["actor"].opponent.keyDown.right && player["actor"].opponent.shouldFaceTo == "left"),
-        //     player["actor"].opponent.keyDown.attack.small,
-        //     player["actor"].opponent.keyDown.attack.medium,
-        //     player["actor"].opponent.keyDown.attack.large,
-        // ])
     }
 
     static getPoint(actor) {

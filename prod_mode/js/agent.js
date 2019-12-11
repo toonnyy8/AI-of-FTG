@@ -67,30 +67,6 @@ tf.ready().then(() => {
                                 outputActions = [outputActions]
                             }
                             outputActions = outputActions.map(outputAction => {
-                                if (window.dev == "print" || window.dev == 1) {
-                                    console.log("print")
-                                    outputAction.print()
-                                    console.log("--------")
-                                } else if (window.dev == "print max" || window.dev == 2) {
-                                    console.log("print max")
-                                    outputAction.argMax(1).print()
-                                    outputAction.max(1).print()
-                                    console.log("--------")
-                                }
-                                else if (window.dev == "print min" || window.dev == 3) {
-                                    console.log("print min")
-                                    outputAction.argMin(1).print()
-                                    outputAction.min(1).print()
-                                    console.log("--------")
-                                }
-                                else if (window.dev == "print max&min" || window.dev == 4) {
-                                    console.log("print max&min")
-                                    outputAction.argMax(1).print()
-                                    outputAction.max(1).print()
-                                    outputAction.argMin(1).print()
-                                    outputAction.min(1).print()
-                                    console.log("--------")
-                                }
                                 outputAction = tf.softmax(outputAction, 1)
                                 if (e.data.args.CP) { //如果有補正機率就執行這段
                                     outputAction = tf.div(
@@ -101,8 +77,6 @@ tf.ready().then(() => {
                                         2
                                     )
                                 }
-                                // outputAction.sum(1).print()
-                                // outputAction.print()
                                 return outputAction
                             })
 
