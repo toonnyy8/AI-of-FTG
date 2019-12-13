@@ -2,11 +2,7 @@ console.log('Hello from sw.js')
 
 let CACHE_NAME = "cacheV1"
 var urlsToCache = [
-    '/',
-    './main.fb6bbcaf.js',
-    './agent.347b5559.js',
-    './main.fb6bbcaf.js.map',
-    './agent.347b5559.js.map'
+    '/'
 ]
 
 
