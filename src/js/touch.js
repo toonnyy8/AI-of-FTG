@@ -35,16 +35,16 @@ export let touchAction = (player, keySet, canvas) => {
     // Create a recognizer
     let PanH = new Hammer.Pan({
         event: "panh",
-        threshold: 10,
+        threshold: 50,
         direction: Hammer.DIRECTION_HORIZONTAL
     })
     let PanV = new Hammer.Pan({
         event: "panv",
-        threshold: 20,
+        threshold: 100,
         direction: Hammer.DIRECTION_VERTICAL
     })
     let Swipe = new Hammer.Swipe({
-        threshold: 5,
+        threshold: 50,
         velocity: 0
     })
     let singleTap = new Hammer.Tap({ event: 'singletap', time: 100 })
