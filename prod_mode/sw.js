@@ -2,7 +2,7 @@ console.log('Hello from sw.js')
 
 let CACHE_NAME = "cacheV1"
 var urlsToCache = [
-    '/'
+    './'
 ]
 
 
