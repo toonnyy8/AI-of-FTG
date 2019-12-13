@@ -106,7 +106,6 @@ export let touchAction = (player, keySet, canvas) => {
     })
 
     manager.on("swipe", function (e) {
-        console.log("swipe")
         switch (e.offsetDirection) {
             case 16: {
                 if (!squat) {
