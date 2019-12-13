@@ -6,6 +6,7 @@ import * as tool from "../../src/js/tool"
 import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
+import { touchAction } from "../../src/js/touch"
 
 let keySets = [{
     jump: "w",
@@ -43,6 +44,8 @@ let main = () => {
         actor: game.player2,
         keySet: keySets[1]
     }], canvas, 5000, 4)
+
+    touchAction(game.player1, keySets[0], canvas)
 
     {
         document.getElementById("player1").onclick = () => {

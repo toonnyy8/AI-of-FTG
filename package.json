@@ -10,6 +10,7 @@
         "babylonjs-loaders": "^4.0.3",
         "cannon": "^0.6.2",
         "core-js": "^3.4.7",
+        "hammerjs": "^2.0.8",
         "parcel": "^1.12.4",
         "regenerator-runtime": "^0.13.3"
     },
