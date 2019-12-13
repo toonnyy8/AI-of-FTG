@@ -12,8 +12,10 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            -moz-user-select: none;
+            -webkit-user-select: none;
         }
-        
+
         #bobylonCanvas {
             touch-action: none;
         }
@@ -32,10 +34,12 @@
         player2 AI : <button id="player2">on</button>
     </p>
     <p>
-        player1 AI choose action random value : <input type="number" min="0" max="1" step="0.01" value="0.05" id="player1ChooseActionRandomValue"></input>
+        player1 AI choose action random value : <input type="number" min="0" max="1" step="0.01" value="0.05"
+            id="player1ChooseActionRandomValue"></input>
     </p>
     <p>
-        player2 AI choose action random value : <input type="number" min="0" max="1" step="0.01" value="0.05" id="player2ChooseActionRandomValue"></input>
+        player2 AI choose action random value : <input type="number" min="0" max="1" step="0.01" value="0.05"
+            id="player2ChooseActionRandomValue"></input>
     </p>
     <p>
         correction probability : <button id="CP">off</button>
