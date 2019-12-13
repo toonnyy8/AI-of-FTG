@@ -12,14 +12,11 @@ export class DDDQN {
         updateTargetStep = 0.05,
         initLearningRate = 1e-3,
         minLearningRate = 1e-5,
-        discount = 0.63,
         maxCoderSize = 4
     }) {
 
         {
             this.updateTargetStep = updateTargetStep
-
-            this.discount = discount
 
             this.count = 0
 
@@ -526,7 +523,6 @@ export function dddqn({
     updateTargetStep = 0.05,
     initLearningRate = 1e-3,
     minLearningRate = 1e-5,
-    discount = 0.63,
     maxCoderSize = 4
 }) {
     return new DDDQN({
@@ -538,7 +534,6 @@ export function dddqn({
         updateTargetStep,
         initLearningRate,
         minLearningRate,
-        discount,
         maxCoderSize
     })
 }

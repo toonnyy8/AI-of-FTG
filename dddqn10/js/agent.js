@@ -16,7 +16,6 @@ let dddqnModel = dddqn({
     minLearningRate: 1e-4,
     initLearningRate: 1e-3,
     updateTargetStep: 0.01,
-    discount: 0.8,
     maxCoderSize: 4
 })
 

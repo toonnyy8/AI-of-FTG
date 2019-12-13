@@ -319,7 +319,7 @@ export class Environment {
                                     this.players[playerName]["actor"].keyDown.attack.large
                                 ].reduce((prev, curr, idx) => prev + curr * (2 ** idx), 0)
                             ],
-                            discount: 0.6 + ((Math.abs(this.players[playerName]["actor"].mesh.position.x - this.players[playerName]["actor"].opponent.mesh.position.x) / 22) ** 0.5) * 0.39,
+                            discount: 0.65 + ((Math.abs(this.players[playerName]["actor"].mesh.position.x - this.players[playerName]["actor"].opponent.mesh.position.x) / 22) ** 0.5) * 0.34,
                             chooseActionRandomValue: ctrlDatas[playerName].chooseActionRandomValue,
                             aiCtrl: ctrlDatas[playerName].aiCtrl
                         }
@@ -565,7 +565,7 @@ export class Environment {
             point -= (1 - ((actor.HP - actor.cumulativeDamage) / actor.maxHP)) * 5
         }
         if (actor.opponent._state["chapter"] == "hitRecover" && actor._state["chapter"] == "attack") {
-            point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)) * 5
+            point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)) * 2
         }
 
         return point
