@@ -3,6 +3,21 @@
 <html>
 
 <head>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700,400italic|Material+Icons">
+    <link rel="manifest" href="manifest.webmanifest">
+    <!-- <meta http-equiv="refresh" content="5" /> -->
+    <script defer>
+        // Check that service workers are supported
+        if ('serviceWorker' in navigator) {
+            // Use the window load event to keep the page load performant
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                console.log("success")
+            })
+        }
+    </script>
     <script src="./js/main.js" defer></script>
     <style>
         html,
