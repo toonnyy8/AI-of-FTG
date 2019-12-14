@@ -3,7 +3,7 @@ import { dddqn } from "../../src/js/MirageNet/dddqn10"
 import { registerTfex } from "../../src/lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
 import * as fs from "fs"
-let initWeights = tfex.sl.load(fs.readFileSync(__dirname + "/../w.bin"))
+let initWeights = tfex.sl.load(fs.readFileSync(__dirname + "/../w2.bin"))
 
 tf.enableProdMode()
 
