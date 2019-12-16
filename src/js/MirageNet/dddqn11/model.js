@@ -498,7 +498,6 @@ export class DDDQN {
                                     // ...this.model.getWeights(true).map(w => tf.regularizers.l2().apply(w))
                                 ]
                             )
-                            console.log(tf.memory())
                             loss.print()
                             return loss
                         }, this.model.getWeights(true)).grads
