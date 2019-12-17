@@ -491,7 +491,7 @@ export class DDDQN {
                                             })
                                         )
                                     ),
-                                    tf.losses.huberLoss(
+                                    tf.losses.meanSquaredError(
                                         tf.concat([batchPrevS, batchNextS]),
                                         tf.concat([evalDecoder, predictionDecoder])
                                     ),
