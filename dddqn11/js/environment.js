@@ -801,7 +801,7 @@ export class Environment {
         //     point += (1 - ((actor.opponent.HP - actor.opponent.cumulativeDamage) / actor.opponent.maxHP)) * 5
         // }
 
-        return point * 10
+        return point
     }
 
     static getMovePoint(actor) {
