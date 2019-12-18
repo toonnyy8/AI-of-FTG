@@ -52,7 +52,8 @@ export class DDDQN {
         {
             this.minLearningRate = minLearningRate
             this.initLearningRate = initLearningRate
-            this.optimizer = tf.train.adam(this.initLearningRate)
+            this.AEOptimizer = tf.train.adam(this.initLearningRate)
+            this.duelingOptimizer = tf.train.adam(this.initLearningRate)
         }
 
     }
@@ -77,29 +78,30 @@ export class DDDQN {
                 this.layerNum = layerNum
                 this.actionsNum = actionsNum
                 this.scope = scope
-                this.weights = []
+                this.AEWeights = []
+                this.duelingWeights = []
 
                 let inputSize = stateVectorLen
                 let outputSize = stateVectorLen * maxCoderSize
-                this.weights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                this.AEWeights.push(scope.getVariable(`input_w`, [1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.AEWeights.push(scope.getVariable(`input_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
-                this.weights.push(scope.getVariable(`sc_w0`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`sc_b0`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                this.AEWeights.push(scope.getVariable(`sc_w0`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.AEWeights.push(scope.getVariable(`sc_b0`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
                 for (let i = 1; i <= layerNum; i++) {
                     inputSize = outputSize
                     outputSize = (stateVectorLen / 2) * (i / layerNum) + stateVectorLen * maxCoderSize * (layerNum - i) / layerNum
                     outputSize = Math.ceil(outputSize)
-                    this.weights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (layerNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
-                    this.weights.push(scope.getVariable(`sc_w${i}`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`sc_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                    this.AEWeights.push(scope.getVariable(`ae_w${i}`, [Math.ceil(sequenceLen / (layerNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.AEWeights.push(scope.getVariable(`ae_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                    this.AEWeights.push(scope.getVariable(`sc_w${i}`, [1, outputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.AEWeights.push(scope.getVariable(`sc_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
                 }
 
                 inputSize = outputSize
-                this.weights.push(scope.getVariable(`coding_w`, [Math.ceil(sequenceLen / (layerNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                this.weights.push(scope.getVariable(`coding_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                this.AEWeights.push(scope.getVariable(`coding_w`, [Math.ceil(sequenceLen / (layerNum)) + 1, inputSize, outputSize], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                this.AEWeights.push(scope.getVariable(`coding_b`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
 
                 inputSize += stateVectorLen * maxCoderSize
                 for (let i = 1; i <= layerNum; i++) {
@@ -107,29 +109,29 @@ export class DDDQN {
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
+                    this.duelingWeights.push(scope.getVariable(`value_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.duelingWeights.push(scope.getVariable(`value_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
 
-                    this.weights.push(scope.getVariable(`value_w2`, [1, inputSize, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.zeros({})))
+                    this.duelingWeights.push(scope.getVariable(`value_w2`, [1, inputSize, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.duelingWeights.push(scope.getVariable(`value_b2`, [1, 1, 1], "float32", tf.initializers.zeros({})))
                 }
 
                 {
-                    this.weights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
+                    this.duelingWeights.push(scope.getVariable(`A_w1`, [1, sequenceLen, 1], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.duelingWeights.push(scope.getVariable(`A_b1`, [1, 1, 1], "float32", tf.initializers.zeros({})))
 
-                    this.weights.push(scope.getVariable(`A_w2`, [1, inputSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
-                    this.weights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.zeros({})))
+                    this.duelingWeights.push(scope.getVariable(`A_w2`, [1, inputSize, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.truncatedNormal({ stddev: 0.1, mean: 0 })))
+                    this.duelingWeights.push(scope.getVariable(`A_b2`, [1, 1, actionsNum.reduce((prev, curr) => prev + curr, 0)], "float32", tf.initializers.zeros({})))
                 }
 
                 for (let i = 1; i <= layerNum; i++) {
                     outputSize = (stateVectorLen / 2) * ((layerNum - i) / layerNum) + stateVectorLen * maxCoderSize * i / layerNum
                     outputSize = Math.ceil(outputSize)
-                    this.weights.push(scope.getVariable(`ad_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
+                    this.AEWeights.push(scope.getVariable(`ad_b${i}`, [1, 1, outputSize], "float32", tf.initializers.zeros({})))
                 }
 
-                this.weights.push(scope.getVariable(`adOutput_b`, [1, 1, stateVectorLen], "float32", tf.initializers.zeros({})))
-                // this.weights.forEach(w => w.sum().print())
+                this.AEWeights.push(scope.getVariable(`adOutput_b`, [1, 1, stateVectorLen], "float32", tf.initializers.zeros({})))
+                // this.AEWeights.forEach(w => w.sum().print())
                 console.log(this.scope.variables)
             }
 
@@ -241,7 +243,7 @@ export class DDDQN {
                 })
             }
 
-            predictWithDecoder(x) {
+            autoEncoder(x) {
                 return tf.tidy(() => {
                     let shotcutLayers = []
                     let AELayer = tf.conv1d(
@@ -292,59 +294,8 @@ export class DDDQN {
                     )
                     AELayer = tf.add(AELayer, this.scope.getVariable(`coding_b`))
                     AELayer = tfex.funcs.mish(AELayer)
-
-                    let value = tf.concat([AELayer, ...shotcutLayers], 2)
-                    {
-                        value = tf.transpose(value, [0, 2, 1])
-                        value = tf.conv1d(
-                            value,
-                            this.scope.getVariable(`value_w1`),
-                            1, 0
-                        )
-                        value = tf.add(value, this.scope.getVariable(`value_b1`))
-
-                        value = tf.transpose(value, [0, 2, 1])
-                        value = tf.conv1d(
-                            value,
-                            this.scope.getVariable(`value_w2`),
-                            1, 0
-                        )
-                        value = tf.add(value, this.scope.getVariable(`value_b2`))
-                        value = tf.reshape(value, [-1, 1])
-                    }
-
-                    let A = tf.concat([AELayer, ...shotcutLayers], 2)
-
-                    {
-                        A = tf.transpose(A, [0, 2, 1])
-                        A = tf.conv1d(
-                            A,
-                            this.scope.getVariable(`A_w1`),
-                            1, 0
-                        )
-                        A = tf.add(A, this.scope.getVariable(`A_b1`))
-                        A = tf.transpose(A, [0, 2, 1])
-                        A = tf.conv1d(
-                            A,
-                            this.scope.getVariable(`A_w2`),
-                            1, 0
-                        )
-                        A = tf.add(A, this.scope.getVariable(`A_b2`))
-                        A = tf.reshape(A, [-1, this.actionsNum.reduce((prev, curr) => prev + curr, 0)])
-
-                        A = tf.sub(A, tf.mean(A, 1, true))
-                    }
-
-                    let Q = tf.add(value, A)
-
-                    let outputs
-                    if (this.actionsNum.length == 1) {
-                        outputs = Q
-                    } else {
-                        outputs = tf.split(Q, this.actionsNum, 1)
-                    }
-
                     AELayer = tf.add(AELayer, shotcutLayers.pop())
+
                     for (let i = 0; i < layerNum; i++) {
                         AELayer = tf.conv1d(
                             AELayer,
@@ -371,16 +322,22 @@ export class DDDQN {
                     )
                     AELayerOutput = tf.add(AELayerOutput, this.scope.getVariable(`adOutput_b`))
 
-                    return [outputs, AELayerOutput]
+                    return AELayerOutput
                 })
             }
 
+            getAEWeights() {
+                return this.AEWeights
+            }
+            getDuelingWeights() {
+                return this.duelingWeights
+            }
             getWeights() {
-                return this.weights
+                return this.AEWeights.concat(this.duelingWeights)
             }
 
             setWeights(weights) {
-                this.weights.forEach((w, idx) => w.assign(weights[idx]))
+                this.AEWeights.concat(this.duelingWeights).forEach((w, idx) => w.assign(weights[idx]))
             }
         }
 
@@ -395,7 +352,7 @@ export class DDDQN {
 
     tQandQ(batchPrevS, batchAs, batchRs, batchNextS, batchDiscount) {
         return tf.tidy(() => {
-            let [evalNet, evalDecoder] = this.model.predictWithDecoder(batchPrevS)
+            let evalNet = this.model.predict(batchPrevS)
             if (this.actionsNum.length == 1) {
                 evalNet = [evalNet]
             }
@@ -409,7 +366,7 @@ export class DDDQN {
                 ).sum(1)
             })
 
-            let [predictions, predictionDecoder] = this.model.predictWithDecoder(batchNextS)
+            let predictions = this.model.predict(batchNextS)
             if (this.actionsNum.length == 1) {
                 predictions = [predictions]
             }
@@ -431,7 +388,7 @@ export class DDDQN {
                 const targets = batchRs[actionType].add(maxQ.mul(batchDiscount));
                 return targets;
             })
-            return [targetQs, Qs, evalDecoder, predictionDecoder]
+            return [targetQs, Qs]
         })
     }
 
@@ -472,47 +429,45 @@ export class DDDQN {
                     let batchNextS = tf.tensor3d(arrayNextS)
                     let batchDiscount = tf.tensor1d(arrayDiscount)
 
-                    let grads = this.optimizer.computeGradients(
+                    this.AEOptimizer.minimize(() => {
+                        let labels = tf.concat([batchPrevS, batchNextS])
+                        return tf.losses.huberLoss(
+                            labels,
+                            this.model.autoEncoder(labels),
+                            undefined,
+                            2
+                        )
+                    }, false, this.model.getAEWeights())
+
+                    this.duelingOptimizer.minimize(
                         () => {
-                            let [targetQs, Qs, evalDecoder, predictionDecoder] = this.tQandQ(
+                            let [targetQs, Qs] = this.tQandQ(
                                 batchPrevS,
                                 batchAs,
                                 batchRs,
                                 batchNextS,
                                 batchDiscount
                             )
-                            let loss = tf.addN(
-                                [
-                                    tf.mean(
-                                        tf.stack(
-                                            this.actionsNum.map((actionNum, actionType) => {
-                                                // return tf.losses.huberLoss(targetQs[actionType], Qs[actionType])
-                                                return tf.losses.meanSquaredError(targetQs[actionType], Qs[actionType])
-                                            })
+                            let loss = tf.mean(
+                                tf.stack(
+                                    this.actionsNum.map((actionNum, actionType) => {
+                                        // return tf.losses.huberLoss(targetQs[actionType], Qs[actionType])
+                                        return tf.losses.huberLoss(
+                                            targetQs[actionType],
+                                            Qs[actionType],
+                                            undefined,
+                                            2
                                         )
-                                    ),
-                                    tf.losses.meanSquaredError(
-                                        tf.concat([batchPrevS, batchNextS]),
-                                        tf.concat([evalDecoder, predictionDecoder])
-                                    ),
-                                    // ...this.model.getWeights(true).map(w => tf.regularizers.l2().apply(w))
-                                ]
+                                    })
+                                )
                             )
+
                             loss.print()
                             return loss
-                        }, this.model.getWeights(true)).grads
-
-                    // let gradsName = Object.keys(grads)
-                    // grads = tfex.funcs.clipByGlobalNorm(Object.values(grads), 1)[0]
-
-                    // this.optimizer.applyGradients(gradsName.reduce((acc, gn, idx) => {
-                    //     acc[gn] = grads[idx]
-                    //     // if (gn == "weighted_average_WeightedAverage1/w") {
-                    //     //     acc[gn].print()
-                    //     // }
-                    //     return acc
-                    // }, {}))
-                    this.optimizer.applyGradients(grads)
+                        },
+                        false,
+                        this.model.getWeights()
+                    )
 
                     {
                         let [targetQs, Qs] = this.tQandQ(
@@ -534,7 +489,7 @@ export class DDDQN {
 
                     this.count++
 
-                    this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
+                    // this.optimizer.learningRate = Math.max(this.initLearningRate / (this.count ** 0.5), this.minLearningRate)
 
                     if (this.updateTargetStep < 1) {
                         this.targetModel.setWeights(
