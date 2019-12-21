@@ -2,10 +2,9 @@ import "core-js/stable"
 import "regenerator-runtime/runtime"
 
 import * as tf from "@tensorflow/tfjs"
-import * as tfex from "../src"
 import { registerTfex } from "../src"
-const tfex_ = registerTfex(tf)
-console.log(tfex_)
+const tfex = registerTfex(tf)
+console.log(tfex)
 
 console.log(tf.memory())
 
