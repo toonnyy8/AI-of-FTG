@@ -71,6 +71,7 @@ export class Actor {
         this.maxPerfectDefenseTime = maxPerfectDefenseTime
         this.perfectDefenseTime = -1
         this.isPD = false
+        this.PDMaterialTime = 0
 
         this.beInjuredObj = { atk: null, scale: null, beHitVector: BABYLON.Vector3.Zero() }
 
@@ -525,12 +526,6 @@ export class Actor {
                             }
                         case "defense":
                             {
-                                this._actions[chapter][section][subsection][0].onAnimationGroupPlayObservable.add(() => {
-                                    setTimeout(() => {
-                                        this.materialMesh.material = this.material
-                                    }, 100)
-                                })
-
                                 this._actions[chapter][section][subsection][0].onAnimationEndObservable.add(() => {
                                     if (stateEqual(0)) {
                                         this._state.subsubsection = 1
@@ -577,7 +572,7 @@ export class Actor {
                                     this._state.subsection = this.shouldFaceTo == "right" ? "forward" : "backward"
                                 }
                                 this.keyDown.right = true
-                                if (this.shouldFaceTo == "left") {
+                                if (this.shouldFaceTo == "right") {
                                     this.perfectDefenseTime = this.maxPerfectDefenseTime
                                 }
                             }
@@ -592,8 +587,8 @@ export class Actor {
                                     this._state.subsection = this.shouldFaceTo == "left" ? "forward" : "backward"
                                 }
                                 this.keyDown.left = true
-                                if (this.shouldFaceTo == "right") {
-                                    this.perfectDefenseTime = 6
+                                if (this.shouldFaceTo == "left") {
+                                    this.perfectDefenseTime = this.maxPerfectDefenseTime
                                 }
                             }
                         }
@@ -1432,6 +1427,12 @@ export class Actor {
     }
 
     tick(debug) {
+        if (this.PDMaterialTime == 0) {
+            this.materialMesh.material = this.material
+            this.PDMaterialTime -= 1
+        } else if (this.PDMaterialTime > 0) {
+            this.PDMaterialTime -= 1
+        }
         this.perfectDefenseTime -= 1
 
         if (this.cumulativeDamage < this.maxCumulativeDamage && this._state["chapter"] != "attack" && !(this._state["chapter"] == "hitRecover" && this._state["subsubsection"] == 0)) {
@@ -1457,7 +1458,7 @@ export class Actor {
             this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].start(false, (Actor.actionSet()[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].speed || 1) /* * 0.5*/)
             this._state.frame = this._actions[this._state.chapter][this._state.section][this._state.subsection][this._state.subsubsection].animatables[0].getAnimations()[0].currentFrame
 
-        } catch{
+        } catch {
             console.error(`${this._state.chapter}:${this._state.section}:${this._state.subsection}:${this._state.subsubsection}`)
         }
         // if (`${this._state["chapter"]}:${this._state["section"]}:${this._state["subsection"]}` == "normal:stand:main") {
@@ -1727,12 +1728,17 @@ export class Actor {
         let isBack = () => {
             return (this.keyDown.left && this._faceTo == "right") || (this.keyDown.right && this._faceTo == "left")
         }
-        if (this.keyDown.left != this.keyDown.right && isBack() && (this._state.chapter == "normal" || this._state.chapter == "defense")) {
+        let isForward = () => {
+            return (this.keyDown.left && this._faceTo == "left") || (this.keyDown.right && this._faceTo == "right")
+        }
+        if (this.perfectDefenseTime >= 0 && isForward()) {
+            this.isPD = true
+        }
+        if (this.keyDown.left != this.keyDown.right && (isBack() || this.isPD) && (this._state.chapter == "normal" || this._state.chapter == "defense")) {
             this._state.chapter = "defense"
             this._state.subsection = "main"
             this._state.subsubsection = 0
-            if (this.perfectDefenseTime >= 0) {
-                this.isPD = true
+            if (this.isPD) {
 
                 let tempM = new BABYLON.StandardMaterial("material", this.scene)
                 tempM.diffuseColor = new BABYLON.Color3(1, 1, 1)
@@ -1742,6 +1748,7 @@ export class Actor {
 
                 this.materialMesh.material = tempM
                 // console.log("perfect")
+                this.PDMaterialTime = 6
 
                 this.opponent.cumulativeDamage += this.cumulativeDamage
                 this.cumulativeDamage = 0
