@@ -31,6 +31,8 @@ let keySets = [{
 }]
 
 let canvas = document.getElementById("bobylonCanvas")
+let p1canvas = document.getElementById("p1Canvas")
+let p2canvas = document.getElementById("p2Canvas")
 
 let game = new Game(keySets, canvas)
 
@@ -146,6 +148,26 @@ let main = () => {
 
     game.restart = false
     let loop = () => {
+        let [p1pix, p2pix] = tf.tidy(() => {
+            let pix = tf.browser.fromPixels(canvas)
+            return [
+                pix.slice([0, 0, 2], [-1, -1, -1]),
+                pix.slice([0, 0, 0], [-1, -1, 1]).reverse(1)
+            ]
+        })
+        tf.browser.toPixels(
+            p1pix,
+            p1canvas,
+        ).then(() => {
+            p1pix.dispose()
+        })
+        tf.browser.toPixels(
+            p2pix,
+            p2canvas,
+        ).then(() => {
+            p2pix.dispose()
+        })
+
         if (game.restart) {
             if (document.getElementById("trainAtEnd").innerText == "off") {
                 game.restart = false

@@ -25,7 +25,7 @@ export class Game {
 
             // This creates a basic Babylon Scene object (non-mesh)
             let scene = new BABYLON.Scene(engine)
-            scene.clearColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+            scene.clearColor = new BABYLON.Color3(0, 0, 0);
             scene.enablePhysics()
 
             //Adding an Arc Rotate Camera
