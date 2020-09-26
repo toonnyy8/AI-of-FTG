@@ -4,7 +4,7 @@
     "description": "以tensorflow.js實作基於深度學習的FTG AI",
     "main": "index.js",
     "dependencies": {
-        "@tensorflow/tfjs": "^1.7.4",
+        "@tensorflow/tfjs": "^2.4.0",
         "babylonjs": "^4.1.0",
         "babylonjs-gui": "^4.1.0",
         "babylonjs-loaders": "^4.1.0",
