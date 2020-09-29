@@ -48,16 +48,16 @@ export class Game {
             light.groundColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 
             let p1_hpMaterial = new BABYLON.StandardMaterial("hpMaterial", scene);
-            p1_hpMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_hpMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_hpMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_hpMaterial.ambientColor = new BABYLON.Color3(0.3, 0.3, 1)
+            p1_hpMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_hpMaterial.specularColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_hpMaterial.emissiveColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_hpMaterial.ambientColor = new BABYLON.Color3(0.4, 0.4, 1)
 
             let p2_hpMaterial = new BABYLON.StandardMaterial("hpMaterial", scene);
-            p2_hpMaterial.diffuseColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_hpMaterial.specularColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_hpMaterial.emissiveColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_hpMaterial.ambientColor = new BABYLON.Color3(1, 0.3, 0.3)
+            p2_hpMaterial.diffuseColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_hpMaterial.specularColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_hpMaterial.emissiveColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_hpMaterial.ambientColor = new BABYLON.Color3(1, 0.4, 0.4)
 
             let HPBar = { p1: BABYLON.MeshBuilder.CreateBox("P1_hp", { size: 0.5, width: 8 }), p2: BABYLON.MeshBuilder.CreateBox("P2_hp", { size: 0.5, width: 8 }) }
             HPBar.p1.setPivotMatrix(new BABYLON.Matrix.Translation(-4, 0, 0), false);
@@ -72,16 +72,16 @@ export class Game {
             HPBar.p2.material = p2_hpMaterial
 
             let p1_cumulativeDamageMaterial = new BABYLON.StandardMaterial("p1_hpMaterial", scene);
-            p1_cumulativeDamageMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_cumulativeDamageMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_cumulativeDamageMaterial.emissiveColor = new BABYLON.Color3(0.3, 0.3, 1)
-            p1_cumulativeDamageMaterial.ambientColor = new BABYLON.Color3(0.3, 0.3, 1)
+            p1_cumulativeDamageMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_cumulativeDamageMaterial.specularColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_cumulativeDamageMaterial.emissiveColor = new BABYLON.Color3(0.4, 0.4, 1)
+            p1_cumulativeDamageMaterial.ambientColor = new BABYLON.Color3(0.4, 0.4, 1)
 
             let p2_cumulativeDamageMaterial = new BABYLON.StandardMaterial("p2_hpMaterial", scene);
-            p2_cumulativeDamageMaterial.diffuseColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_cumulativeDamageMaterial.specularColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_cumulativeDamageMaterial.emissiveColor = new BABYLON.Color3(1, 0.3, 0.3)
-            p2_cumulativeDamageMaterial.ambientColor = new BABYLON.Color3(1, 0.3, 0.3)
+            p2_cumulativeDamageMaterial.diffuseColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_cumulativeDamageMaterial.specularColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_cumulativeDamageMaterial.emissiveColor = new BABYLON.Color3(1, 0.4, 0.4)
+            p2_cumulativeDamageMaterial.ambientColor = new BABYLON.Color3(1, 0.4, 0.4)
 
             let cumulativeDamageBar = { p1: BABYLON.MeshBuilder.CreateBox("P1_cumulativeDamage", { size: 0.1, width: 8 }), p2: BABYLON.MeshBuilder.CreateBox("P2_cumulativeDamage", { size: 0.1, width: 8 }) }
             cumulativeDamageBar.p1.setPivotMatrix(new BABYLON.Matrix.Translation(-4, 0, 0), false);
@@ -103,10 +103,10 @@ export class Game {
                 console.log(meshes)
                 console.log(animationGroups)
                 // meshes[1].material = new BABYLON.StandardMaterial("p1_material", this.scene)
-                meshes[1].material.diffuseColor = new BABYLON.Color3(0.3, 0.3, 1);
-                meshes[1].material.specularColor = new BABYLON.Color3(0.3, 0.3, 1);
-                meshes[1].material.emissiveColor = new BABYLON.Color3(0.3, 0.3, 1);
-                meshes[1].material.ambientColor = new BABYLON.Color3(0.3, 0.3, 1);
+                meshes[1].material.diffuseColor = new BABYLON.Color3(0.4, 0.4, 1);
+                meshes[1].material.specularColor = new BABYLON.Color3(0.4, 0.4, 1);
+                meshes[1].material.emissiveColor = new BABYLON.Color3(0.4, 0.4, 1);
+                meshes[1].material.ambientColor = new BABYLON.Color3(0.4, 0.4, 1);
 
                 let animationGroup = animationGroups[0] //.start(false)
                 animationGroup.stop()
@@ -133,10 +133,10 @@ export class Game {
                     console.log(meshes)
                     console.log(animationGroups)
                     // meshes[1].material = new BABYLON.StandardMaterial("p2_material", this.scene)
-                    meshes[1].material.diffuseColor = new BABYLON.Color3(1, 0.3, 0.3);
-                    meshes[1].material.specularColor = new BABYLON.Color3(1, 0.3, 0.3);
-                    meshes[1].material.emissiveColor = new BABYLON.Color3(1, 0.3, 0.3);
-                    meshes[1].material.ambientColor = new BABYLON.Color3(1, 0.3, 0.3);
+                    meshes[1].material.diffuseColor = new BABYLON.Color3(1, 0.4, 0.4);
+                    meshes[1].material.specularColor = new BABYLON.Color3(1, 0.4, 0.4);
+                    meshes[1].material.emissiveColor = new BABYLON.Color3(1, 0.4, 0.4);
+                    meshes[1].material.ambientColor = new BABYLON.Color3(1, 0.4, 0.4);
 
                     let animationGroup = animationGroups[0]
                     animationGroup.stop()

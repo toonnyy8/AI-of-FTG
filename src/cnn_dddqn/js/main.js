@@ -4,10 +4,13 @@ import "regenerator-runtime/runtime"
 import { Environment } from "./environment"
 import { Game } from "../../lib/slime-FTG-for-cnn/src/js"
 
+import { insertPadding } from "../model"
+
 import * as tool from "../../other/tool"
 import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)
+
 
 let keySets = [{
     jump: "w",
@@ -151,9 +154,9 @@ let main = () => {
     let loop = () => {
         let [p1pix, p2pix] = tf.tidy(() => {
             let pix = tf.image.resizeNearestNeighbor(tf.browser.fromPixels(canvas), [64, 64]);
-            console.log(1)
+
             return [
-                pix.slice([0, 0, 2], [-1, -1, -1]),
+                insertPadding(pix.slice([0, 0, 2], [-1, -1, -1])),
                 pix.slice([0, 0, 0], [-1, -1, 1]).reverse(1)
             ]
         })
