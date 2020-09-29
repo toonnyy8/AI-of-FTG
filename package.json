@@ -24,7 +24,8 @@
         "dev:prod_mode": "parcel ./src/prod_mode/index.html -p 8080 --open",
         "build:prod_mode": "parcel build --no-content-hash  ./src/prod_mode/index.html --out-dir build/prod_mode --public-url=./",
         "dev:cnn_dddqn": "parcel ./src/cnn_dddqn/index.html ./src/cnn_dddqn/agent.html -p 8080 --open",
-        "build:cnn_dddqn": "parcel build --no-content-hash  ./cnn_dddqn/index.html ./cnn_dddqn/agent.html --out-dir build/cnn_dddqn --public-url=./"
+        "build:cnn_dddqn": "parcel build --no-content-hash  ./cnn_dddqn/index.html ./cnn_dddqn/agent.html --out-dir build/cnn_dddqn --public-url=./",
+        "dev:test": "parcel ./src/test/index.html -p 8080 --open"
     },
     "keywords": [],
     "author": "",
