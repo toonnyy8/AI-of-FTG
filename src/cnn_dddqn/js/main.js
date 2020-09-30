@@ -153,11 +153,14 @@ let main = () => {
     game.restart = false
     let loop = () => {
         let [p1pix, p2pix] = tf.tidy(() => {
-            let pix = tf.image.resizeNearestNeighbor(tf.browser.fromPixels(canvas), [64, 64]);
-
+            let pix = tf
+                .image
+                .resizeNearestNeighbor(tf.browser.fromPixels(canvas), [64, 64])
+                .cast("float32")
+                .div(255);
             return [
-                insertPadding(pix.slice([0, 0, 2], [-1, -1, -1])),
-                pix.slice([0, 0, 0], [-1, -1, 1]).reverse(1)
+                insertPadding(pix),
+                pix.reverse([1, 2]),
             ]
         })
         tf.browser.toPixels(
