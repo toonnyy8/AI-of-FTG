@@ -33,38 +33,41 @@ export const AED = (layers: number, inputChannels: number) => {
             })
         )
 
-    return {
-        ae: (input: tf.Tensor3D | tf.Tensor4D) =>
-            tf.tidy(() =>
-                convs.reduce((inp, conv) =>
-                    nn.mish(<tf.Tensor>conv.apply(inp)),
-                    input,
-                )
-            ),
-        ae_ws: () =>
-            tf.tidy(() =>
-                convs.reduce(
-                    (w, conv) =>
-                        w.concat(...<tf.Variable[]>conv.getWeights()),
-                    <tf.Variable[]>[],
-                )
-            ),
-
-        ad: (input: tf.Tensor3D | tf.Tensor4D) =>
-            tf.tidy(() =>
-                deconvs.reduce((inp, deconv) =>
-                    nn.mish(<tf.Tensor>deconv.apply(nn.insertPadding(inp))),
-                    input,
-                )
-            ),
-        ad_ws: () =>
-            tf.tidy(() =>
-                deconvs.reduce(
-                    (w, deconv) =>
-                        w.concat(...<tf.Variable[]>deconv.getWeights()),
-                    <tf.Variable[]>[],
-                )
-            ),
-    }
+    return [
+        {
+            fn: (input: tf.Tensor3D | tf.Tensor4D) =>
+                tf.tidy(() =>
+                    convs.reduce((inp, conv) =>
+                        nn.mish(<tf.Tensor>conv.apply(inp)),
+                        input,
+                    )
+                ),
+            ws: () =>
+                tf.tidy(() =>
+                    convs.reduce(
+                        (w, conv) =>
+                            w.concat(...<tf.Variable[]>conv.getWeights()),
+                        <tf.Variable[]>[],
+                    )
+                ),
+        },
+        {
+            fn: (input: tf.Tensor3D | tf.Tensor4D) =>
+                tf.tidy(() =>
+                    deconvs.reduce((inp, deconv) =>
+                        nn.mish(<tf.Tensor>deconv.apply(nn.insertPadding(inp))),
+                        input,
+                    )
+                ),
+            ws: () =>
+                tf.tidy(() =>
+                    deconvs.reduce(
+                        (w, deconv) =>
+                            w.concat(...<tf.Variable[]>deconv.getWeights()),
+                        <tf.Variable[]>[],
+                    )
+                ),
+        }
+    ]
 
 }

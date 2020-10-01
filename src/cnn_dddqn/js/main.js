@@ -4,7 +4,9 @@ import "regenerator-runtime/runtime"
 import { Environment } from "./environment"
 import { Game } from "../../lib/slime-FTG-for-cnn/src/js"
 
-import { insertPadding } from "../model"
+import { insertPadding } from "../model/nn"
+import { AED } from "../model/ae"
+const [{ fn: ae }, { fn: ad }] = AED(6, 3)
 
 import * as tool from "../../other/tool"
 import * as tf from "@tensorflow/tfjs"
@@ -78,13 +80,6 @@ let main = () => {
                 document.getElementById("reduceHP").innerText = "off"
             }
         }
-        document.getElementById("trainAtFrame").onclick = () => {
-            if (document.getElementById("trainAtFrame").innerText == "off") {
-                document.getElementById("trainAtFrame").innerText = "on"
-            } else {
-                document.getElementById("trainAtFrame").innerText = "off"
-            }
-        }
         document.getElementById("trainAtEnd").onclick = () => {
             if (document.getElementById("trainAtEnd").innerText == "off") {
                 document.getElementById("trainAtEnd").innerText = "on"
@@ -112,12 +107,6 @@ let main = () => {
     }
     let lastState = getLastState()
 
-    let trainLoop = new tool.Loop(() => {
-        if (document.getElementById("trainAtFrame").innerText == "on") {
-            env.train(64, [], false)
-        }
-    }, 32)
-
     let ctrlLoop = new tool.Loop(() => {
         // if (
         //     lastState.find((s, idx) => s == getLastState()[idx]) != undefined ||
@@ -136,7 +125,6 @@ let main = () => {
             }
 
             env.control(ctrlDatas)
-            trainLoop.run()
 
             env.isReturnCtrl = false
 
@@ -158,8 +146,11 @@ let main = () => {
                 .resizeNearestNeighbor(tf.browser.fromPixels(canvas), [64, 64])
                 .cast("float32")
                 .div(255);
+            // let img = tf.relu(ad(ae(pix.reverse([1, 2]).expandDims(0))).squeeze(0))
+            // let max = tf.max(img)
             return [
                 insertPadding(pix),
+                // img.div(max),
                 pix.reverse([1, 2]),
             ]
         })
