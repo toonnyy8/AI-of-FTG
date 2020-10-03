@@ -1,4 +1,4 @@
-import { Game } from "../../lib/slime-FTG-for-cnn/src/js"
+import { Game } from "../../lib/slime-FTG/src/js"
 import * as tf from "@tensorflow/tfjs"
 import { registerTfex } from "../../lib/tfjs-extensions/src"
 const tfex = registerTfex(tf)

@@ -2,43 +2,55 @@ import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 
 
-export const AED = (layers: number, inputChannels: number) => {
-    const filters = new Array(layers)
-        .fill(0)
-        .map((_, idx) => 64 * 2 ** Math.floor(idx / 2))
-        .reverse()
-        .concat(inputChannels)
+export const AED = (channels: number[]):
+    [{
+        fn: (input: tf.Tensor) => tf.Tensor,
+        ws: () => tf.Variable[],
+    }, {
+        fn: (input: tf.Tensor) => tf.Tensor,
+        ws: () => tf.Variable[],
+    }] => {
+
+    const enChannels = [...channels]
+    const deChannels = [...channels]
         .reverse()
 
-    const convs = filters
+    console.log(enChannels, deChannels)
+
+    const convs = enChannels
         .slice(1)
-        .map(f => tf
+        .map((f, idx) => tf
             .layers
             .separableConv2d({
                 kernelSize: 3,
                 filters: f,
-                strides: 2,
-                padding: "same"
+                inputShape: [1, 1, 1, enChannels[idx]],
+                strides: 1,
+                padding: "same",
+                trainable: true,
             })
-        )
-    const deconvs = filters
-        .slice(0, -1)
-        .reverse()
-        .map(f => tf
+        );
+    convs.forEach((conv, idx) => conv.build([1, 1, 1, enChannels[idx]]))
+
+    const deconvs = deChannels
+        .slice(1)
+        .map((f, idx) => tf
             .layers
             .separableConv2d({
                 kernelSize: 3,
                 filters: f,
-                padding: "same"
+                padding: "same",
+                trainable: true,
             })
-        )
+        );
+    deconvs.forEach((deconv, idx) => deconv.build([1, 1, 1, deChannels[idx]]))
 
     return [
         {
-            fn: (input: tf.Tensor3D | tf.Tensor4D) =>
+            fn: (input: tf.Tensor) =>
                 tf.tidy(() =>
                     convs.reduce((inp, conv) =>
-                        nn.mish(<tf.Tensor>conv.apply(inp)),
+                        tf.maxPool(<tf.Tensor4D>nn.mish(<tf.Tensor>conv.apply(inp)), [2, 2], 2, "same"),
                         input,
                     )
                 ),
@@ -52,10 +64,13 @@ export const AED = (layers: number, inputChannels: number) => {
                 ),
         },
         {
-            fn: (input: tf.Tensor3D | tf.Tensor4D) =>
+            fn: (input: tf.Tensor) =>
                 tf.tidy(() =>
-                    deconvs.reduce((inp, deconv) =>
-                        nn.mish(<tf.Tensor>deconv.apply(nn.insertPadding(inp))),
+                    deconvs.reduce(
+                        (inp, deconv, l) => {
+                            if (l < channels.length - 2) return nn.mish(<tf.Tensor>deconv.apply(nn.unPooling(inp)))
+                            else return <tf.Tensor>deconv.apply(nn.unPooling(inp))
+                        },
                         input,
                     )
                 ),

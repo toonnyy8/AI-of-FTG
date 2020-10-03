@@ -2,7 +2,7 @@ import "core-js/stable"
 import "regenerator-runtime/runtime"
 // import "./test"
 import { Environment } from "./environment"
-import { Game } from "../../lib/slime-FTG-for-cnn/src/js"
+import { Game } from "../../lib/slime-FTG/src/js"
 
 import { insertPadding } from "../model/nn"
 import { AED } from "../model/ae"

@@ -38,9 +38,9 @@ export const Game = (
     // canvas = document.getElementById('bobylonCanvas')
     // Load the 3D engine
     const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true })
-    window.addEventListener('resize', () => {
-        engine.resize()
-    })
+    // window.addEventListener('resize', () => {
+    //     engine.resize()
+    // })
 
     window.onresize = (e) => {
         if (document.body.offsetWidth / document.body.offsetHeight > 1920 / 1080) {
@@ -239,7 +239,7 @@ export const Game = (
             }
             // engine.runRenderLoop(next)
 
-            return { next, getP1: () => player1, getP2: () => player2, getRestart: () => restart }
+            return { next, getP1: () => player1, getP2: () => player2, getRestart: () => restart, scene }
         })
 
 }
