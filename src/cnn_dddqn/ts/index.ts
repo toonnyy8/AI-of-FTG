@@ -180,12 +180,12 @@ let control = (ctrl, keySet) => {
     }
 }
 
-let op = tf.train.adam()
+let op = tf.train.adamax(2e-4)
 {
     (async () => {
         let [{ fn: ae1, ws: ae1_ws }, { fn: ad1, ws: ad1_ws }] = AED([3, 32, 32])
         let [{ fn: ae2, ws: ae2_ws }, { fn: ad2, ws: ad2_ws }] = AED([32, 128, 128])
-        let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([128, 256, 256])
+        let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([128, 512, 512])
         let { next, getP1, getP2, getRestart } = await Game(
             keySets,
             canvas,
@@ -218,15 +218,12 @@ let op = tf.train.adam()
 
                         let loss1_1 = tf.losses.sigmoidCrossEntropy(b, d1)
                         let loss2_1 = tf.losses.sigmoidCrossEntropy(b, d2)
-                        let loss2_2 = tf.losses.sigmoidCrossEntropy(tf.sigmoid(d1), d2)
                         let loss3_1 = tf.losses.sigmoidCrossEntropy(b, d3)
-                        let loss3_2 = tf.losses.sigmoidCrossEntropy(tf.sigmoid(d1), d3)
-                        let loss3_3 = tf.losses.sigmoidCrossEntropy(tf.sigmoid(d2), d3)
 
                         tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d1.unstack(0)[0]), d1canvas)
                         tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d2.unstack(0)[0]), d2canvas)
                         tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d3.unstack(0)[0]), d3canvas)
-                        let loss = tf.addN([loss1_1, loss2_1, loss2_2, loss3_1, loss3_2, loss3_3]).div(6)
+                        let loss = tf.addN([loss1_1, loss2_1.mul(2), loss3_1.mul(3)]).div(6)
                         loss.print()
                         return <tf.Scalar>loss
                     },

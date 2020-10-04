@@ -36,3 +36,16 @@ export const unPooling = (input: tf.Tensor) => tf.tidy(() => {
         }
     }
 })
+
+export const stopGradient = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) => {
+    // Save x to make sure it's available later for the gradient.
+    save([x])
+    // Override gradient of our custom x ^ 2 op to be dy * abs(x);
+    return {
+        value: x.clone(),
+        // Note `saved.x` which points to the `x` we saved earlier.
+        gradFunc: (dy, saved) => {
+            return [tf.mul(dy, 0)]
+        }
+    }
+})
