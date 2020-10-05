@@ -62,6 +62,7 @@ let d1canvas = <HTMLCanvasElement>document.getElementById("d1Canvas")
 let d2canvas = <HTMLCanvasElement>document.getElementById("d2Canvas")
 let d3canvas = <HTMLCanvasElement>document.getElementById("d3Canvas")
 let d4canvas = <HTMLCanvasElement>document.getElementById("d4Canvas")
+let d5canvas = <HTMLCanvasElement>document.getElementById("d5Canvas")
 
 let control = (ctrl, keySet) => {
     switch (ctrl) {
@@ -186,10 +187,10 @@ tf.setBackend("webgl")
     .then(() => Game(keySets, canvas))
     .then(({ next, getP1, getP2, getRestart }) => {
         let op = tf.train.adamax(1e-4)
-        let [{ fn: ae1, ws: ae1_ws }, { fn: ad1, ws: ad1_ws }] = AED([3, 32])
-        let [{ fn: ae2, ws: ae2_ws }, { fn: ad2, ws: ad2_ws }] = AED([32, 64])
-        let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([64, 128])
-        let [{ fn: ae4, ws: ae4_ws }, { fn: ad4, ws: ad4_ws }] = AED([128, 256])
+        let [{ fn: ae1, ws: ae1_ws }, { fn: ad1, ws: ad1_ws }] = AED([3, 128])
+        let [{ fn: ae2, ws: ae2_ws }, { fn: ad2, ws: ad2_ws }] = AED([128, 128])
+        // let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([64, 128])
+        // let [{ fn: ae4, ws: ae4_ws }, { fn: ad4, ws: ad4_ws }] = AED([128, 256])
 
         let count = 0
 
@@ -198,10 +199,10 @@ tf.setBackend("webgl")
                 let tList = [
                     ...ae1_ws(),
                     ...ae2_ws(),
-                    ...ae3_ws(),
-                    ...ae4_ws(),
-                    ...ad4_ws(),
-                    ...ad3_ws(),
+                    // ...ae3_ws(),
+                    // ...ae4_ws(),
+                    // ...ad4_ws(),
+                    // ...ad3_ws(),
                     ...ad2_ws(),
                     ...ad1_ws(),
                 ].reduce((acc, w) => {
@@ -234,10 +235,10 @@ tf.setBackend("webgl")
                             ;[
                                 ...ae1_ws(),
                                 ...ae2_ws(),
-                                ...ae3_ws(),
-                                ...ae4_ws(),
-                                ...ad4_ws(),
-                                ...ad3_ws(),
+                                // ...ae3_ws(),
+                                // ...ae4_ws(),
+                                // ...ad4_ws(),
+                                // ...ad3_ws(),
                                 ...ad2_ws(),
                                 ...ad1_ws(),
                             ].forEach((w) => {
@@ -262,6 +263,7 @@ tf.setBackend("webgl")
                 control(ctrl2, keySets[1])
             }
             if (count % 10 == 0) {
+                count = 0
                 tf.tidy(() => {
                     op.minimize(
                         () => {
@@ -280,27 +282,37 @@ tf.setBackend("webgl")
                                 )
                                 .cast("float32")
                                 .div(255)
-                            let b = tf.stack([pix, pix.reverse([1, 2])], 0)
+                            let b = tf.stack([pix, pix.reverse([1, 2]), pix.reverse([1]), pix.reverse([2])], 0)
                             let e1 = ae1(b)
                             let e2 = ae2(e1)
-                            let e3 = ae3(e2)
-                            let e4 = ae4(e3)
+                            let e3 = ae2(e2)
+                            let e4 = ae2(e3)
+                            let e5 = ae2(e4)
                             let d1 = ad1(e1)
                             let d2 = ad1(nn.mish(ad2(e2)))
-                            let d3 = ad1(nn.mish(ad2(nn.mish(ad3(e3)))))
-                            let d4 = ad1(nn.mish(ad2(nn.mish(ad3(nn.mish(ad4(e4)))))))
+                            let d3 = ad1(nn.mish(ad2(nn.mish(ad2(e3)))))
+                            let d4 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(e4)))))))
+                            let d5 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(e5)))))))))
 
                             let loss1_1 = tf.losses.sigmoidCrossEntropy(b, d1)
                             let loss2_1 = tf.losses.sigmoidCrossEntropy(b, d2)
                             let loss3_1 = tf.losses.sigmoidCrossEntropy(b, d3)
                             let loss4_1 = tf.losses.sigmoidCrossEntropy(b, d4)
+                            let loss5_1 = tf.losses.sigmoidCrossEntropy(b, d5)
 
                             tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d1.unstack(0)[0]), d1canvas)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d2.unstack(0)[0]), d2canvas)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d3.unstack(0)[0]), d3canvas)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d4.unstack(0)[0]), d4canvas)
-                            let loss = tf.addN([loss1_1, loss2_1, loss3_1, loss4_1]).div(4)
+                            tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d5.unstack(0)[0]), d5canvas)
+                            let loss = tf.addN([
+                                loss1_1.mul(0.2),
+                                loss2_1.mul(0.2),
+                                loss3_1.mul(0.2),
+                                loss4_1.mul(0.2),
+                                loss5_1.mul(0.2),
+                            ])
                             loss.print()
                             return <tf.Scalar>loss
                         },
@@ -308,10 +320,10 @@ tf.setBackend("webgl")
                         [
                             ...ae1_ws(),
                             ...ae2_ws(),
-                            ...ae3_ws(),
-                            ...ae4_ws(),
-                            ...ad4_ws(),
-                            ...ad3_ws(),
+                            // ...ae3_ws(),
+                            // ...ae4_ws(),
+                            // ...ad4_ws(),
+                            // ...ad3_ws(),
                             ...ad2_ws(),
                             ...ad1_ws(),
                         ]
