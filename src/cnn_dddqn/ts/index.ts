@@ -4,7 +4,8 @@ import * as tf from "@tensorflow/tfjs"
 import { AED } from "../model/ae"
 import * as nn from "../model/nn"
 
-tf.setBackend("webgl")
+import { registerTfex } from "../../lib/tfjs-extensions/src/"
+const tfex = registerTfex(tf)
 
 const keySets: [
     {
@@ -181,16 +182,76 @@ let control = (ctrl, keySet) => {
         }
     }
 }
-
-{
-    ;(async () => {
+tf.setBackend("webgl")
+    .then(() => Game(keySets, canvas))
+    .then(({ next, getP1, getP2, getRestart }) => {
         let op = tf.train.adamax(1e-4)
         let [{ fn: ae1, ws: ae1_ws }, { fn: ad1, ws: ad1_ws }] = AED([3, 16])
         let [{ fn: ae2, ws: ae2_ws }, { fn: ad2, ws: ad2_ws }] = AED([16, 32])
         let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([32, 64])
         let [{ fn: ae4, ws: ae4_ws }, { fn: ad4, ws: ad4_ws }] = AED([64, 128])
-        let { next, getP1, getP2, getRestart } = await Game(keySets, canvas)
+
         let count = 0
+
+        document.getElementById("save").onclick = () => {
+            tf.tidy(() => {
+                let tList = [
+                    ...ae1_ws(),
+                    ...ae2_ws(),
+                    ...ae3_ws(),
+                    ...ae4_ws(),
+                    ...ad4_ws(),
+                    ...ad3_ws(),
+                    ...ad2_ws(),
+                    ...ad1_ws(),
+                ].reduce((acc, w) => {
+                    acc[w.name] = w
+                    return acc
+                }, {})
+                let blob = new Blob([tfex.sl.save(tList)])
+                let a = document.createElement("a")
+                let url = window.URL.createObjectURL(blob)
+                let filename = "w.bin"
+                a.href = url
+                a.download = filename
+                a.click()
+                window.URL.revokeObjectURL(url)
+            })
+        }
+
+        document.getElementById("load").onclick = () => {
+            tf.tidy(() => {
+                tf.tidy(() => {
+                    let load = document.createElement("input")
+                    load.type = "file"
+                    load.accept = ".bin"
+
+                    load.onchange = (event) => {
+                        const files = load.files
+                        var reader = new FileReader()
+                        reader.addEventListener("loadend", () => {
+                            let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
+                            ;[
+                                ...ae1_ws(),
+                                ...ae2_ws(),
+                                ...ae3_ws(),
+                                ...ae4_ws(),
+                                ...ad4_ws(),
+                                ...ad3_ws(),
+                                ...ad2_ws(),
+                                ...ad1_ws(),
+                            ].forEach((w) => {
+                                w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                            })
+                        })
+                        reader.readAsArrayBuffer(files[0])
+                    }
+
+                    load.click()
+                })
+            })
+        }
+
         const loop = () => {
             count++
             next()
@@ -244,19 +305,21 @@ let control = (ctrl, keySet) => {
                             return <tf.Scalar>loss
                         },
                         false,
-                        [...ae1_ws(), ...ae2_ws(), ...ae3_ws(), ...ad3_ws(), ...ad2_ws(), ...ad1_ws()]
+                        [
+                            ...ae1_ws(),
+                            ...ae2_ws(),
+                            ...ae3_ws(),
+                            ...ae4_ws(),
+                            ...ad4_ws(),
+                            ...ad3_ws(),
+                            ...ad2_ws(),
+                            ...ad1_ws(),
+                        ]
                     )
-                    // let pix = tf
-                    //     .image
-                    //     .resizeNearestNeighbor(tf.browser.fromPixels(canvas), [64, 64])
-                    //     .cast("float32")
-                    //     .div(255);
-                    // tf.browser.toPixels(<tf.Tensor3D>pix, p1canvas)
                 })
             }
 
             requestAnimationFrame(loop)
         }
         requestAnimationFrame(loop)
-    })()
-}
+    })

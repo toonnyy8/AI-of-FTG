@@ -11,6 +11,7 @@
         "cannon": "^0.6.2",
         "core-js": "^3.6.5",
         "hammerjs": "^2.0.8",
+        "is-obj": "^2.0.0",
         "parcel": "^1.12.4",
         "regenerator-runtime": "^0.13.7"
     },
@@ -24,7 +25,7 @@
         "dev:prod_mode": "parcel ./src/prod_mode/index.html -p 8080 --open",
         "build:prod_mode": "parcel build --no-content-hash  ./src/prod_mode/index.html --out-dir build/prod_mode --public-url=./",
         "dev:cnn_dddqn": "parcel ./src/cnn_dddqn/index.html ./src/cnn_dddqn/agent.html -p 8080 --open",
-        "build:cnn_dddqn": "parcel build --no-content-hash  ./cnn_dddqn/index.html ./cnn_dddqn/agent.html --out-dir build/cnn_dddqn --public-url=./",
+        "build:cnn_dddqn": "parcel build --no-content-hash  ./src/cnn_dddqn/index.html ./src/cnn_dddqn/agent.html --out-dir build/cnn_dddqn --public-url=./",
         "dev:test": "parcel ./src/test/index.html -p 8080 --open"
     },
     "keywords": [],
