@@ -189,26 +189,19 @@ tf.setBackend("webgl")
         let op = tf.train.adamax(1e-4)
         let [{ fn: ae1, ws: ae1_ws }, { fn: ad1, ws: ad1_ws }] = AED([3, 128])
         let [{ fn: ae2, ws: ae2_ws }, { fn: ad2, ws: ad2_ws }] = AED([128, 128])
-        // let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([64, 128])
-        // let [{ fn: ae4, ws: ae4_ws }, { fn: ad4, ws: ad4_ws }] = AED([128, 256])
+        let [{ fn: ae3, ws: ae3_ws }, { fn: ad3, ws: ad3_ws }] = AED([128, 256])
 
         let count = 0
 
         document.getElementById("save").onclick = () => {
             tf.tidy(() => {
-                let tList = [
-                    ...ae1_ws(),
-                    ...ae2_ws(),
-                    // ...ae3_ws(),
-                    // ...ae4_ws(),
-                    // ...ad4_ws(),
-                    // ...ad3_ws(),
-                    ...ad2_ws(),
-                    ...ad1_ws(),
-                ].reduce((acc, w) => {
-                    acc[w.name] = w
-                    return acc
-                }, {})
+                let tList = [...ae1_ws(), ...ae2_ws(), ...ae3_ws(), ...ad3_ws(), ...ad2_ws(), ...ad1_ws()].reduce(
+                    (acc, w) => {
+                        acc[w.name] = w
+                        return acc
+                    },
+                    {}
+                )
                 let blob = new Blob([tfex.sl.save(tList)])
                 let a = document.createElement("a")
                 let url = window.URL.createObjectURL(blob)
@@ -232,18 +225,11 @@ tf.setBackend("webgl")
                         var reader = new FileReader()
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
-                            ;[
-                                ...ae1_ws(),
-                                ...ae2_ws(),
-                                // ...ae3_ws(),
-                                // ...ae4_ws(),
-                                // ...ad4_ws(),
-                                // ...ad3_ws(),
-                                ...ad2_ws(),
-                                ...ad1_ws(),
-                            ].forEach((w) => {
-                                w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
-                            })
+                            ;[...ae1_ws(), ...ae2_ws(), ...ae3_ws(), ...ad3_ws(), ...ad2_ws(), ...ad1_ws()].forEach(
+                                (w) => {
+                                    w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                                }
+                            )
                         })
                         reader.readAsArrayBuffer(files[0])
                     }
@@ -252,7 +238,6 @@ tf.setBackend("webgl")
                 })
             })
         }
-
         const loop = () => {
             count++
             next()
@@ -265,68 +250,44 @@ tf.setBackend("webgl")
             if (count % 10 == 0) {
                 count = 0
                 tf.tidy(() => {
+                    let pix = tf.image
+                        .resizeBilinear(
+                            <tf.Tensor3D>(
+                                tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [30, 20], [30, 20], "same")
+                            ),
+                            [32, 32]
+                        )
+                        .cast("float32")
+                        .div(255)
+                    tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
+                    let b = tf.stack([pix, pix.reverse([1, 2]), pix.reverse([1]), pix.reverse([2])], 0)
+
                     op.minimize(
                         () => {
-                            let pix = tf.image
-                                .resizeBilinear(
-                                    <tf.Tensor3D>(
-                                        tf.maxPool(
-                                            <tf.Tensor3D>tf.browser.fromPixels(canvas),
-                                            [30, 20],
-                                            [30, 20],
-                                            "same"
-                                        )
-                                    ),
-                                    // <tf.Tensor3D>tf.browser.fromPixels(canvas),
-                                    [32, 32]
-                                )
-                                .cast("float32")
-                                .div(255)
-                            let b = tf.stack([pix, pix.reverse([1, 2]), pix.reverse([1]), pix.reverse([2])], 0)
                             let e1 = ae1(b)
-                            let e2 = ae2(e1)
-                            let e3 = ae2(e2)
-                            let e4 = ae2(e3)
-                            let e5 = ae2(e4)
                             let d1 = ad1(e1)
-                            let d2 = ad1(nn.mish(ad2(e2)))
-                            let d3 = ad1(nn.mish(ad2(nn.mish(ad2(e3)))))
-                            let d4 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(e4)))))))
-                            let d5 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(e5)))))))))
-
                             let loss1_1 = tf.losses.sigmoidCrossEntropy(b, d1)
-                            let loss2_1 = tf.losses.sigmoidCrossEntropy(b, d2)
-                            let loss3_1 = tf.losses.sigmoidCrossEntropy(b, d3)
-                            let loss4_1 = tf.losses.sigmoidCrossEntropy(b, d4)
-                            let loss5_1 = tf.losses.sigmoidCrossEntropy(b, d5)
-
-                            tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d1.unstack(0)[0]), d1canvas)
+
+                            let e2_1 = ae2(e1)
+                            let e2_2 = ae2(e2_1)
+                            let e2_3 = ae2(e2_2)
+                            let d2 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(e2_3)))))))
+                            let loss2_1 = tf.losses.sigmoidCrossEntropy(b, d2)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d2.unstack(0)[0]), d2canvas)
+
+                            let e3 = ae3(e2_3)
+                            let d3 = ad1(nn.mish(ad2(nn.mish(ad2(nn.mish(ad2(nn.mish(ad3(e3)))))))))
+                            let loss3_1 = tf.losses.sigmoidCrossEntropy(b, d3)
                             tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d3.unstack(0)[0]), d3canvas)
-                            tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d4.unstack(0)[0]), d4canvas)
-                            tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>d5.unstack(0)[0]), d5canvas)
-                            let loss = tf.addN([
-                                loss1_1.mul(0.2),
-                                loss2_1.mul(0.2),
-                                loss3_1.mul(0.2),
-                                loss4_1.mul(0.2),
-                                loss5_1.mul(0.2),
-                            ])
+
+                            let loss = tf.addN([loss1_1, loss2_1, loss3_1]).div(3)
                             loss.print()
+
                             return <tf.Scalar>loss
                         },
                         false,
-                        [
-                            ...ae1_ws(),
-                            ...ae2_ws(),
-                            // ...ae3_ws(),
-                            // ...ae4_ws(),
-                            // ...ad4_ws(),
-                            // ...ad3_ws(),
-                            ...ad2_ws(),
-                            ...ad1_ws(),
-                        ]
+                        [...ae1_ws(), ...ae2_ws(), ...ae3_ws(), ...ad3_ws(), ...ad2_ws(), ...ad1_ws()]
                     )
                 })
             }
