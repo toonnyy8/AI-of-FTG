@@ -238,14 +238,14 @@ tf.setBackend("webgl")
                     activation: "selu",
                     trainable: true,
                 }),
-                // tf.layers.separableConv2d({
-                //     kernelSize: 3,
-                //     filters: dv,
-                //     padding: "same",
-                //     // dilationRate: 2,
-                //     activation: "selu",
-                //     trainable: true,
-                // }),
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dv,
+                    padding: "same",
+                    // dilationRate: 2,
+                    activation: "selu",
+                    trainable: true,
+                }),
                 // tf.layers.separableConv2d({
                 //     kernelSize: 3,
                 //     filters: dv / 2,
