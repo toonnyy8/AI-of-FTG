@@ -7,7 +7,8 @@ import * as nn from "../model/nn"
 import { registerTfex } from "../../lib/tfjs-extensions/src/"
 import { dot } from "@tensorflow/tfjs"
 const tfex = registerTfex(tf)
-window["train"] = true
+window["train"] = false
+console.log(`window["train"] = ${window["train"]}`)
 const keySets: [
     {
         jump: string
