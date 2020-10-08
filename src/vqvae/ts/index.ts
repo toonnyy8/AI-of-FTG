@@ -5,7 +5,7 @@ import { AED } from "../model/ae"
 import * as nn from "../model/nn"
 
 import { registerTfex } from "../../lib/tfjs-extensions/src/"
-import { dot } from "@tensorflow/tfjs"
+import { dot, tidy } from "@tensorflow/tfjs"
 const tfex = registerTfex(tf)
 window["train"] = false
 console.log(`window["train"] = ${window["train"]}`)
@@ -33,29 +33,29 @@ const keySets: [
         }
     }
 ] = [
-    {
-        jump: "w",
-        squat: "s",
-        left: "a",
-        right: "d",
-        attack: {
-            light: "j",
-            medium: "k",
-            heavy: "l",
+        {
+            jump: "w",
+            squat: "s",
+            left: "a",
+            right: "d",
+            attack: {
+                light: "j",
+                medium: "k",
+                heavy: "l",
+            },
         },
-    },
-    {
-        jump: "ArrowUp",
-        squat: "ArrowDown",
-        left: "ArrowLeft",
-        right: "ArrowRight",
-        attack: {
-            light: "1",
-            medium: "2",
-            heavy: "3",
+        {
+            jump: "ArrowUp",
+            squat: "ArrowDown",
+            left: "ArrowLeft",
+            right: "ArrowRight",
+            attack: {
+                light: "1",
+                medium: "2",
+                heavy: "3",
+            },
         },
-    },
-]
+    ]
 
 let canvas = <HTMLCanvasElement>document.getElementById("bobylonCanvas")
 
@@ -188,9 +188,10 @@ let control = (ctrl, keySet) => {
 tf.setBackend("webgl")
     .then(() => Game(keySets, canvas))
     .then(({ next, getP1, getP2, getRestart }) => {
-        let op = tf.train.adamax(1e-2)
-        let dk = 16
+        let op = tf.train.adamax(1e-4)
+        let dk = 4
         let dv = 64
+        let bookSize = 256
         let inpLayer = tf.layers.separableConv2d({
             kernelSize: 3,
             filters: dk,
@@ -267,9 +268,22 @@ tf.setBackend("webgl")
         })
         outLayer.build([1, 1, 1, dv])
 
-        let bookSize = 256
-        let key = tf.variable(tf.randomNormal([1, 1, bookSize, dk]), true, "key")
-        let value = tf.variable(tf.randomNormal([1, 1, bookSize, dv]), true, "value")
+        let bookLayer = tf.sequential({
+            layers: [
+                tf.layers.conv2d({
+                    inputShape: [1, 1, dk],
+                    filters: bookSize,
+                    kernelSize: 1,
+                    useBias: false,
+                    activation: "softmax",
+                }),
+                tf.layers.conv2d({
+                    filters: dv,
+                    kernelSize: 1,
+                    useBias: false,
+                })
+            ]
+        })
 
         let count = 0
 
@@ -280,8 +294,7 @@ tf.setBackend("webgl")
                     ...(<tf.Variable[]>encoder.getWeights()),
                     ...(<tf.Variable[]>decoder.getWeights()),
                     ...(<tf.Variable[]>outLayer.getWeights()),
-                    key,
-                    value,
+                    ...(<tf.Variable[]>bookLayer.getWeights()),
                 ].reduce((acc, w) => {
                     acc[w.name] = w
                     return acc
@@ -309,16 +322,15 @@ tf.setBackend("webgl")
                         var reader = new FileReader()
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
-                            ;[
-                                ...(<tf.Variable[]>inpLayer.getWeights()),
-                                ...(<tf.Variable[]>encoder.getWeights()),
-                                ...(<tf.Variable[]>decoder.getWeights()),
-                                ...(<tf.Variable[]>outLayer.getWeights()),
-                                key,
-                                value,
-                            ].forEach((w) => {
-                                w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
-                            })
+                                ;[
+                                    ...(<tf.Variable[]>inpLayer.getWeights()),
+                                    ...(<tf.Variable[]>encoder.getWeights()),
+                                    ...(<tf.Variable[]>decoder.getWeights()),
+                                    ...(<tf.Variable[]>outLayer.getWeights()),
+                                    ...(<tf.Variable[]>bookLayer.getWeights()),
+                                ].forEach((w) => {
+                                    w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                                })
                         })
                         reader.readAsArrayBuffer(files[0])
                     }
@@ -336,94 +348,77 @@ tf.setBackend("webgl")
                 control(ctrl1, keySets[0])
                 control(ctrl2, keySets[1])
             }
-            if (count % 10 == 0) {
+            if (window["train"] == false) {
+                tf.tidy(() => {
+                    let pix = tf.image
+                        .resizeBilinear(
+                            <tf.Tensor3D>(
+                                tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [30, 20], [30, 20], "same")
+                            ),
+                            [64, 64]
+                        )
+                        .cast("float32")
+                        .div(255)
+                    tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
+
+                    let query = <tf.Tensor>(
+                        encoder.apply(
+                            encoder.apply(encoder.apply(encoder.apply(inpLayer.apply(pix.expandDims(0)))))
+                        )
+                    )
+                    let z = bookLayer.apply(query)
+                    // let z = query
+
+                    let out = <tf.Tensor>(
+                        outLayer.apply(decoder.apply(decoder.apply(decoder.apply(decoder.apply(z)))))
+                    )
+
+                    tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.squeeze([0])), d1canvas)
+                })
+            }
+            else if (count % 10 == 0) {
                 count = 0
                 tf.tidy(() => {
-                    if (window["train"] == true) {
-                        let pix = tf.image
-                            .resizeBilinear(
-                                <tf.Tensor3D>(
-                                    tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [30, 20], [30, 20], "same")
-                                ),
-                                [64, 64]
-                            )
-                            .cast("float32")
-                            .div(255)
-                        tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
-                        let b = tf.stack([pix, pix.reverse([1, 2]), pix.reverse([1]), pix.reverse([2])], 0)
-                        // let z:tf.Tensor
-                        op.minimize(
-                            () => {
-                                let query = <tf.Tensor>(
-                                    encoder.apply(encoder.apply(encoder.apply(encoder.apply(inpLayer.apply(b)))))
-                                )
-                                let [batch, h, w, c] = query.shape
-
-                                let z = query
-                                    .reshape([batch, h * w, 1, c])
-                                    .mul(key)
-                                    .sum(-1)
-                                    .softmax(-1)
-                                    .reshape([batch, h * w, bookSize, 1])
-                                    .mul(value)
-                                    .sum(2)
-                                    .reshape([batch, h, w, -1])
-
-                                let out = <tf.Tensor>(
-                                    outLayer.apply(decoder.apply(decoder.apply(decoder.apply(decoder.apply(z)))))
-                                )
-
-                                let loss = tf.losses.sigmoidCrossEntropy(b, out)
-                                tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.unstack(0)[0]), d1canvas)
-
-                                loss.print()
-                                return <tf.Scalar>loss
-                            },
-                            false,
-                            [
-                                ...(<tf.Variable[]>inpLayer.getWeights()),
-                                ...(<tf.Variable[]>encoder.getWeights()),
-                                ...(<tf.Variable[]>decoder.getWeights()),
-                                ...(<tf.Variable[]>outLayer.getWeights()),
-                                key,
-                                value,
-                            ]
+                    let pix = tf.image
+                        .resizeBilinear(
+                            <tf.Tensor3D>(
+                                tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [15, 10], [15, 10], "same")
+                                // tf.browser.fromPixels(canvas)
+                            ),
+                            [64, 64]
                         )
-                    } else {
-                        let pix = tf.image
-                            .resizeBilinear(
-                                <tf.Tensor3D>(
-                                    tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [30, 20], [30, 20], "same")
-                                ),
-                                [64, 64]
+                        .cast("float32")
+                        .div(255)
+                    tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
+                    let b = tf.stack([pix, pix.reverse([1, 2]), pix.reverse([1]), pix.reverse([2])], 0)
+                    // let z:tf.Tensor
+                    op.minimize(
+                        () => {
+                            let query = <tf.Tensor>(
+                                encoder.apply(encoder.apply(encoder.apply(encoder.apply(inpLayer.apply(b)))))
                             )
-                            .cast("float32")
-                            .div(255)
-                        tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
+                            let z = bookLayer.apply(query)
+                            // let z = query
 
-                        let query = <tf.Tensor>(
-                            encoder.apply(
-                                encoder.apply(encoder.apply(encoder.apply(inpLayer.apply(pix.expandDims(0)))))
+                            let out = <tf.Tensor>(
+                                outLayer.apply(decoder.apply(decoder.apply(decoder.apply(decoder.apply(z)))))
                             )
-                        )
-                        let [batch, h, w, c] = query.shape
 
-                        let z = query
-                            .reshape([batch, h * w, 1, c])
-                            .mul(key)
-                            .sum(-1)
-                            .softmax(-1)
-                            .reshape([batch, h * w, bookSize, 1])
-                            .mul(value)
-                            .sum(2)
-                            .reshape([batch, h, w, -1])
+                            let loss = tf.losses.sigmoidCrossEntropy(b, out)
+                            tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.unstack(0)[0]), d1canvas)
 
-                        let out = <tf.Tensor>(
-                            outLayer.apply(decoder.apply(decoder.apply(decoder.apply(decoder.apply(z)))))
-                        )
-
-                        tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.squeeze([0])), d1canvas)
-                    }
+                            loss.print()
+                            return <tf.Scalar>loss
+                        },
+                        false,
+                        [
+                            ...(<tf.Variable[]>inpLayer.getWeights()),
+                            ...(<tf.Variable[]>encoder.getWeights()),
+                            ...(<tf.Variable[]>decoder.getWeights()),
+                            ...(<tf.Variable[]>outLayer.getWeights()),
+                            ...(<tf.Variable[]>bookLayer.getWeights()),
+                        ]
+                    )
                 })
             }
 
