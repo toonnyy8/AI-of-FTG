@@ -20,35 +20,58 @@ export const AED = (
         ws: () => tf.Variable[]
     }
 ] => {
-    let inp2enc = tf.layers.separableConv2d({
-        kernelSize: 3,
-        filters: dk,
-        padding: "same",
-        inputShape: [1, 1, 3],
-        trainable: true,
-        name: "inp2enc",
+    let inp2enc = tf.sequential({
+        layers: [
+            tf.layers.separableConv2d({
+                kernelSize: 3,
+                filters: dk,
+                padding: "same",
+                inputShape: [1, 1, 3],
+                trainable: true,
+                name: "inp2enc",
+            }),
+        ],
     })
-    inp2enc.build([null, 1, 1, 3])
 
     let encoder = [
-        tf.layers.separableConv2d({
-            kernelSize: 3,
-            filters: dk,
-            padding: "same",
-            inputShape: [1, 1, dk],
-            trainable: true,
-            name: "enc0",
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dk,
+                    padding: "same",
+                    inputShape: [1, 1, dk],
+                    trainable: true,
+                    name: "enc0",
+                }),
+            ],
         }),
-        tf.layers.separableConv2d({
-            kernelSize: 3,
-            filters: dk,
-            padding: "same",
-            inputShape: [1, 1, dk],
-            trainable: true,
-            name: "enc1",
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dk,
+                    padding: "same",
+                    inputShape: [1, 1, dk],
+                    trainable: true,
+                    name: "enc1",
+                }),
+            ],
+        }),
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dk,
+                    padding: "same",
+                    inputShape: [1, 1, dk],
+                    strides: 2,
+                    trainable: true,
+                    name: "enc1",
+                }),
+            ],
         }),
     ]
-    encoder.forEach((enc) => enc.build([null, 1, 1, dk]))
 
     let book = tf.sequential({
         layers: [
@@ -68,38 +91,55 @@ export const AED = (
                 trainable: true,
                 name: "value",
             }),
+            // tf.layers.conv2d({
+            //     inputShape: [1, 1, dk],
+            //     filters: dv,
+            //     kernelSize: 1,
+            //     trainable: true,
+            //     name: "qk_mapping",
+            // }),
         ],
     })
 
     let decoder = [
-        tf.layers.separableConv2d({
-            kernelSize: 3,
-            filters: dv,
-            padding: "same",
-            inputShape: [1, 1, dv],
-            trainable: true,
-            name: "dec0",
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dv,
+                    padding: "same",
+                    inputShape: [1, 1, dv],
+                    trainable: true,
+                    name: "dec0",
+                }),
+            ],
         }),
-        tf.layers.separableConv2d({
-            kernelSize: 3,
-            filters: dv,
-            padding: "same",
-            inputShape: [1, 1, dv],
-            trainable: true,
-            name: "dec1",
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: dv,
+                    padding: "same",
+                    inputShape: [1, 1, dv],
+                    trainable: true,
+                    name: "dec1",
+                }),
+            ],
         }),
     ]
-    decoder.forEach((dec) => dec.build([null, 1, 1, dv]))
 
-    let dec2out = tf.layers.separableConv2d({
-        kernelSize: 3,
-        filters: 3,
-        padding: "same",
-        inputShape: [1, 1, dv],
-        trainable: true,
-        name: "dec2out",
+    let dec2out = tf.sequential({
+        layers: [
+            tf.layers.separableConv2d({
+                kernelSize: 3,
+                filters: 3,
+                padding: "same",
+                inputShape: [1, 1, dv],
+                trainable: true,
+                name: "dec2out",
+            }),
+        ],
     })
-    dec2out.build([null, 1, 1, dv])
 
     let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
         return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 2, 2, "same")
@@ -113,9 +153,18 @@ export const AED = (
                         nn.layerFn(inp2enc),
                         nn.mish,
                         ...new Array(down - 1).fill(
-                            nn.pipe(nn.layerFn(encoder[0]), nn.mish, nn.layerFn(encoder[1]), maxPool, nn.mish)
+                            nn.pipe(
+                                nn.layerFn(encoder[0]),
+                                nn.mish,
+                                nn.layerFn(encoder[1]),
+                                nn.mish,
+                                (inp: tf.Tensor) => tf.add(maxPool(inp), nn.layerFn(encoder[2])(inp)),
+                                nn.mish
+                            )
                         ),
-                        nn.pipe(nn.layerFn(encoder[0]), nn.mish, nn.layerFn(encoder[1]), maxPool)
+                        nn.pipe(nn.layerFn(encoder[0]), nn.mish, nn.layerFn(encoder[1]), nn.mish, (inp: tf.Tensor) =>
+                            tf.add(maxPool(inp), nn.layerFn(encoder[2])(inp))
+                        )
                     )(input)
                 ),
             ws: () =>

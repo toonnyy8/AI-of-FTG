@@ -205,9 +205,9 @@ tf.setBackend("webgl")
     .then(({ next, getP1, getP2, getRestart }) => {
         let op = tf.train.adamax(1e-2)
         let dk = 8
-        let dv = 64
-        let bookSize = 512
-        let [{ fn: en_fn, ws: en_ws }, { fn: bk_fn, ws: bk_ws }, { fn: de_fn, ws: de_ws }] = AED(dk, dv, bookSize)
+        let dv = 128
+        let bookSize = 1024
+        let [{ fn: en_fn, ws: en_ws }, { fn: bk_fn, ws: bk_ws }, { fn: de_fn, ws: de_ws }] = AED(dk, dv, bookSize, 4)
 
         let count = 0
         let { read, write } = memory(1024)
@@ -244,7 +244,7 @@ tf.setBackend("webgl")
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
                             ;[...en_ws(), ...bk_ws(), ...de_ws()].forEach((w) => {
-                                w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                                if (loadWeights[w.name]) w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
                             })
                         })
                         reader.readAsArrayBuffer(files[0])

@@ -1,7 +1,7 @@
 import "core-js/stable"
 import "regenerator-runtime/runtime"
 
-import * as BABYLON from './babylon-module'
+import * as BABYLON from "./babylon-module"
 
 import * as slime from "../../file/slime/slime.js"
 import * as CANNON from "cannon"
@@ -11,29 +11,30 @@ global["CANNON"] = CANNON
 export const Game = (
     keySets: [
         {
-            jump: string;
-            squat: string;
-            left: string;
-            right: string;
+            jump: string
+            squat: string
+            left: string
+            right: string
             attack: {
-                light: string;
-                medium: string;
-                heavy: string;
-            };
+                light: string
+                medium: string
+                heavy: string
+            }
         },
         {
-            jump: string;
-            squat: string;
-            left: string;
-            right: string;
+            jump: string
+            squat: string
+            left: string
+            right: string
             attack: {
-                light: string;
-                medium: string;
-                heavy: string;
-            };
+                light: string
+                medium: string
+                heavy: string
+            }
         }
-    ], canvas: HTMLCanvasElement) => {
-
+    ],
+    canvas: HTMLCanvasElement
+) => {
     // Get the canvas DOM element
     // canvas = document.getElementById('bobylonCanvas')
     // Load the 3D engine
@@ -65,37 +66,36 @@ export const Game = (
     let player2
     let restart = true
 
-
     // This creates a basic Babylon Scene object (non-mesh)
     let scene = new BABYLON.Scene(engine)
-    scene.clearColor = new BABYLON.Color4(0, 0, 0);
-    scene.enablePhysics(new BABYLON.Vector3(0, 1, 0),)
+    scene.clearColor = new BABYLON.Color4(0, 0, 0)
+    scene.enablePhysics(new BABYLON.Vector3(0, 1, 0))
 
     //Adding an Arc Rotate Camera
     // let camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2, 15, new BABYLON.Vector3(0, 5, 0), scene)
-    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 10, 100), scene);
-    camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
+    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 10, 100), scene)
+    camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA
 
-    camera.orthoTop = 9 * 0.7;
-    camera.orthoBottom = -9 * 0.7;
-    camera.orthoLeft = -16 * 0.7;
-    camera.orthoRight = 16 * 0.7;
+    camera.orthoTop = 9 * 0.7
+    camera.orthoBottom = -9 * 0.7
+    camera.orthoLeft = -16 * 0.7
+    camera.orthoRight = 16 * 0.7
     // target the camera to scene origin
-    camera.setTarget(new BABYLON.Vector3(0, 4, 0));
+    camera.setTarget(new BABYLON.Vector3(0, 4, 0))
     // attach the camera to the canvas
     // camera.attachControl(canvas, false)
     //Adding a light
     const createLight = (name = "", color = { r: 0.2, g: 0.2, b: 0.2 }) => {
-        const l = new BABYLON.HemisphericLight(name, new BABYLON.Vector3(0, 5, 0), scene);
-        l.diffuse = new BABYLON.Color3(color.r, color.g, color.b);
-        l.specular = new BABYLON.Color3(color.r, color.g, color.b);
-        l.groundColor = new BABYLON.Color3(color.r, color.g, color.b);
+        const l = new BABYLON.HemisphericLight(name, new BABYLON.Vector3(0, 5, 0), scene)
+        l.diffuse = new BABYLON.Color3(color.r, color.g, color.b)
+        l.specular = new BABYLON.Color3(color.r, color.g, color.b)
+        l.groundColor = new BABYLON.Color3(color.r, color.g, color.b)
         return l
     }
     let light = createLight("light")
 
     const createMaterial = (name = "", color = { r: 0.4, g: 0.4, b: 1 }) => {
-        const m = new BABYLON.StandardMaterial(name, scene);
+        const m = new BABYLON.StandardMaterial(name, scene)
         m.diffuseColor = new BABYLON.Color3(color.r, color.g, color.b)
         m.specularColor = new BABYLON.Color3(color.r, color.g, color.b)
         m.emissiveColor = new BABYLON.Color3(color.r, color.g, color.b)
@@ -103,41 +103,64 @@ export const Game = (
         return m
     }
 
-
     const createBar = (
         name: string,
         size: number,
         width: number,
         pos: {
-            x: number,
-            y: number,
+            x: number
+            y: number
         },
         center: {
-            x: number,
-            y: number,
-            z: number,
+            x: number
+            y: number
+            z: number
         },
         material: BABYLON.Material
     ) => {
         const bar = BABYLON.MeshBuilder.CreateBox(name, { size, width })
-        bar.setPivotMatrix(BABYLON.Matrix.Translation(center.x, center.y, center.z), false);
+        bar.setPivotMatrix(BABYLON.Matrix.Translation(center.x, center.y, center.z), false)
         bar.position.y = pos.y
         bar.position.x = pos.x
         bar.material = material
         return bar
     }
     let HPBar = {
-        p1: createBar("P1_hp", 0.5, 8, { x: 10, y: 9 }, { x: - 4, y: 0, z: 0 },
-            createMaterial("p1_hpMaterial", { r: 0.4, g: 0.4, b: 1 })),
-        p2: createBar("P2_hp", 0.5, 8, { x: -10, y: 9 }, { x: 4, y: 0, z: 0 },
-            createMaterial("p2_hpMaterial", { r: 1, g: 0.4, b: 0.4 })),
+        p1: createBar(
+            "P1_hp",
+            0.5,
+            8,
+            { x: 10, y: 9 },
+            { x: -4, y: 0, z: 0 },
+            createMaterial("p1_hpMaterial", { r: 0.4, g: 0.4, b: 1 })
+        ),
+        p2: createBar(
+            "P2_hp",
+            0.5,
+            8,
+            { x: -10, y: 9 },
+            { x: 4, y: 0, z: 0 },
+            createMaterial("p2_hpMaterial", { r: 1, g: 0.4, b: 0.4 })
+        ),
     }
 
     let cumulativeDamageBar = {
-        p1: createBar("P1_cumulativeDamage", 0.1, 8, { x: 10, y: 8.5 }, { x: - 4, y: 0, z: 0 },
-            createMaterial("p1_cumulativeDamageMaterial", { r: 0.4, g: 0.4, b: 1 })),
-        p2: createBar("P2_cumulativeDamage", 0.1, 8, { x: -10, y: 8.5 }, { x: 4, y: 0, z: 0 },
-            createMaterial("p2_cumulativeDamageMaterial", { r: 1, g: 0.4, b: 0.4 })),
+        p1: createBar(
+            "P1_cumulativeDamage",
+            0.1,
+            8,
+            { x: 10, y: 8.2 },
+            { x: -4, y: 0, z: 0 },
+            createMaterial("p1_cumulativeDamageMaterial", { r: 0.4, g: 0.4, b: 1 })
+        ),
+        p2: createBar(
+            "P2_cumulativeDamage",
+            0.1,
+            8,
+            { x: -10, y: 8.2 },
+            { x: 4, y: 0, z: 0 },
+            createMaterial("p2_cumulativeDamageMaterial", { r: 1, g: 0.4, b: 0.4 })
+        ),
     }
 
     return BABYLON.SceneLoader.ImportMeshAsync("", slime.Actor.url(), "", scene, null, ".glb")
@@ -161,10 +184,11 @@ export const Game = (
                 startRotationQuaternion: new BABYLON.Vector3(0, Math.PI, 0).toQuaternion(),
                 maxHP: 3000,
                 maxCumulativeDamage: 500,
-                maxPerfectDefenseTime: 10
+                maxPerfectDefenseTime: 10,
             })
             return BABYLON.SceneLoader.ImportMeshAsync("", slime.Actor.url(), "", scene, null, ".glb")
-        }).then(({ meshes, particleSystems, skeletons, animationGroups }) => {
+        })
+        .then(({ meshes, particleSystems, skeletons, animationGroups }) => {
             console.log(skeletons)
             console.log(meshes)
             console.log(animationGroups)
@@ -183,12 +207,12 @@ export const Game = (
                 startRotationQuaternion: new BABYLON.Vector3(0, 0, 0).toQuaternion(),
                 maxHP: 3000,
                 maxCumulativeDamage: 500,
-                maxPerfectDefenseTime: 10
+                maxPerfectDefenseTime: 10,
             })
-        }).then(() => {
-
+        })
+        .then(() => {
             // create a built-in "ground" shape;
-            var ground = BABYLON.Mesh.CreateGround('ground1', 60, 60, 2, scene);
+            var ground = BABYLON.Mesh.CreateGround("ground1", 60, 60, 2, scene)
             ground.position.y = -0.1
             ground.position.z = 20
 
@@ -200,9 +224,9 @@ export const Game = (
                 player2.tick(false)
                 scene.render()
                 if (player1.isHit || player2.isHit) {
-                    camera.setTarget(new BABYLON.Vector3(-0.06 + Math.random() * 0.12, 3.94 + Math.random() * 0.12, 0));
+                    camera.setTarget(new BABYLON.Vector3(-0.06 + Math.random() * 0.12, 3.94 + Math.random() * 0.12, 0))
                 } else {
-                    camera.setTarget(new BABYLON.Vector3(0, 4, 0));
+                    camera.setTarget(new BABYLON.Vector3(0, 4, 0))
                 }
 
                 if (player1.HP > player1.maxHP) {
@@ -234,12 +258,9 @@ export const Game = (
                 }
                 cumulativeDamageBar.p1.scaling.x = player1.cumulativeDamage / player1.maxCumulativeDamage
                 cumulativeDamageBar.p2.scaling.x = player2.cumulativeDamage / player2.maxCumulativeDamage
-
-
             }
             // engine.runRenderLoop(next)
 
             return { next, getP1: () => player1, getP2: () => player2, getRestart: () => restart, scene }
         })
-
 }
