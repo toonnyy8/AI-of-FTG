@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs"
+import { exp } from "@tensorflow/tfjs"
 import { positionalEncoding } from "./mha"
 
 export const mish = (x: tf.Tensor) => tf.tidy(() => tf.mul(x, tf.tanh(tf.softplus(x))))
@@ -66,3 +67,11 @@ export const stopGradient = tf.customGrad((x: tf.Tensor, save: tf.GradSaveFunc) 
 //         const { result, indexes } = tf.maxPoolWithArgmax(x, filterSize, strides, pad)
 //         return tf.add(result, pe.flatten().gather(indexes.flatten().cast("int32")).reshapeAs(result))
 //     })
+
+export type tfFn = (inp: tf.Tensor) => tf.Tensor
+
+export const pipe = (...fns: ((inp: tf.Tensor) => tf.Tensor)[]): tfFn => {
+    return (inp: tf.Tensor) => tf.tidy(() => fns.reduce((prev, fn) => fn(prev), inp))
+}
+
+export const layerFn = (layer: tf.layers.Layer): tfFn => (inp: tf.Tensor): tf.Tensor => <tf.Tensor>layer.apply(inp)
