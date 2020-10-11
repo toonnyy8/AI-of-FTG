@@ -67,7 +67,7 @@ export const AED = (
                     inputShape: [1, 1, dk],
                     strides: 2,
                     trainable: true,
-                    name: "enc1",
+                    name: "enc2",
                 }),
             ],
         }),
@@ -96,7 +96,7 @@ export const AED = (
             //     filters: dv,
             //     kernelSize: 1,
             //     trainable: true,
-            //     name: "qk_mapping",
+            //     name: "K2V",
             // }),
         ],
     })

@@ -6,7 +6,13 @@ import { AED } from "../model/ae"
 import { registerTfex } from "../../lib/tfjs-extensions/src/"
 const tfex = registerTfex(tf)
 window["train"] = false
+window["autoP1"] = true
+window["autoP2"] = true
+window["storeMemory"] = true
 console.log(`window["train"] = ${window["train"]}`)
+console.log(`window["autoP1"] = ${window["autoP1"]}`)
+console.log(`window["autoP2"] = ${window["autoP2"]}`)
+console.log(`window["storeMemory"] = ${window["storeMemory"]}`)
 const keySets: [
     {
         jump: string
@@ -244,7 +250,9 @@ tf.setBackend("webgl")
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
                             ;[...en_ws(), ...bk_ws(), ...de_ws()].forEach((w) => {
-                                if (loadWeights[w.name]) w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                                if (w.name.split("/")[0] == "enc2") {
+                                    w.assign(<tf.Tensor>(<unknown>loadWeights["enc1/" + w.name.split("/")[1] + "_1"]))
+                                } else if (loadWeights[w.name]) w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
                             })
                         })
                         reader.readAsArrayBuffer(files[0])
@@ -260,8 +268,8 @@ tf.setBackend("webgl")
             if (count % 2 == 0) {
                 let ctrl1 = Math.floor(Math.random() * 15)
                 let ctrl2 = Math.floor(Math.random() * 15)
-                control(ctrl1, keySets[0])
-                control(ctrl2, keySets[1])
+                if (window["autoP1"]) control(ctrl1, keySets[0])
+                if (window["autoP2"]) control(ctrl2, keySets[1])
             }
             if (window["train"] == false) {
                 tf.tidy(() => {
@@ -275,12 +283,13 @@ tf.setBackend("webgl")
                         .cast("float32")
                         .div(255)
                     tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
-                    write(
-                        tf.keep(pix),
-                        tf.keep(pix.reverse([1, 2])),
-                        tf.keep(pix.reverse([1])),
-                        tf.keep(pix.reverse([2]))
-                    )
+                    if (window["storeMemory"])
+                        write(
+                            tf.keep(pix),
+                            tf.keep(pix.reverse([1, 2])),
+                            tf.keep(pix.reverse([1])),
+                            tf.keep(pix.reverse([2]))
+                        )
 
                     let query = en_fn(pix.expandDims(0))
                     let z = bk_fn(query)
@@ -304,12 +313,13 @@ tf.setBackend("webgl")
                         .cast("float32")
                         .div(255)
                     tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
-                    write(
-                        tf.keep(pix),
-                        tf.keep(pix.reverse([1, 2])),
-                        tf.keep(pix.reverse([1])),
-                        tf.keep(pix.reverse([2]))
-                    )
+                    if (window["storeMemory"])
+                        write(
+                            tf.keep(pix),
+                            tf.keep(pix.reverse([1, 2])),
+                            tf.keep(pix.reverse([1])),
+                            tf.keep(pix.reverse([2]))
+                        )
 
                     let b = tf.stack([pix, read(), read(), read()], 0)
                     // let z:tf.Tensor
