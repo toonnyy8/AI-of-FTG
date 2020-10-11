@@ -190,7 +190,8 @@ export const AED = (
                                 nn.mish
                             )
                         ),
-                        nn.layerFn(dec2out)
+                        nn.layerFn(dec2out),
+                        tf.sigmoid
                     )(input)
                 ),
             ws: () =>

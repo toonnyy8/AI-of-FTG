@@ -288,7 +288,7 @@ tf.setBackend("webgl")
 
                     let out = de_fn(z)
 
-                    tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.squeeze([0])), d1canvas)
+                    tf.browser.toPixels(<tf.Tensor3D>out.squeeze([0]), d1canvas)
                 })
             } else if (count % 10 == 0) {
                 count = 0
@@ -321,8 +321,38 @@ tf.setBackend("webgl")
 
                             let out = de_fn(z)
 
-                            let loss = tf.losses.sigmoidCrossEntropy(b, out)
-                            tf.browser.toPixels(tf.sigmoid(<tf.Tensor3D>out.unstack(0)[0]), d1canvas)
+                            let gx = (inp: tf.Tensor) => {
+                                let [batch, h, w, c] = inp.shape
+                                return tf
+                                    .conv2d(
+                                        <tf.Tensor4D>inp.reshape([batch * c, h, w, 1]),
+                                        tf.tensor4d([1, 0, -1], [1, 3, 1, 1]),
+                                        1,
+                                        "same"
+                                    )
+                                    .reshape([batch, h, w, c])
+                                    .add(1)
+                                    .div(2)
+                            }
+                            let gy = (inp: tf.Tensor) => {
+                                let [batch, h, w, c] = inp.shape
+                                return tf
+                                    .conv2d(
+                                        <tf.Tensor4D>inp.reshape([batch * c, h, w, 1]),
+                                        tf.tensor4d([1, 0, -1], [3, 1, 1, 1]),
+                                        1,
+                                        "same"
+                                    )
+                                    .reshape([batch, h, w, c])
+                                    .add(1)
+                                    .div(2)
+                            }
+
+                            let loss1 = tf.losses.logLoss(b, out)
+                            let loss2 = tf.losses.logLoss(gx(b), gx(out))
+                            let loss3 = tf.losses.logLoss(gy(b), gy(out))
+                            let loss = tf.addN([loss1.mul(0.4), loss2.mul(0.3), loss3.mul(0.3)])
+                            tf.browser.toPixels(<tf.Tensor3D>out.unstack(0)[0], d1canvas)
 
                             loss.print()
                             return <tf.Scalar>loss
