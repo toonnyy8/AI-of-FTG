@@ -28,6 +28,8 @@
         "build:cnn_dddqn": "parcel build --no-content-hash  ./src/cnn_dddqn/index.html ./src/cnn_dddqn/agent.html --out-dir build/cnn_dddqn --public-url=./",
         "dev:vqvae": "parcel ./src/vqvae/index.html ./src/vqvae/agent.html -p 8080 --open",
         "build:vqvae": "parcel build --no-content-hash  ./src/vqvae/index.html ./src/vqvae/agent.html --out-dir build/vqvae --public-url=./",
+        "dev:asset-ae": "parcel ./src/asset-ae/index.html ./src/asset-ae/agent.html -p 8080 --open",
+        "build:asset-ae": "parcel build --no-content-hash  ./src/asset-ae/index.html ./src/asset-ae/agent.html --out-dir build/asset-ae --public-url=./",
         "dev:test": "parcel ./src/test/index.html -p 8080 --open"
     },
     "keywords": [],
