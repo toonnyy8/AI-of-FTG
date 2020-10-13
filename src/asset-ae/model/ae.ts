@@ -152,6 +152,18 @@ export const AED = ({
                 }),
             ],
         }),
+        tf.sequential({
+            layers: [
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: assetGroups * assetSize,
+                    padding: "same",
+                    inputShape: [1, 1, assetGroups * assetSize],
+                    trainable: true,
+                    name: "dec2",
+                }),
+            ],
+        }),
     ]
 
     let dec2out = tf.sequential({
@@ -178,7 +190,7 @@ export const AED = ({
                     nn.pipe(
                         nn.layerFn(inp2enc),
                         nn.mish,
-                        ...new Array(down - 1).fill(
+                        ...new Array(down).fill(
                             nn.pipe(
                                 nn.layerFn(encoder[0]),
                                 nn.mish,
@@ -187,9 +199,6 @@ export const AED = ({
                                 (inp: tf.Tensor) => tf.add(maxPool(inp), nn.layerFn(encoder[2])(inp)),
                                 nn.mish
                             )
-                        ),
-                        nn.pipe(nn.layerFn(encoder[0]), nn.mish, nn.layerFn(encoder[1]), nn.mish, (inp: tf.Tensor) =>
-                            tf.add(maxPool(inp), nn.layerFn(encoder[2])(inp))
                         )
                     )(input)
                 ),
@@ -245,10 +254,12 @@ export const AED = ({
                     nn.pipe(
                         ...new Array(down).fill(
                             nn.pipe(
-                                nn.layerFn(unSampling),
                                 nn.layerFn(decoder[0]),
                                 nn.mish,
+                                nn.layerFn(unSampling),
                                 nn.layerFn(decoder[1]),
+                                nn.mish,
+                                nn.layerFn(decoder[2]),
                                 nn.mish
                             )
                         ),

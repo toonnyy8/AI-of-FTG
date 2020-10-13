@@ -37,29 +37,29 @@ const keySets: [
         }
     }
 ] = [
-        {
-            jump: "w",
-            squat: "s",
-            left: "a",
-            right: "d",
-            attack: {
-                light: "j",
-                medium: "k",
-                heavy: "l",
-            },
+    {
+        jump: "w",
+        squat: "s",
+        left: "a",
+        right: "d",
+        attack: {
+            light: "j",
+            medium: "k",
+            heavy: "l",
         },
-        {
-            jump: "ArrowUp",
-            squat: "ArrowDown",
-            left: "ArrowLeft",
-            right: "ArrowRight",
-            attack: {
-                light: "1",
-                medium: "2",
-                heavy: "3",
-            },
+    },
+    {
+        jump: "ArrowUp",
+        squat: "ArrowDown",
+        left: "ArrowLeft",
+        right: "ArrowRight",
+        attack: {
+            light: "1",
+            medium: "2",
+            heavy: "3",
         },
-    ]
+    },
+]
 
 let canvas = <HTMLCanvasElement>document.getElementById("bobylonCanvas")
 
@@ -260,9 +260,14 @@ tf.setBackend("webgl")
                         var reader = new FileReader()
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
-                                ;[...en_ws(), ...asset_ws(), ...de_ws()].forEach((w) => {
-                                    if (loadWeights[w.name]) try { w.assign(<tf.Tensor>(<unknown>loadWeights[w.name])) } catch (e) { console.error(e) }
-                                })
+                            ;[...en_ws(), ...asset_ws(), ...de_ws()].forEach((w) => {
+                                if (loadWeights[w.name])
+                                    try {
+                                        w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
+                                    } catch (e) {
+                                        console.error(e)
+                                    }
+                            })
                         })
                         reader.readAsArrayBuffer(files[0])
                     }
@@ -283,9 +288,7 @@ tf.setBackend("webgl")
             tf.tidy(() => {
                 let pix = tf.image
                     .resizeBilinear(
-                        <tf.Tensor3D>(
-                            tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [15, 10], [15, 10], "same")
-                        ),
+                        <tf.Tensor3D>tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [15, 10], [15, 10], "same"),
                         [64, 64]
                     )
                     .cast("float32")
@@ -358,7 +361,6 @@ tf.setBackend("webgl")
                         [...en_ws(), ...asset_ws(), ...de_ws()]
                     )
                 }
-
             })
 
             requestAnimationFrame(loop)
