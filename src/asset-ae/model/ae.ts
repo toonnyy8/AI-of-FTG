@@ -254,9 +254,9 @@ export const AED = ({
                     nn.pipe(
                         ...new Array(down).fill(
                             nn.pipe(
+                                nn.layerFn(unSampling),
                                 nn.layerFn(decoder[0]),
                                 nn.mish,
-                                nn.layerFn(unSampling),
                                 nn.layerFn(decoder[1]),
                                 nn.mish,
                                 nn.layerFn(decoder[2]),

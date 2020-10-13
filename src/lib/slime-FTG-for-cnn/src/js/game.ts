@@ -222,7 +222,7 @@ export const Game = (
             const next = () => {
                 player1.tick(false)
                 player2.tick(false)
-                scene.render()
+
                 if (player1.isHit || player2.isHit) {
                     camera.setTarget(new BABYLON.Vector3(-0.06 + Math.random() * 0.12, 3.94 + Math.random() * 0.12, 0))
                 } else {
@@ -259,8 +259,11 @@ export const Game = (
                 cumulativeDamageBar.p1.scaling.x = player1.cumulativeDamage / player1.maxCumulativeDamage
                 cumulativeDamageBar.p2.scaling.x = player2.cumulativeDamage / player2.maxCumulativeDamage
             }
+            const render = () => {
+                scene.render()
+            }
             // engine.runRenderLoop(next)
 
-            return { next, getP1: () => player1, getP2: () => player2, getRestart: () => restart, scene }
+            return { next, render, getP1: () => player1, getP2: () => player2, getRestart: () => restart, scene }
         })
 }

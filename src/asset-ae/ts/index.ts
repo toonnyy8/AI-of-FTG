@@ -208,7 +208,7 @@ const memory = (size) => {
 
 tf.setBackend("webgl")
     .then(() => Game(keySets, canvas))
-    .then(({ next, getP1, getP2, getRestart }) => {
+    .then(({ next, render, getP1, getP2, getRestart }) => {
         let op = tf.train.adamax(1e-2)
         let dh: number = 4,
             dk: number = 8,
@@ -279,6 +279,7 @@ tf.setBackend("webgl")
         const loop = () => {
             count++
             next()
+            render()
             if (count % 2 == 0) {
                 let ctrl1 = Math.floor(Math.random() * 15)
                 let ctrl2 = Math.floor(Math.random() * 15)
