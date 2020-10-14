@@ -75,3 +75,46 @@ export const pipe = (...fns: ((inp: tf.Tensor) => tf.Tensor)[]): tfFn => {
 }
 
 export const layerFn = (layer: tf.layers.Layer): tfFn => (inp: tf.Tensor): tf.Tensor => <tf.Tensor>layer.apply(inp)
+
+export const blurPooling = (filtSize: 1 | 2 | 3 | 4 | 5 | 6 | 7, strides: number) => {
+    const kernel: tf.Tensor4D = tf.tidy(() => {
+        let k: tf.Tensor = tf.tensor([1, 3, 3, 1], [4, 1])
+        switch (filtSize) {
+            case 1:
+                k = tf.tensor([1], [1, 1])
+                break
+            case 2:
+                k = tf.tensor([1, 1], [2, 1])
+                break
+            case 3:
+                k = tf.tensor([1, 2, 1], [3, 1])
+                break
+            case 4:
+                k = tf.tensor([1, 3, 3, 1], [4, 1])
+                break
+            case 5:
+                k = tf.tensor([1, 4, 6, 4, 1], [5, 1])
+                break
+            case 6:
+                k = tf.tensor([1, 5, 10, 10, 5, 1], [6, 1])
+                break
+            case 7:
+                k = tf.tensor([1, 6, 15, 20, 15, 6, 1], [7, 1])
+                break
+        }
+        k = k.matMul(k, false, true).reshape([filtSize, filtSize, 1, 1])
+        return k.div(k.sum())
+    })
+
+    return {
+        fn: (x: tf.Tensor3D | tf.Tensor4D) =>
+            tf.tidy(() => {
+                let [batch, h, w, c] = x.shape
+                if (c == null) {
+                    c = w
+                }
+                return tf.depthwiseConv2d(x, <tf.Tensor4D>kernel.tile([1, 1, c, 1]), strides, "same")
+            }),
+        dispose: () => kernel.dispose(),
+    }
+}

@@ -44,7 +44,7 @@ export const AED = ({
         ],
     })
 
-    let encoder = [
+    let encoder = new Array(down).fill(0).map((_, idx) => [
         tf.sequential({
             layers: [
                 tf.layers.separableConv2d({
@@ -53,7 +53,7 @@ export const AED = ({
                     padding: "same",
                     inputShape: [1, 1, dh],
                     trainable: true,
-                    name: "enc0",
+                    name: `enc${idx}-0`,
                 }),
             ],
         }),
@@ -65,7 +65,7 @@ export const AED = ({
                     padding: "same",
                     inputShape: [1, 1, dh],
                     trainable: true,
-                    name: "enc1",
+                    name: `enc${idx}-1`,
                 }),
             ],
         }),
@@ -76,13 +76,12 @@ export const AED = ({
                     filters: dh,
                     padding: "same",
                     inputShape: [1, 1, dh],
-                    strides: 2,
                     trainable: true,
-                    name: "enc2",
+                    name: `enc${idx}-2`,
                 }),
             ],
         }),
-    ]
+    ])
 
     let hv2Qs = new Array(assetGroups).fill(0).map((_, idx) =>
         tf.sequential({
@@ -126,8 +125,7 @@ export const AED = ({
             }),
         ],
     })
-
-    let decoder = [
+    let decoder = new Array(down).fill(0).map((_, idx) => [
         tf.sequential({
             layers: [
                 tf.layers.separableConv2d({
@@ -136,7 +134,7 @@ export const AED = ({
                     padding: "same",
                     inputShape: [1, 1, assetGroups * assetSize],
                     trainable: true,
-                    name: "dec0",
+                    name: `dec${idx}-0`,
                 }),
             ],
         }),
@@ -148,7 +146,7 @@ export const AED = ({
                     padding: "same",
                     inputShape: [1, 1, assetGroups * assetSize],
                     trainable: true,
-                    name: "dec1",
+                    name: `dec${idx}-1`,
                 }),
             ],
         }),
@@ -160,11 +158,49 @@ export const AED = ({
                     padding: "same",
                     inputShape: [1, 1, assetGroups * assetSize],
                     trainable: true,
-                    name: "dec2",
+                    name: `dec${idx}-2`,
                 }),
             ],
         }),
-    ]
+    ])
+    // let decoder = [
+    //     tf.sequential({
+    //         layers: [
+    //             tf.layers.separableConv2d({
+    //                 kernelSize: 3,
+    //                 filters: assetGroups * assetSize,
+    //                 padding: "same",
+    //                 inputShape: [1, 1, assetGroups * assetSize],
+    //                 trainable: true,
+    //                 name: "dec0",
+    //             }),
+    //         ],
+    //     }),
+    //     tf.sequential({
+    //         layers: [
+    //             tf.layers.separableConv2d({
+    //                 kernelSize: 3,
+    //                 filters: assetGroups * assetSize,
+    //                 padding: "same",
+    //                 inputShape: [1, 1, assetGroups * assetSize],
+    //                 trainable: true,
+    //                 name: "dec1",
+    //             }),
+    //         ],
+    //     }),
+    //     tf.sequential({
+    //         layers: [
+    //             tf.layers.separableConv2d({
+    //                 kernelSize: 3,
+    //                 filters: assetGroups * assetSize,
+    //                 padding: "same",
+    //                 inputShape: [1, 1, assetGroups * assetSize],
+    //                 trainable: true,
+    //                 name: "dec2",
+    //             }),
+    //         ],
+    //     }),
+    // ]
 
     let dec2out = tf.sequential({
         layers: [
@@ -179,9 +215,13 @@ export const AED = ({
         ],
     })
 
+    // let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
+    //     return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 2, 2, "same")
+    // })
     let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
-        return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 2, 2, "same")
+        return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 2, 1, "same")
     })
+    let blurPooling = nn.blurPooling(3, 2)
     let unSampling = tf.layers.upSampling2d({ size: [2, 2], inputShape: [1, 1, assetGroups * assetSize] })
     return [
         {
@@ -190,14 +230,16 @@ export const AED = ({
                     nn.pipe(
                         nn.layerFn(inp2enc),
                         nn.mish,
-                        ...new Array(down).fill(
+                        ...encoder.map((enc) =>
                             nn.pipe(
-                                nn.layerFn(encoder[0]),
+                                nn.layerFn(enc[0]),
                                 nn.mish,
-                                nn.layerFn(encoder[1]),
+                                nn.layerFn(enc[1]),
                                 nn.mish,
-                                (inp: tf.Tensor) => tf.add(maxPool(inp), nn.layerFn(encoder[2])(inp)),
-                                nn.mish
+                                nn.layerFn(enc[2]),
+                                nn.mish,
+                                maxPool,
+                                blurPooling.fn
                             )
                         )
                     )(input)
@@ -205,7 +247,12 @@ export const AED = ({
             ws: () =>
                 tf.tidy(() => [
                     ...(<tf.Variable[]>inp2enc.getWeights()),
-                    ...(<tf.Variable[]>encoder.reduce((prev, enc) => prev.concat(enc.getWeights()), [])),
+                    ...(<tf.Variable[]>(
+                        encoder.reduce(
+                            (prev, enc) => prev.concat(enc.reduce((prev, _enc) => prev.concat(_enc.getWeights()), [])),
+                            <tf.Variable[]>[]
+                        )
+                    )),
                 ]),
         },
         {
@@ -252,14 +299,14 @@ export const AED = ({
             fn: (input: tf.Tensor) =>
                 tf.tidy(() =>
                     nn.pipe(
-                        ...new Array(down).fill(
+                        ...decoder.map((dec) =>
                             nn.pipe(
                                 nn.layerFn(unSampling),
-                                nn.layerFn(decoder[0]),
+                                nn.layerFn(dec[0]),
                                 nn.mish,
-                                nn.layerFn(decoder[1]),
+                                nn.layerFn(dec[1]),
                                 nn.mish,
-                                nn.layerFn(decoder[2]),
+                                nn.layerFn(dec[2]),
                                 nn.mish
                             )
                         ),
@@ -269,7 +316,12 @@ export const AED = ({
                 ),
             ws: () =>
                 tf.tidy(() => [
-                    ...(<tf.Variable[]>decoder.reduceRight((prev, decoder) => prev.concat(decoder.getWeights()), [])),
+                    ...(<tf.Variable[]>(
+                        decoder.reduce(
+                            (prev, dec) => prev.concat(dec.reduce((prev, _dec) => prev.concat(_dec.getWeights()), [])),
+                            <tf.Variable[]>[]
+                        )
+                    )),
                     ...(<tf.Variable[]>dec2out.getWeights()),
                 ]),
         },

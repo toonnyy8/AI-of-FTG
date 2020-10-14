@@ -2,6 +2,7 @@ import { Game } from "../../lib/slime-FTG-for-cnn/src/js/game"
 
 import * as tf from "@tensorflow/tfjs"
 import { AED } from "../model/ae"
+import * as nn from "../model/nn"
 
 import { registerTfex } from "../../lib/tfjs-extensions/src/"
 const tfex = registerTfex(tf)
@@ -209,7 +210,7 @@ const memory = (size) => {
 tf.setBackend("webgl")
     .then(() => Game(keySets, canvas))
     .then(({ next, render, getP1, getP2, getRestart }) => {
-        let op = tf.train.adamax(1e-2)
+        let op = tf.train.adamax(1e-3)
         let dh: number = 4,
             dk: number = 8,
             assetSize: number = 32,
@@ -261,12 +262,39 @@ tf.setBackend("webgl")
                         reader.addEventListener("loadend", () => {
                             let loadWeights = tfex.sl.load(new Uint8Array(<ArrayBuffer>reader.result))
                             ;[...en_ws(), ...asset_ws(), ...de_ws()].forEach((w) => {
-                                if (loadWeights[w.name])
+                                if (loadWeights[w.name]) {
                                     try {
                                         w.assign(<tf.Tensor>(<unknown>loadWeights[w.name]))
                                     } catch (e) {
                                         console.error(e)
                                     }
+                                }
+                                // else if (w.name.slice(0, 3) == "enc") {
+                                //     switch (w.name.split("-")[1][0]) {
+                                //         case "0":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`enc0/${w.name.split("/")[1]}`]))
+                                //             break
+                                //         case "1":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`enc1/${w.name.split("/")[1]}`]))
+                                //             break
+                                //         case "2":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`enc2/${w.name.split("/")[1]}`]))
+                                //             break
+                                //     }
+                                // }
+                                // else if (w.name.slice(0, 3) == "dec") {
+                                //     switch (w.name.split("-")[1][0]) {
+                                //         case "0":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`dec0/${w.name.split("/")[1]}`]))
+                                //             break
+                                //         case "1":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`dec1/${w.name.split("/")[1]}`]))
+                                //             break
+                                //         case "2":
+                                //             w.assign(<tf.Tensor>(<unknown>loadWeights[`dec2/${w.name.split("/")[1]}`]))
+                                //             break
+                                //     }
+                                // }
                             })
                         })
                         reader.readAsArrayBuffer(files[0])
@@ -276,6 +304,10 @@ tf.setBackend("webgl")
                 })
             })
         }
+        let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
+            return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 5, 2, "same")
+        })
+        let blurPooling = nn.blurPooling(7, 2)
         const loop = () => {
             count++
             next()
@@ -287,13 +319,18 @@ tf.setBackend("webgl")
                 if (window["autoP2"]) control(ctrl2, keySets[1])
             }
             tf.tidy(() => {
-                let pix = tf.image
-                    .resizeBilinear(
-                        <tf.Tensor3D>tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [15, 10], [15, 10], "same"),
-                        [64, 64]
-                    )
-                    .cast("float32")
-                    .div(255)
+                // let pix = tf.image
+                //     .resizeBilinear(
+                //         <tf.Tensor3D>tf.maxPool(<tf.Tensor3D>tf.browser.fromPixels(canvas), [15, 10], [15, 10], "same"),
+                //         [64, 64]
+                //     )
+                //     .cast("float32")
+                //     .div(255)
+
+                let pix = nn.pipe(maxPool, blurPooling.fn, maxPool, blurPooling.fn, (inp: tf.Tensor3D) =>
+                    tf.image.resizeBilinear(inp, [64, 64])
+                )(<tf.Tensor3D>tf.browser.fromPixels(canvas).cast("float32").div(255))
+
                 tf.browser.toPixels(<tf.Tensor3D>pix, pixcanvas)
                 if (window["storeMemory"])
                     write(
@@ -352,7 +389,17 @@ tf.setBackend("webgl")
                             let loss1 = tf.losses.logLoss(b, out)
                             let loss2 = tf.losses.logLoss(gx(b), gx(out))
                             let loss3 = tf.losses.logLoss(gy(b), gy(out))
-                            let loss = tf.addN([loss1.mul(0.4), loss2.mul(0.3), loss3.mul(0.3)])
+
+                            let ws = [...en_ws(), ...asset_ws(), ...de_ws()]
+                            let lossl1 = tf.addN(ws.map((w) => w.abs().mean())).div(ws.length)
+                            let lossl2 = tf.addN(ws.map((w) => w.square().mean())).div(ws.length)
+                            let loss = tf.addN([
+                                loss1.mul(0.5),
+                                loss2.mul(0.25),
+                                loss3.mul(0.25),
+                                // lossl1.mul(0.15),
+                                // lossl2.mul(0.15),
+                            ])
                             tf.browser.toPixels(<tf.Tensor3D>out.unstack(0)[0], d1canvas)
 
                             loss.print()
