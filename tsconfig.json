@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "target": "es6", //指定編譯生成的JS版本
+        "strict": true, //採用嚴格模式  
+        "esModuleInterop": true, //兼容模組導入的方式
+        "moduleResolution": "node"
+    }
+}

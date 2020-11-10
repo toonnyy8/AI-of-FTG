@@ -16,6 +16,11 @@
         "regenerator-runtime": "^0.13.7"
     },
     "devDependencies": {
+        "@babel/core": "^7.12.3",
+        "@babel/preset-flow": "^7.12.1",
+        "next": "^10.0.1",
+        "react": "^17.0.1",
+        "react-dom": "^17.0.1",
         "typescript": "^3.9.7"
     },
     "scripts": {
@@ -42,5 +47,8 @@
     "bugs": {
         "url": "https://github.com/toonnyy8/AI-of-FTG/issues"
     },
-    "homepage": "https://github.com/toonnyy8/AI-of-FTG#readme"
+    "homepage": "https://github.com/toonnyy8/AI-of-FTG#readme",
+    "browserslist": [
+        "last 1 chrome versions"
+    ]
 }
