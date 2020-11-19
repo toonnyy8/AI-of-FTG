@@ -1,0 +1,35 @@
+<!DOCTYPE thml>
+
+<html>
+
+<head>
+    <!-- <script src="./js/main.js" defer></script> -->
+    <script src="./ts/index.ts" defer></script>
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #bobylonCanvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bobylonCanvas" width="1920" height="1080"></canvas>
+    <canvas id="pixCanvas" width="64" height="64" style="width:30%;image-rendering: pixelated;"></canvas>
+    <p>
+        <button id="save">save weights</button>
+    </p>
+    <p>
+        <button id="load">load weights</button>
+    </p>
+</body>
+
+</html>

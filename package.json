@@ -4,14 +4,15 @@
     "description": "以tensorflow.js實作基於深度學習的FTG AI",
     "main": "index.js",
     "dependencies": {
-        "@tensorflow/tfjs": "^2.6.0",
-        "babylonjs": "^4.1.0",
-        "babylonjs-gui": "^4.1.0",
-        "babylonjs-loaders": "^4.1.0",
+        "@tensorflow/tfjs": "^2.7.0",
+        "babylonjs": "^4.2.0",
+        "babylonjs-gui": "^4.2.0",
+        "babylonjs-loaders": "^4.2.0",
         "cannon": "^0.6.2",
-        "core-js": "^3.6.5",
+        "core-js": "^3.7.0",
         "hammerjs": "^2.0.8",
         "is-obj": "^2.0.0",
+        "jszip": "^3.5.0",
         "parcel": "^1.12.4",
         "regenerator-runtime": "^0.13.7"
     },
@@ -35,7 +36,8 @@
         "build:vqvae": "parcel build --no-content-hash  ./src/vqvae/index.html ./src/vqvae/agent.html --out-dir build/vqvae --public-url=./",
         "dev:asset-ae": "parcel ./src/asset-ae/index.html ./src/asset-ae/agent.html -p 8080 --open",
         "build:asset-ae": "parcel build --no-content-hash  ./src/asset-ae/index.html ./src/asset-ae/agent.html --out-dir build/asset-ae --public-url=./",
-        "dev:test": "parcel ./src/test/index.html -p 8080 --open"
+        "dev:test": "parcel ./src/test/index.html -p 8080 --open",
+        "dev:save-data": "parcel ./src/save-data/index.html -p 8080 --open"
     },
     "keywords": [],
     "author": "",
