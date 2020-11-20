@@ -44,7 +44,7 @@ export const Game = (
     // })
 
     window.onresize = (e) => {
-        if (document.body.offsetWidth / document.body.offsetHeight > 1920 / 1080) {
+        if (document.body.offsetWidth / document.body.offsetHeight > 1080 / 1080) {
             canvas.style.height = "100%"
             canvas.style.width = "auto"
         } else {
@@ -52,7 +52,7 @@ export const Game = (
             canvas.style.width = "100%"
         }
     }
-    if (document.body.offsetWidth / document.body.offsetHeight > 1920 / 1080) {
+    if (document.body.offsetWidth / document.body.offsetHeight > 1080 / 1080) {
         canvas.style.height = "100%"
         canvas.style.width = "auto"
     } else {
@@ -76,10 +76,10 @@ export const Game = (
     var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 10, 100), scene)
     camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA
 
-    camera.orthoTop = 9 * 0.7
+    camera.orthoTop = 11 * 0.7
     camera.orthoBottom = -9 * 0.7
-    camera.orthoLeft = -16 * 0.7
-    camera.orthoRight = 16 * 0.7
+    camera.orthoLeft = -10 * 0.7
+    camera.orthoRight = 10 * 0.7
     // target the camera to scene origin
     camera.setTarget(new BABYLON.Vector3(0, 4, 0))
     // attach the camera to the canvas
@@ -129,17 +129,17 @@ export const Game = (
         p1: createBar(
             "P1_hp",
             0.5,
-            8,
-            { x: 10, y: 9 },
-            { x: -4, y: 0, z: 0 },
+            6,
+            { x: 6.5, y: 11 },
+            { x: -3, y: 0, z: 0 },
             createMaterial("p1_hpMaterial", { r: 0.4, g: 0.4, b: 1 })
         ),
         p2: createBar(
             "P2_hp",
             0.5,
-            8,
-            { x: -10, y: 9 },
-            { x: 4, y: 0, z: 0 },
+            6,
+            { x: -6.5, y: 11 },
+            { x: 3, y: 0, z: 0 },
             createMaterial("p2_hpMaterial", { r: 1, g: 0.4, b: 0.4 })
         ),
     }
@@ -147,18 +147,18 @@ export const Game = (
     let cumulativeDamageBar = {
         p1: createBar(
             "P1_cumulativeDamage",
-            0.1,
-            8,
-            { x: 10, y: 8.2 },
-            { x: -4, y: 0, z: 0 },
+            0.2,
+            6,
+            { x: 6.5, y: 10 },
+            { x: -3, y: 0, z: 0 },
             createMaterial("p1_cumulativeDamageMaterial", { r: 0.4, g: 0.4, b: 1 })
         ),
         p2: createBar(
             "P2_cumulativeDamage",
-            0.1,
-            8,
-            { x: -10, y: 8.2 },
-            { x: 4, y: 0, z: 0 },
+            0.2,
+            6,
+            { x: -6.5, y: 10 },
+            { x: 3, y: 0, z: 0 },
             createMaterial("p2_cumulativeDamageMaterial", { r: 1, g: 0.4, b: 0.4 })
         ),
     }
@@ -220,6 +220,7 @@ export const Game = (
             player2.setOpponent(player1)
 
             const next = () => {
+                restart = false
                 player1.tick(false)
                 player2.tick(false)
 

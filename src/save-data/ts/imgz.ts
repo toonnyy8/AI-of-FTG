@@ -3,7 +3,6 @@ import * as tf from "@tensorflow/tfjs"
 interface SaveJson {
     name: string
     shape: number[]
-    dtype: "float32" | "int32" | "bool"
 }
 
 export const save = (
@@ -13,15 +12,15 @@ export const save = (
     }[]
 ) => {
     return new Blob([
-        "tfz",
+        "imgz",
         ...(inps.reduce((prev, inp) => {
-            let buf = inp.tensor.bufferSync()
-            let json = `{"name":"${inp.name}","shape":[${buf.shape}],"dtype":"${buf.dtype}"}`
+            let buf = inp.tensor.bufferSync<"int32">()
+            let json = `{"name":"${inp.name}","shape":[${buf.shape}]}`
             return [
                 ...prev,
-                new Uint32Array([json.length, buf.values.length * buf.values.BYTES_PER_ELEMENT]),
+                new Uint32Array([json.length, buf.values.length]),
                 json,
-                buf.values,
+                new Uint8Array(buf.values),
             ]
         }, [] as BlobPart[]) as BlobPart[]),
     ])
@@ -39,8 +38,8 @@ export const load = (tfzFile: Blob | ArrayBuffer) => {
             resolve(<ArrayBuffer>tfzFile)
         }
     }).then((arrBuf: ArrayBuffer) => {
-        if (String.fromCharCode(...new Uint8Array(arrBuf.slice(0, 3))) == "tfz") {
-            let at = 3
+        if (String.fromCharCode(...new Uint8Array(arrBuf.slice(0, 4))) == "imgz") {
+            let at = 4
             let outs: {
                 name: string
                 tensor: tf.Tensor
@@ -51,31 +50,20 @@ export const load = (tfzFile: Blob | ArrayBuffer) => {
 
                 const bufLen = new Uint32Array(arrBuf.slice(at, at + 4))[0]
                 at += 4
-
-                const { name, dtype, shape } = <SaveJson>(
+                const { name, shape } = <SaveJson>(
                     JSON.parse(String.fromCharCode(...new Uint8Array(arrBuf.slice(at, at + jsonLen))))
                 )
                 at += jsonLen
 
-                let values: Float32Array | Int32Array | Uint8Array
-                switch (dtype) {
-                    case "float32":
-                        values = new Float32Array(arrBuf.slice(at, at + bufLen))
-                        break
-                    case "int32":
-                        values = new Int32Array(arrBuf.slice(at, at + bufLen))
-                        break
-                    case "bool":
-                        values = new Uint8Array(arrBuf.slice(at, at + bufLen))
-                        break
-                }
+                let values: Int32Array = new Int32Array(new Uint8Array(arrBuf.slice(at, at + bufLen)))
+
                 at += bufLen
-                outs.push({ name: name, tensor: tf.tensor(values, shape, dtype) })
+                outs.push({ name: name, tensor: tf.tensor(values, shape, "int32") })
             }
 
             return outs
         } else {
-            throw new Error("input file isn't tfz")
+            throw new Error("input file isn't imgz")
         }
     })
 }
