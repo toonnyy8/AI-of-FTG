@@ -37,7 +37,8 @@
         "dev:asset-ae": "parcel ./src/asset-ae/index.html ./src/asset-ae/agent.html -p 8080 --open",
         "build:asset-ae": "parcel build --no-content-hash  ./src/asset-ae/index.html ./src/asset-ae/agent.html --out-dir build/asset-ae --public-url=./",
         "dev:test": "parcel ./src/test/index.html -p 8080 --open",
-        "dev:save-data": "parcel ./src/save-data/index.html -p 8080 --open"
+        "dev:save-data": "parcel ./src/save-data/index.html -p 8080 --open",
+        "build:save-data": "parcel build --no-content-hash  ./src/save-data/index.html --out-dir build/save-data --public-url=./"
     },
     "keywords": [],
     "author": "",

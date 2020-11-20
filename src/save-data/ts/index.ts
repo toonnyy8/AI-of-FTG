@@ -2,7 +2,7 @@ import { Game } from "../../lib/slime-FTG-for-cnn/src/js/game"
 
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
-import * as imgz from "./imgz"
+import * as myz from "./myz"
 
 interface KeySet {
     jump: string
@@ -159,23 +159,24 @@ let control = (ctrl: number, keySet: KeySet) => {
     }
 }
 
-const _control = (ctrl: {
-    jump: boolean,
-    squat: boolean,
-    left: boolean,
-    right: boolean,
-    attack: {
-        light: boolean,
-        medium: boolean,
-        heavy: boolean,
+const _control = (
+    ctrl: {
+        jump: boolean
+        squat: boolean
+        left: boolean
+        right: boolean
+        attack: {
+            light: boolean
+            medium: boolean
+            heavy: boolean
+        }
     },
-}, keySet: KeySet) => {
+    keySet: KeySet
+) => {
     Object.keys(ctrl).map((ctrlName) => {
         if (ctrlName == "attack") {
-            Object.keys(ctrl.attack).map(atkName => {
-                if (
-                    ctrl.attack[<"light" | "medium" | "heavy">atkName]
-                ) {
+            Object.keys(ctrl.attack).map((atkName) => {
+                if (ctrl.attack[<"light" | "medium" | "heavy">atkName]) {
                     document.dispatchEvent(
                         new KeyboardEvent("keydown", {
                             key: keySet.attack[<"light" | "medium" | "heavy">atkName],
@@ -189,11 +190,8 @@ const _control = (ctrl: {
                     )
                 }
             })
-        }
-        else {
-            if (
-                ctrl[<"jump" | "squat" | "left" | "right">ctrlName]
-            ) {
+        } else {
+            if (ctrl[<"jump" | "squat" | "left" | "right">ctrlName]) {
                 document.dispatchEvent(
                     new KeyboardEvent("keydown", {
                         key: keySet[<"jump" | "squat" | "left" | "right">ctrlName],
@@ -243,23 +241,41 @@ tf.setBackend("webgl")
     .then(({ next, render, getP1, getP2, getRestart }) => {
         let count = 0
         let { clone, write, clear } = memory(60 * 60)
+        let { clone: ctrl1Clone, write: ctrl1Write, clear: ctrl1Clear } = memory(60 * 60)
+        let { clone: ctrl2Clone, write: ctrl2Write, clear: ctrl2Clear } = memory(60 * 60)
+        let blobs = [] as Blob[]
 
-            ; (<HTMLButtonElement>document.getElementById("save")).onclick = () => {
-                tf.tidy(() => {
-                    let tensors = clone()
-                    let frames = { name: "frames", tensor: tf.stack(tensors, 0) }
+        ;(<HTMLButtonElement>document.getElementById("save")).onclick = () => {
+            tf.tidy(() => {
+                // let frames = tf.stack(clone(), 0)
+                // let frameSave = { name: "frames", values: new Uint8Array(frames.dataSync()) }
+                // let frameShape = { name: "frameShape", values: new Uint32Array(frames.shape) }
 
-                    let blob = imgz.save([frames])
+                // let ctrl1 = tf.stack(ctrl1Clone(), 0)
+                // let ctrl1Save = { name: "ctrl1", values: new Uint8Array(ctrl1.dataSync()) }
+                // let ctrl1Shape = { name: "ctrl1Shape", values: new Uint32Array(ctrl1.shape) }
+
+                // let ctrl2 = tf.stack(ctrl2Clone(), 0)
+                // let ctrl2Save = { name: "ctrl2", values: new Uint8Array(ctrl2.dataSync()) }
+                // let ctrl2Shape = { name: "ctrl2Shape", values: new Uint32Array(ctrl2.shape) }
+
+                // let blob = myz.save([frameSave, frameShape, ctrl1Save, ctrl1Shape, ctrl2Save, ctrl2Shape])
+                // myz.load(blob).then((data) => {
+                //     console.log(data)
+                // })
+                blobs.forEach((blob) => {
                     let a = document.createElement("a")
                     let url = URL.createObjectURL(blob)
-                    let filename = `${tensors.length}.imgz`
+                    let filename = `data.imgz`
                     a.href = url
                     a.download = filename
                     a.click()
                     window.URL.revokeObjectURL(url)
-                    clear()
                 })
-            }
+                blobs = []
+                // clear()
+            })
+        }
 
         let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
             return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 5, 2, "same")
@@ -278,19 +294,91 @@ tf.setBackend("webgl")
         let blurPooling5 = nn.blurPooling(5, 2)
         const loop = () => {
             count++
+            if (getRestart()) {
+                tf.tidy(() => {
+                    let frames = tf.stack(clone(), 0)
+                    let frameSave = { name: "frames", values: new Uint8Array(frames.dataSync()) }
+                    let frameShape = { name: "frameShape", values: new Uint32Array(frames.shape) }
+
+                    let ctrl1 = tf.stack(ctrl1Clone(), 0)
+                    let ctrl1Save = { name: "ctrl1", values: new Uint8Array(ctrl1.dataSync()) }
+                    let ctrl1Shape = { name: "ctrl1Shape", values: new Uint32Array(ctrl1.shape) }
+
+                    let ctrl2 = tf.stack(ctrl2Clone(), 0)
+                    let ctrl2Save = { name: "ctrl2", values: new Uint8Array(ctrl2.dataSync()) }
+                    let ctrl2Shape = { name: "ctrl2Shape", values: new Uint32Array(ctrl2.shape) }
+
+                    let blob = myz.save([frameSave, frameShape, ctrl1Save, ctrl1Shape, ctrl2Save, ctrl2Shape])
+
+                    clear()
+                    ctrl1Clear()
+                    ctrl2Clear()
+                    blobs.push(blob)
+                })
+            }
             next()
             render()
+
+            const ctrl1 = [
+                Math.random() < 0.3 ? true : false,
+                Math.random() < 0.1 ? true : false,
+                Math.random() < 0.5 ? true : false,
+                Math.random() < 0.5 ? true : false,
+                Math.random() < 0.01 ? true : false,
+                Math.random() < 0.01 ? true : false,
+                Math.random() < 0.01 ? true : false,
+            ]
+            ctrl1Write(tf.keep(tf.tensor(ctrl1.reduce((prev, curr) => prev * 2 + Number(curr), 0))))
+
+            const ctrl2 = [
+                Math.random() < 0.2 ? true : false,
+                Math.random() < 0.2 ? true : false,
+                Math.random() < 0.4 ? true : false,
+                Math.random() < 0.4 ? true : false,
+                Math.random() < 0.1 ? true : false,
+                Math.random() < 0.1 ? true : false,
+                Math.random() < 0.1 ? true : false,
+            ]
+            ctrl2Write(tf.keep(tf.tensor(ctrl2.reduce((prev, curr) => prev * 2 + Number(curr), 0))))
+
+            _control(
+                {
+                    jump: ctrl1[0],
+                    squat: ctrl1[1],
+                    left: ctrl1[2],
+                    right: ctrl1[3],
+                    attack: {
+                        light: ctrl1[4],
+                        medium: ctrl1[5],
+                        heavy: ctrl1[6],
+                    },
+                },
+                keySets[0]
+            )
+            _control(
+                {
+                    jump: ctrl2[0],
+                    squat: ctrl2[1],
+                    left: ctrl2[2],
+                    right: ctrl2[3],
+                    attack: {
+                        light: ctrl2[4],
+                        medium: ctrl2[5],
+                        heavy: ctrl2[6],
+                    },
+                },
+                keySets[1]
+            )
+
             tf.tidy(() => {
                 let pix = <tf.Tensor3D>(
                     nn.pipe(
-                        // <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeBilinear(inp, [256, 256])),
                         maxPool,
                         <nn.tfFn>blurPooling3.fn,
                         maxPool3,
                         <nn.tfFn>blurPooling3.fn,
-                        // <nn.tfFn>blurPooling3.fn,
-                        <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeBilinear(inp, [32, 32])),
-                        <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32")),
+                        <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeBilinear(inp, [40, 40])),
+                        <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
                     )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
                 )
 
@@ -300,33 +388,7 @@ tf.setBackend("webgl")
             if (getRestart()) {
                 console.log(count)
                 count = 0
-            } else {
-                const ctrl1 = {
-                    jump: Math.random() < 0.3 ? true : false,
-                    squat: Math.random() < 0.1 ? true : false,
-                    left: Math.random() < 0.5 ? true : false,
-                    right: Math.random() < 0.5 ? true : false,
-                    attack: {
-                        light: Math.random() < 0.01 ? true : false,
-                        medium: Math.random() < 0.01 ? true : false,
-                        heavy: Math.random() < 0.01 ? true : false,
-                    },
-                }
-                const ctrl2 = {
-                    jump: Math.random() < 0.2 ? true : false,
-                    squat: Math.random() < 0.2 ? true : false,
-                    left: Math.random() < 0.4 ? true : false,
-                    right: Math.random() < 0.4 ? true : false,
-                    attack: {
-                        light: Math.random() < 0.1 ? true : false,
-                        medium: Math.random() < 0.1 ? true : false,
-                        heavy: Math.random() < 0.1 ? true : false,
-                    },
-                }
-                // _control(ctrl1, keySets[0])
-                _control(ctrl2, keySets[1])
             }
-
 
             requestAnimationFrame(loop)
         }

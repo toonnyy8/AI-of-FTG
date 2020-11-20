@@ -64,7 +64,7 @@ export const Game = (
 
     let player1
     let player2
-    let restart = true
+    let restart = false
 
     // This creates a basic Babylon Scene object (non-mesh)
     let scene = new BABYLON.Scene(engine)
@@ -76,8 +76,8 @@ export const Game = (
     var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 10, 100), scene)
     camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA
 
-    camera.orthoTop = 11 * 0.7
-    camera.orthoBottom = -9 * 0.7
+    camera.orthoTop = 12 * 0.7
+    camera.orthoBottom = -8 * 0.7
     camera.orthoLeft = -10 * 0.7
     camera.orthoRight = 10 * 0.7
     // target the camera to scene origin
@@ -130,7 +130,7 @@ export const Game = (
             "P1_hp",
             0.5,
             6,
-            { x: 6.5, y: 11 },
+            { x: 6.5, y: 11.5 },
             { x: -3, y: 0, z: 0 },
             createMaterial("p1_hpMaterial", { r: 0.4, g: 0.4, b: 1 })
         ),
@@ -138,7 +138,7 @@ export const Game = (
             "P2_hp",
             0.5,
             6,
-            { x: -6.5, y: 11 },
+            { x: -6.5, y: 11.5 },
             { x: 3, y: 0, z: 0 },
             createMaterial("p2_hpMaterial", { r: 1, g: 0.4, b: 0.4 })
         ),
@@ -149,7 +149,7 @@ export const Game = (
             "P1_cumulativeDamage",
             0.2,
             6,
-            { x: 6.5, y: 10 },
+            { x: 6.5, y: 10.5 },
             { x: -3, y: 0, z: 0 },
             createMaterial("p1_cumulativeDamageMaterial", { r: 0.4, g: 0.4, b: 1 })
         ),
@@ -157,7 +157,7 @@ export const Game = (
             "P2_cumulativeDamage",
             0.2,
             6,
-            { x: -6.5, y: 10 },
+            { x: -6.5, y: 10.5 },
             { x: 3, y: 0, z: 0 },
             createMaterial("p2_cumulativeDamageMaterial", { r: 1, g: 0.4, b: 0.4 })
         ),
@@ -220,7 +220,11 @@ export const Game = (
             player2.setOpponent(player1)
 
             const next = () => {
-                restart = false
+                if (restart) {
+                    restart = false
+                    player1.restart()
+                    player2.restart()
+                }
                 player1.tick(false)
                 player2.tick(false)
 
@@ -246,8 +250,6 @@ export const Game = (
                     } else {
                         console.log("Draw")
                     }
-                    player1.restart()
-                    player2.restart()
                     restart = true
                 }
 
