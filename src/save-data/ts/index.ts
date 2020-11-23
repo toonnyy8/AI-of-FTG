@@ -266,7 +266,7 @@ tf.setBackend("webgl")
                 blobs.forEach((blob) => {
                     let a = document.createElement("a")
                     let url = URL.createObjectURL(blob)
-                    let filename = `data.imgz`
+                    let filename = `data.myz`
                     a.href = url
                     a.download = filename
                     a.click()

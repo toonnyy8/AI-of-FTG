@@ -68,7 +68,17 @@ export const load = (tfzFile: Blob | ArrayBuffer) => {
             let at = 3
             let outs: {
                 name: string
-                values: ArrayBuffer
+                values:
+                    | Float64Array
+                    | Float32Array
+                    | BigInt64Array
+                    | Int32Array
+                    | Int16Array
+                    | Int8Array
+                    | BigUint64Array
+                    | Uint32Array
+                    | Uint16Array
+                    | Uint8Array
             }[] = []
             while (at < arrBuf.byteLength) {
                 const jsonLen = new Uint32Array(arrBuf.slice(at, at + 4))[0]
