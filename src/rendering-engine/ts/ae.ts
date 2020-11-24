@@ -42,15 +42,15 @@ export const AED = (
         assetNum: number
     } = { assetGroups: 4, assetSize: 16, assetNum: 32 }
 ): [
-    {
-        fn: (input: tf.Tensor) => tf.Tensor
-        ws: () => tf.Variable[]
-    },
-    {
-        fn: (input: tf.Tensor) => tf.Tensor
-        ws: () => tf.Variable[]
-    }
-] => {
+        {
+            fn: (input: tf.Tensor) => tf.Tensor
+            ws: () => tf.Variable[]
+        },
+        {
+            fn: (input: tf.Tensor) => tf.Tensor
+            ws: () => tf.Variable[]
+        }
+    ] => {
     let blurPooling = nn.blurPooling(3, 2)
     let encRes = (a: tf.Tensor, b: tf.Tensor) => {
         return blurPooling.fn(tf.add(a, tf.maxPool(<tf.Tensor4D | tf.Tensor3D>b, 2, 1, "same")))
@@ -146,20 +146,20 @@ export const AED = (
             tf.layers.separableConv2d({
                 name: "decoderConv1",
                 kernelSize: 3,
-                filters: 64,
+                filters: 128,
                 padding: "same",
             }),
             layers.mish({}),
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [20, 20, 16] }),
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [20, 20, 32] }),
 
             tf.layers.separableConv2d({
                 name: "decoderConv3",
                 kernelSize: 3,
-                filters: 64,
+                filters: 128,
                 padding: "same",
             }),
             layers.mish({}),
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [40, 40, 16] }),
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [40, 40, 32] }),
 
             tf.layers.separableConv2d({
                 name: "decoderConv4",
@@ -196,11 +196,13 @@ export const AED = (
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
                     const [b, h, w, c] = input.shape
-                    const att = tf.softmax(<tf.Tensor4D>mappingKeys.apply(input), -1)
-
+                    const att = (<tf.Tensor4D>mappingKeys.apply(input))
+                        .reshape([b, h, w, config.assetGroups, config.assetNum])
+                        .softmax(4)
+                        .expandDims(-1)
                     return <tf.Tensor>dec.apply(
                         tf
-                            .mul(assets, att.reshape([b, h, w, config.assetGroups, config.assetNum, 1]))
+                            .mul(assets, att)
                             .sum(4)
                             .reshape([b, h, w, -1])
                     )
