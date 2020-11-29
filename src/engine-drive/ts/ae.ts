@@ -50,6 +50,9 @@ export const AED = (
     {
         fn: (input: tf.Tensor) => tf.Tensor
         ws: () => tf.Variable[]
+    },
+    {
+        att: (input: tf.Tensor) => tf.Tensor
     }
 ] => {
     let blurPooling = nn.blurPooling(3, 2)
@@ -231,6 +234,16 @@ export const AED = (
                     assets,
                     ...(<tf.Variable[]>dec.getWeights()),
                 ]),
+        },
+        {
+            att: (input: tf.Tensor) =>
+                tf.tidy(() => {
+                    const [b, h, w, c] = input.shape
+                    const att = (<tf.Tensor5D>mappingKeys.apply(input))
+                        .reshape([b, h, w, config.assetGroups, config.assetNum])
+                        .softmax(4)
+                    return att
+                }),
         },
     ]
 }

@@ -32,44 +32,39 @@ export const positionalEncoding = (position: number, d_model: number) => {
     }
 }
 
-export const MHA = (d_model: number, h: number, d_k: number, d_v: number, causal: boolean = true) => {
+export const MHA = (d_model: number, h: number, d_k: number, d_v: number) => {
     const QLinear = tf.layers.dense({ inputShape: [d_model], units: d_k * h })
     const KVLinear = tf.layers.dense({ inputShape: [d_model], units: (d_k + d_v) * h })
 
     const outLinear = tf.layers.dense({ inputShape: [d_v * h], units: d_model })
 
     return {
-        fn: (Qin: tf.Tensor, KVin: tf.Tensor) =>
+        fn: (Qin: tf.Tensor2D, KVin: tf.Tensor2D) =>
             tf.tidy(() => {
                 const mask = tf.linalg.bandPart(tf.fill([Qin.shape.slice(-2)[0], KVin.shape.slice(-2)[0]], -1e9), -1, 0)
 
-                let reshape2Head = (t: tf.Tensor) => {
-                    const shape = t.shape
-                    return t.reshape([h, ...shape.slice(0, -1), -1])
+                let reshape2Head = (t: tf.Tensor2D) => {
+                    const [l] = t.shape
+                    return <tf.Tensor3D>t.reshape([l, h, -1]).transpose([1, 0, 2])
                 }
-                const Q = reshape2Head(<tf.Tensor>QLinear.apply(Qin))
+                const Q = reshape2Head(<tf.Tensor2D>QLinear.apply(Qin))
 
                 const [K, V] = (<tf.Tensor>KVLinear.apply(KVin))
                     .split([d_k * h, d_v * h], -1)
-                    .map((t) => reshape2Head(t))
+                    .map((t) => reshape2Head(<tf.Tensor2D>t))
 
-                const att = causal
-                    ? tf
-                          .matMul(Q, K, false, true)
-                          .div(d_k ** 0.5)
-                          .add(mask)
-                          .softmax(-1)
-                    : tf
-                          .matMul(Q, K, false, true)
-                          .div(d_k ** 0.5)
-                          .softmax(-1)
+                const att = tf
+                    .matMul(Q, K, false, true)
+                    .div(d_k ** 0.5)
+                    .add(mask)
+                    .softmax(-1)
 
                 let headConcat = (t: tf.Tensor) => {
-                    const shape = t.shape
-                    return t.reshape([...shape.slice(1, -1), -1])
+                    const [, l] = t.shape
+                    return t.transpose([1, 0, 2]).reshape([l, -1])
                 }
 
-                return <tf.Tensor>outLinear.apply(headConcat(tf.matMul(att, V)))
+                return <tf.Tensor2D>outLinear.apply(headConcat(tf.matMul(att, V)))
             }),
         ws: () => <tf.Variable[]>[...QLinear.getWeights(), ...KVLinear.getWeights(), ...outLinear.getWeights()],
     }
@@ -78,7 +73,6 @@ export const MHA = (d_model: number, h: number, d_k: number, d_v: number, causal
 export const FF = (d_model: number, hiddens: number) => {
     const linear1 = tf.layers.dense({ inputShape: [d_model], units: hiddens })
     const linear2 = tf.layers.dense({ inputShape: [hiddens], units: d_model })
-    nn.mish
     return {
         fn: (x: tf.Tensor) => linear2.apply(nn.mish(<tf.Tensor>linear1.apply(x))),
         ws: () => <tf.Variable[]>[...linear1.getWeights(), ...linear2.getWeights()],
