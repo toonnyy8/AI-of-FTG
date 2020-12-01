@@ -52,7 +52,7 @@ export const AED = (
         ws: () => tf.Variable[]
     },
     {
-        att: (input: tf.Tensor) => tf.Tensor
+        mapping: (input: tf.Tensor4D) => tf.Tensor5D
     }
 ] => {
     let blurPooling = nn.blurPooling(3, 2)
@@ -222,11 +222,11 @@ export const AED = (
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
                     const [b, h, w, c] = input.shape
-                    const att = (<tf.Tensor4D>mappingKeys.apply(input))
+                    const mapping = (<tf.Tensor4D>mappingKeys.apply(input))
                         .reshape([b, h, w, config.assetGroups, config.assetNum])
                         .softmax(4)
                         .expandDims(-1)
-                    return <tf.Tensor>dec.apply(tf.mul(assets, att).sum(4).reshape([b, h, w, -1]))
+                    return <tf.Tensor>dec.apply(tf.mul(assets, mapping).sum(4).reshape([b, h, w, -1]))
                 }),
             ws: () =>
                 tf.tidy(() => [
@@ -236,13 +236,15 @@ export const AED = (
                 ]),
         },
         {
-            att: (input: tf.Tensor) =>
+            mapping: (input: tf.Tensor4D): tf.Tensor5D =>
                 tf.tidy(() => {
                     const [b, h, w, c] = input.shape
-                    const att = (<tf.Tensor5D>mappingKeys.apply(input))
-                        .reshape([b, h, w, config.assetGroups, config.assetNum])
-                        .softmax(4)
-                    return att
+                    const mapping = <tf.Tensor5D>(
+                        (<tf.Tensor4D>mappingKeys.apply(input))
+                            .reshape([b, h, w, config.assetGroups, config.assetNum])
+                            .softmax(4)
+                    )
+                    return mapping
                 }),
         },
     ]
