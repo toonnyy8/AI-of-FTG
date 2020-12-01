@@ -51,10 +51,6 @@ export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
                     .mul(-1e9)
                     .expandDims(-1)
 
-                let reshape2Head = (t: tf.Tensor2D) => {
-                    const [l] = t.shape
-                    return <tf.Tensor3D>t.reshape([l, h, -1]).transpose([1, 0, 2])
-                }
                 const Q = <tf.Tensor2D>QLinear.apply(Qin)
 
                 const [K, V] = <tf.Tensor2D[]>(<tf.Tensor>KVLinear.apply(KVin)).split([dk * h, dv * h], -1)
@@ -67,11 +63,6 @@ export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
                         .add(mask),
                     1
                 )
-
-                let headConcat = (t: tf.Tensor) => {
-                    const [, l] = t.shape
-                    return t.transpose([1, 0, 2]).reshape([l, -1])
-                }
 
                 return <tf.Tensor2D>outLinear.apply(
                     tf

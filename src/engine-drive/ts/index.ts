@@ -4,7 +4,7 @@ import * as myz from "./myz"
 import { AED } from "./ae"
 import { MHA, FF } from "./mha"
 import { Driver } from "./driver"
-import { unstack } from "@tensorflow/tfjs"
+import { tensor, unstack } from "@tensorflow/tfjs"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
@@ -79,7 +79,7 @@ tf.setBackend("webgl").then(() => {
     const op = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 1
+        let t = 3
         let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize - t))
         let train = () => {
             for (let j = 0; j < 64; j++) {
@@ -87,25 +87,42 @@ tf.setBackend("webgl").then(() => {
                     let lossWeight = tf.linspace(0, 1, 64) //.sqrt()
                     lossWeight = lossWeight.div(lossWeight.sum())
                     let xImg = <tf.Tensor4D>trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
-                    let yImg = <tf.Tensor4D>trainData.slice([batchStart + t, 0, 0, 0], [batchSize, -1, -1, -1])
-                    let ctrl1Batch = ctrl1.slice(batchStart, batchStart + batchSize)
-                    let ctrl2Batch = ctrl2.slice(batchStart, batchStart + batchSize)
+                    let yImgs = new Array(t).fill(0).map((_, offset) => {
+                        return <tf.Tensor4D>trainData.slice([batchStart + offset + 1, 0, 0, 0], [batchSize, -1, -1, -1])
+                    })
+                    let ctrl1Batchs = new Array(t).fill(0).map((_, offset) => {
+                        return ctrl1.slice(batchStart + offset, batchStart + batchSize + offset)
+                    })
+                    let ctrl2Batchs = new Array(t).fill(0).map((_, offset) => {
+                        return ctrl2.slice(batchStart + offset, batchStart + batchSize + offset)
+                    })
                     let x_enc = <tf.Tensor4D>enc_fn(xImg)
-                    let y_enc = <tf.Tensor4D>enc_fn(yImg)
-                    let y_att = att(<tf.Tensor4D>y_enc)
-                    let y_dec = <tf.Tensor4D>dec_fn(y_enc)
+                    let y_encs = yImgs.map((yImg) => <tf.Tensor4D>enc_fn(yImg))
+                    let mask = (() => {
+                        let arr = new Array(batchSize).fill(0)
+                        arr[arr.length - 1] = 1
+                        return tf.tensor4d(arr, [batchSize, 1, 1, 1])
+                    })()
+
                     op.minimize(
                         () => {
-                            let driver_enc = <tf.Tensor4D>driver.fn(x_enc, [ctrl1Batch, ctrl2Batch])
-                            let driver_att = <tf.Tensor5D>att(<tf.Tensor4D>driver_enc)
-
-                            return tf
-                                .add(
-                                    tf.sub(x_enc, driver_enc).abs().neg().mean([1, 2, 3]),
-                                    tf.sub(y_enc, driver_enc).square().mul(4).mean([1, 2, 3])
+                            const loss_fn = (y: tf.Tensor4D, _y: tf.Tensor4D) => {
+                                return <tf.Scalar>tf.sub(y, _y).square().mean([1, 2, 3]).mul(lossWeight).sum()
+                            }
+                            return y_encs
+                                .reduce(
+                                    (prev, y_enc, idx) => {
+                                        let next_enc = <tf.Tensor4D>(
+                                            driver.fn(prev.enc, [ctrl1Batchs[idx], ctrl2Batchs[idx]])
+                                        )
+                                        return {
+                                            loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc)),
+                                            enc: <tf.Tensor4D>next_enc.mul(mask).add(y_enc.mul(tf.sub(1, mask))),
+                                        }
+                                    },
+                                    { loss: tf.scalar(0), enc: x_enc }
                                 )
-                                .mul(lossWeight)
-                                .sum()
+                                .loss.div(t)
                         },
                         true,
                         <tf.Variable[]>(<unknown>[...driver.ws()])
