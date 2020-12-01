@@ -12,7 +12,7 @@ tf.setBackend("webgl").then(() => {
     let h = 5,
         w = 10,
         dk = 4
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }, { att }] = AED({
+    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }, { mapping }] = AED({
         assetGroups: 8,
         assetSize: 16,
         assetNum: 32,
@@ -28,49 +28,119 @@ tf.setBackend("webgl").then(() => {
         dk: 32,
         dv: 32,
     })
-    let trainData: tf.Tensor4D = tf.ones([1, 1, 1, 1])
-    let ctrl1: number[]
-    let ctrl2: number[]
+    // let trainData: tf.Tensor4D = tf.ones([1, 1, 1, 1])
+    // let ctrl1: number[]
+    // let ctrl2: number[]
+
+    let trainDatas: tf.Tensor4D[] = []
+    let ctrl1s: number[][] = []
+    let ctrl2s: number[][] = []
+    const readFile = (file: Blob) => {
+        return new Promise((resolve: (value?: ArrayBuffer) => void, reject) => {
+            const reader = new FileReader()
+            reader.addEventListener("loadend", () => {
+                resolve(<ArrayBuffer>reader.result)
+            })
+            reader.readAsArrayBuffer(file)
+        })
+    }
     ;(<HTMLButtonElement>document.getElementById("load-data")).onclick = () => {
         tf.tidy(() => {
             let load = document.createElement("input")
             load.type = "file"
             load.accept = ".myz"
+            load.multiple = true
 
             load.onchange = (event) => {
                 const files = <FileList>load.files
-                var reader = new FileReader()
-                reader.addEventListener("loadend", () => {
-                    myz.load(<ArrayBuffer>reader.result).then((datas) => {
-                        let frames = datas.find((data) => {
-                            return data.name == "frames"
+                let fileCount = 0
+                trainDatas.forEach((trainData) => trainData.dispose())
+                trainDatas = []
+                ctrl1s = []
+                ctrl2s = []
+                const readloop = () => {
+                    if (fileCount < files.length) {
+                        readFile(files[fileCount]).then((file) => {
+                            fileCount += 1
+                            myz.load(file)
+                                .then((datas) => {
+                                    tf.tidy(() => {
+                                        let frames = datas.find((data) => {
+                                            return data.name == "frames"
+                                        })
+                                        let frameShape = datas.find((data) => {
+                                            return data.name == "frameShape"
+                                        })
+                                        ctrl1s = [
+                                            ...ctrl1s,
+                                            Array.from(
+                                                <Uint8Array>datas.find((data) => {
+                                                    return data.name == "ctrl1"
+                                                })?.values
+                                            ),
+                                        ]
+                                        ctrl2s = [
+                                            ...ctrl2s,
+                                            Array.from(
+                                                <Uint8Array>datas.find((data) => {
+                                                    return data.name == "ctrl2"
+                                                })?.values
+                                            ),
+                                        ]
+                                        trainDatas = [
+                                            ...trainDatas,
+                                            tf.keep(
+                                                tf
+                                                    .tensor4d(
+                                                        <Uint8Array>frames?.values,
+                                                        <[number, number, number, number]>(
+                                                            Array.from(<Uint8Array>frameShape?.values)
+                                                        )
+                                                    )
+                                                    .cast("float32")
+                                                    .div(255)
+                                            ),
+                                        ]
+                                    })
+                                })
+                                .then(() => readloop())
                         })
-                        let frameShape = datas.find((data) => {
-                            return data.name == "frameShape"
-                        })
-                        ctrl1 = Array.from(
-                            <Uint8Array>datas.find((data) => {
-                                return data.name == "ctrl1"
-                            })?.values
-                        )
-                        ctrl2 = Array.from(
-                            <Uint8Array>datas.find((data) => {
-                                return data.name == "ctrl2"
-                            })?.values
-                        )
-                        trainData.dispose()
-                        trainData = tf.keep(
-                            tf
-                                .tensor4d(
-                                    <Uint8Array>frames?.values,
-                                    <[number, number, number, number]>Array.from(<Uint8Array>frameShape?.values)
-                                )
-                                .cast("float32")
-                                .div(255)
-                        )
-                    })
-                })
-                reader.readAsArrayBuffer(files[0])
+                    }
+                }
+                readloop()
+                // var reader = new FileReader()
+                // reader.addEventListener("loadend", () => {
+                //     myz.load(<ArrayBuffer>reader.result).then((datas) => {
+                //         let frames = datas.find((data) => {
+                //             return data.name == "frames"
+                //         })
+                //         let frameShape = datas.find((data) => {
+                //             return data.name == "frameShape"
+                //         })
+                //         ctrl1 = Array.from(
+                //             <Uint8Array>datas.find((data) => {
+                //                 return data.name == "ctrl1"
+                //             })?.values
+                //         )
+                //         ctrl2 = Array.from(
+                //             <Uint8Array>datas.find((data) => {
+                //                 return data.name == "ctrl2"
+                //             })?.values
+                //         )
+                //         trainDatas.forEach((trainData) => trainData.dispose())
+                //         trainData.dispose()
+                //         trainData = tf.keep(
+                //             tf
+                //                 .tensor4d(
+                //                     <Uint8Array>frames?.values,
+                //                     <[number, number, number, number]>Array.from(<Uint8Array>frameShape?.values)
+                //                 )
+                //                 .cast("float32")
+                //                 .div(255)
+                //         )
+                //     })
+                // })
+                // reader.readAsArrayBuffer(files[0])
             }
 
             load.click()
@@ -78,36 +148,40 @@ tf.setBackend("webgl").then(() => {
     }
     const op = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
+        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 64
-        let t = 3
-        let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize - t))
+        let t = 4
+        let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize - t))
         let train = () => {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
                     let lossWeight = tf.linspace(0, 1, 64) //.sqrt()
                     lossWeight = lossWeight.div(lossWeight.sum())
-                    let xImg = <tf.Tensor4D>trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                    let xImg = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     let yImgs = new Array(t).fill(0).map((_, offset) => {
-                        return <tf.Tensor4D>trainData.slice([batchStart + offset + 1, 0, 0, 0], [batchSize, -1, -1, -1])
+                        return <tf.Tensor4D>(
+                            trainDatas[fileIdx].slice([batchStart + offset + 1, 0, 0, 0], [batchSize, -1, -1, -1])
+                        )
                     })
                     let ctrl1Batchs = new Array(t).fill(0).map((_, offset) => {
-                        return ctrl1.slice(batchStart + offset, batchStart + batchSize + offset)
+                        return ctrl1s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
                     let ctrl2Batchs = new Array(t).fill(0).map((_, offset) => {
-                        return ctrl2.slice(batchStart + offset, batchStart + batchSize + offset)
+                        return ctrl1s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
                     let x_enc = <tf.Tensor4D>enc_fn(xImg)
                     let y_encs = yImgs.map((yImg) => <tf.Tensor4D>enc_fn(yImg))
-                    let mask = (() => {
-                        let arr = new Array(batchSize).fill(0)
-                        arr[arr.length - 1] = 1
-                        return tf.tensor4d(arr, [batchSize, 1, 1, 1])
-                    })()
+                    let mask = lossWeight.reshape([-1, 1, 1, 1])
+                    // (() => {
+                    //     let arr = new Array(batchSize).fill(0)
+                    //     arr[arr.length - 1] = 1
+                    //     return tf.tensor4d(arr, [batchSize, 1, 1, 1])
+                    // })()
 
                     op.minimize(
                         () => {
-                            const loss_fn = (y: tf.Tensor4D, _y: tf.Tensor4D) => {
-                                return <tf.Scalar>tf.sub(y, _y).square().mean([1, 2, 3]).mul(lossWeight).sum()
+                            const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
+                                return <tf.Scalar>tf.sub(y, _y).square().mean(axis).mul(lossWeight).sum()
                             }
                             return y_encs
                                 .reduce(
@@ -115,9 +189,10 @@ tf.setBackend("webgl").then(() => {
                                         let next_enc = <tf.Tensor4D>(
                                             driver.fn(prev.enc, [ctrl1Batchs[idx], ctrl2Batchs[idx]])
                                         )
+
                                         return {
-                                            loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc)),
-                                            enc: <tf.Tensor4D>next_enc.mul(mask).add(y_enc.mul(tf.sub(1, mask))),
+                                            loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc, [1, 2, 3])),
+                                            enc: <tf.Tensor4D>tf.add(next_enc.mul(mask), y_enc.mul(tf.sub(1, mask))),
                                         }
                                     },
                                     { loss: tf.scalar(0), enc: x_enc }
@@ -128,27 +203,22 @@ tf.setBackend("webgl").then(() => {
                         <tf.Variable[]>(<unknown>[...driver.ws()])
                     )?.print()
                 })
-
-                batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize - t))
+                fileIdx = Math.floor(Math.random() * trainDatas.length)
+                batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize - t))
             }
             tf.tidy(() => {
-                let test_xImg = trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                let test_xImg = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                 let test_yImgs = <tf.Tensor3D[]>(
                     dec_fn(
                         enc_fn(
-                            trainData
+                            trainDatas[fileIdx]
                                 .slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                                 .slice([batchSize - 2, 0, 0, 0], [2, -1, -1, -1])
                         )
                     ).unstack(0)
                 )
-                // let test_yImg = <tf.Tensor3D>(
-                //     dec_fn(
-                //         enc_fn(trainData.slice([batchStart + batchSize + (t - 1), 0, 0, 0], [1, -1, -1, -1]))
-                //     ).squeeze([0])
-                // )
-                let ctrl1Batch = ctrl1.slice(batchStart, batchStart + batchSize)
-                let ctrl2Batch = ctrl2.slice(batchStart, batchStart + batchSize)
+                let ctrl1Batch = ctrl1s[fileIdx].slice(batchStart, batchStart + batchSize)
+                let ctrl2Batch = ctrl2s[fileIdx].slice(batchStart, batchStart + batchSize)
                 let test_out = <tf.Tensor3D>(
                     tf.tidy(() =>
                         (<tf.Tensor>dec_fn(driver.fn(<tf.Tensor4D>enc_fn(test_xImg), [ctrl1Batch, ctrl2Batch])))
@@ -163,7 +233,7 @@ tf.setBackend("webgl").then(() => {
             return tf.nextFrame()
         }
 
-        for (let i = 0; i < 64; i++) {
+        for (let i = 0; i < 64 / t; i++) {
             await train()
         }
     }
