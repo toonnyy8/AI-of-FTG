@@ -70,14 +70,14 @@ export const Driver = (
                 let pos1Out = <tf.Tensor2D>(<tf.Tensor4D>posConv1.apply(inp)).reshape([l, h * w * c])
 
                 let mha1Out = <tf.Tensor2D>mha1.fn(pos1Out, pos1Out)
-                mha1Out = norm(mha1Out.add(pos1Out))
+                mha1Out = mha1Out.add(pos1Out)
                 let ff1Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff1.fn(mha1Out))
-                ff1Out = norm(ff1Out.add(mha1Out))
+                ff1Out = ff1Out.add(mha1Out)
 
                 let mha2Out = <tf.Tensor2D>mha2.fn(ff1Out, ff1Out)
-                mha2Out = norm(mha2Out.add(ff1Out))
+                mha2Out = mha2Out.add(ff1Out)
                 let ff2Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff2.fn(mha2Out))
-                ff2Out = norm(ff2Out.add(mha2Out))
+                ff2Out = ff2Out.add(mha2Out)
 
                 // let mha3Out = <tf.Tensor2D>mha3.fn(ff2Out, ff2Out)
                 // mha3Out = norm(mha3Out.add(ff2Out))
