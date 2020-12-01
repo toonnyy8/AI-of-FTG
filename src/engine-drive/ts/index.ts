@@ -108,39 +108,6 @@ tf.setBackend("webgl").then(() => {
                     }
                 }
                 readloop()
-                // var reader = new FileReader()
-                // reader.addEventListener("loadend", () => {
-                //     myz.load(<ArrayBuffer>reader.result).then((datas) => {
-                //         let frames = datas.find((data) => {
-                //             return data.name == "frames"
-                //         })
-                //         let frameShape = datas.find((data) => {
-                //             return data.name == "frameShape"
-                //         })
-                //         ctrl1 = Array.from(
-                //             <Uint8Array>datas.find((data) => {
-                //                 return data.name == "ctrl1"
-                //             })?.values
-                //         )
-                //         ctrl2 = Array.from(
-                //             <Uint8Array>datas.find((data) => {
-                //                 return data.name == "ctrl2"
-                //             })?.values
-                //         )
-                //         trainDatas.forEach((trainData) => trainData.dispose())
-                //         trainData.dispose()
-                //         trainData = tf.keep(
-                //             tf
-                //                 .tensor4d(
-                //                     <Uint8Array>frames?.values,
-                //                     <[number, number, number, number]>Array.from(<Uint8Array>frameShape?.values)
-                //                 )
-                //                 .cast("float32")
-                //                 .div(255)
-                //         )
-                //     })
-                // })
-                // reader.readAsArrayBuffer(files[0])
             }
 
             load.click()
@@ -148,9 +115,9 @@ tf.setBackend("webgl").then(() => {
     }
     const op = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
-        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 64
         let t = 4
+        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize - t))
         let train = () => {
             for (let j = 0; j < 64; j++) {
