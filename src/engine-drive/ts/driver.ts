@@ -38,13 +38,7 @@ export const Driver = (
     let mha2 = MHA(config.dmodel, config.head, config.dk, config.dv)
     let ff2 = FF(config.dmodel, config.dmodel * 2)
 
-    // let mha3 = MHA(config.dmodel, config.head, config.dk, config.dv)
-    // let ff3 = FF(config.dmodel, config.dmodel * 2)
-
-    // let mha4 = MHA(config.dmodel, config.head, config.dk, config.dv)
-    // let ff4 = FF(config.dmodel, config.dmodel * 2)
-
-    let ff5 = FF(config.dmodel, config.dmodel * 2)
+    let ffout = FF(config.dmodel, config.dmodel * 2)
 
     const norm = <T extends tf.Tensor>(x: T) =>
         tf.tidy(() => {
@@ -79,17 +73,7 @@ export const Driver = (
                 let ff2Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff2.fn(mha2Out))
                 ff2Out = ff2Out.add(mha2Out)
 
-                // let mha3Out = <tf.Tensor2D>mha3.fn(ff2Out, ff2Out)
-                // mha3Out = norm(mha3Out.add(ff2Out))
-                // let ff3Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff3.fn(mha3Out))
-                // ff3Out = norm(ff3Out.add(mha3Out))
-
-                // let mha4Out = <tf.Tensor2D>mha4.fn(ff3Out, ff3Out)
-                // mha4Out = norm(mha4Out.add(ff3Out))
-                // let ff4Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff4.fn(mha4Out))
-                // ff4Out = norm(ff4Out.add(mha4Out))
-
-                let out = <tf.Tensor2D>ff5.fn(ff2Out)
+                let out = <tf.Tensor2D>ffout.fn(ff2Out)
 
                 return out.reshape([l, h, w, c])
             }),
@@ -102,11 +86,7 @@ export const Driver = (
                 ...ff1.ws(),
                 ...mha2.ws(),
                 ...ff2.ws(),
-                // ...mha3.ws(),
-                // ...ff3.ws(),
-                // ...mha4.ws(),
-                // ...ff4.ws(),
-                ...ff5.ws(),
+                ...ffout.ws(),
             ]),
         unk: () => {
             return unk

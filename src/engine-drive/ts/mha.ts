@@ -1,5 +1,6 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
+import * as layers from "./layers"
 
 const getAngles = (pos: tf.Tensor, i: tf.Tensor, d_model: number) =>
     tf.tidy(() => {
@@ -33,13 +34,22 @@ export const positionalEncoding = (position: number, d_model: number) => {
 }
 
 export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
-    const QLinear = tf.layers.dense({ inputShape: [d_model], units: dk * h })
-    const KVLinear = tf.layers.dense({
-        inputShape: [d_model],
-        units: (dk + dv) * h,
+    const QLinear = tf.sequential({
+        layers: [tf.layers.inputLayer({ inputShape: [d_model] }), tf.layers.dense({ units: dk * h, name: "QLinear" })],
+    })
+    const KVLinear = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [d_model] }),
+            tf.layers.dense({ units: (dk + dv) * h, name: "KVLinear" }),
+        ],
     })
 
-    const outLinear = tf.layers.dense({ inputShape: [dv * h], units: d_model })
+    const outLinear = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [dv * h] }),
+            tf.layers.dense({ units: d_model, name: "outLinear" }),
+        ],
+    })
 
     return {
         fn: (Qin: tf.Tensor2D, KVin: tf.Tensor2D) =>
@@ -76,10 +86,16 @@ export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
 }
 
 export const FF = (d_model: number, hiddens: number) => {
-    const linear1 = tf.layers.dense({ inputShape: [d_model], units: hiddens })
-    const linear2 = tf.layers.dense({ inputShape: [hiddens], units: d_model })
+    const ff = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [d_model] }),
+            tf.layers.dense({ units: hiddens, name: "FF-hidden" }),
+            layers.mish({}),
+            tf.layers.dense({ units: d_model, name: "FF-out" }),
+        ],
+    })
     return {
-        fn: (x: tf.Tensor) => linear2.apply(nn.mish(<tf.Tensor>linear1.apply(x))),
-        ws: () => <tf.Variable[]>[...linear1.getWeights(), ...linear2.getWeights()],
+        fn: (x: tf.Tensor) => ff.apply(x),
+        ws: () => <tf.Variable[]>[...ff.getWeights()],
     }
 }

@@ -200,7 +200,7 @@ tf.setBackend("webgl").then(() => {
             return tf.nextFrame()
         }
 
-        for (let i = 0; i < 64 / t; i++) {
+        for (let i = 0; i < 64; i++) {
             await train()
         }
     }
