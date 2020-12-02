@@ -135,10 +135,10 @@ tf.setBackend("webgl").then(() => {
         load.click()
     }
 
-    const op = tf.train.adamax(0.001)
+    const opt = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 4
+        let t = 16
         const train = (loop: number = 64) => {
             for (let j = 0; j < loop; j++) {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -160,14 +160,13 @@ tf.setBackend("webgl").then(() => {
                     })
                     let x_enc = <tf.Tensor4D>enc_fn(xImg)
                     let y_encs = yImgs.map((yImg) => <tf.Tensor4D>enc_fn(yImg))
-                    let mask = lossWeight.reshape([-1, 1, 1, 1])
-                    // (() => {
-                    //     let arr = new Array(batchSize).fill(0)
-                    //     arr[arr.length - 1] = 1
-                    //     return tf.tensor4d(arr, [batchSize, 1, 1, 1])
-                    // })()
-
-                    op.minimize(
+                    let mask = (() => {
+                        let arr = new Array(batchSize).fill(0)
+                        arr[arr.length - 1] = 1
+                        return tf.tensor4d(arr, [batchSize, 1, 1, 1])
+                    })()
+                    // let mask = lossWeight.reshape([-1, 1, 1, 1])
+                    opt.minimize(
                         () => {
                             const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
                                 return <tf.Scalar>tf.sub(y, _y).square().mean(axis).mul(lossWeight).sum()
@@ -289,18 +288,9 @@ tf.setBackend("webgl").then(() => {
             })
         })
     }
-    // ; (<HTMLButtonElement>document.getElementById("test")).onclick = () => {
-    //     tf.tidy(() => {
-    //         let batchSize = 1
-    //         let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
-    //         let test = trainData.slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
-    //         let test_in = <tf.Tensor3D>test.squeeze([0])
-    //         let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
-    //         let test_print = tf.concat([test_in, test_out], 1)
-
-    //         tf.browser.toPixels(test_print, canvas)
-    //     })
-    // }
+    ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
+        test(64)
+    }
     const testFPS = false
     if (testFPS) {
         const H = 5,
