@@ -27,6 +27,7 @@ tf.setBackend("webgl").then(() => {
         head: 8,
         dk: 32,
         dv: 32,
+        hiddens: 400,
     })
 
     let trainDatas: tf.Tensor4D[] = []

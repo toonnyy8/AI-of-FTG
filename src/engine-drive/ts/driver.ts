@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as layers from "./layers"
-import { MHA, FF } from "./mha"
+import { MHA, FF, positionalEncoding } from "./mha"
 import { sequential } from "@tensorflow/tfjs"
 
 export const Driver = (config: {
@@ -27,7 +27,7 @@ export const Driver = (config: {
     const head = config.head !== undefined ? config.head : 8
     const dk = config.dk !== undefined ? config.dk : 32
     const dv = config.dv !== undefined ? config.dv : 32
-    const hiddens = config.hiddens !== undefined ? config.hiddens : 400
+    const hiddens = config.hiddens !== undefined ? config.hiddens : dmodel * 2
 
     let actEmbs = new Array(ctrlNum)
         .fill(0)
@@ -56,12 +56,15 @@ export const Driver = (config: {
             return <T>x.sub(mean).div(variance.add(0.001).sqrt())
         })
 
+    let posEnc: tf.Tensor2D[] = []
+
     return {
         // ctrlActions:number[ctrls][len]
         fn: (input: tf.Tensor4D, ctrlActions: number[][]) =>
             tf.tidy(() => {
                 let [l, h, w, c] = input.shape
                 if (dmodel != h * w * c) throw new Error("h*w*c != dmodel")
+                if (posEnc[l] === undefined) posEnc[l] = tf.keep(positionalEncoding(l, dmodel))
                 let embs: tf.Variable<tf.Rank.R4>[] = ctrlActions.map((actions, idx) => {
                     return <tf.Variable<tf.Rank.R4>>tf.gather(actEmbs[idx], actions, 0).reshape([1, l, 1, dact])
                 })
@@ -71,6 +74,7 @@ export const Driver = (config: {
                     .concat(tf.concat([<tf.Tensor4D>input.reshape([1, l, 1, h * w * c]), ...embs], -1), 1)
 
                 let pos1Out = <tf.Tensor2D>(<tf.Tensor4D>posConv1.apply(inp)).reshape([l, h * w * c])
+                pos1Out = pos1Out.add(posEnc[l])
 
                 let mha1Out = <tf.Tensor2D>mha1.fn(pos1Out, pos1Out)
                 mha1Out = mha1Out.add(pos1Out)
