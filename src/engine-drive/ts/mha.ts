@@ -17,7 +17,7 @@ export const positionalEncoding = (position: number, d_model: number) => {
         )
         const [even, odd] = angleRads.reshape([position, -1, 2]).unstack(-1)
 
-        return tf.stack([tf.sin(even), tf.cos(odd)], -1).reshape([1, position, -1])
+        return <tf.Tensor2D>tf.stack([tf.sin(even), tf.cos(odd)], -1).reshape([position, -1])
     } else {
         const angleRads = getAngles(
             tf.linspace(0, position - 1, position).expandDims(1),
@@ -26,10 +26,10 @@ export const positionalEncoding = (position: number, d_model: number) => {
         )
         const [even, odd] = angleRads.reshape([position, -1, 2]).unstack(-1)
 
-        return tf
+        return <tf.Tensor2D>tf
             .stack([tf.sin(even), tf.cos(odd)], -1)
-            .reshape([1, position, -1])
-            .slice([0, 0, 0], [-1, -1, d_model])
+            .reshape([position, -1])
+            .slice([0, 0], [-1, d_model])
     }
 }
 
