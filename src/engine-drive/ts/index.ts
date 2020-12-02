@@ -288,8 +288,157 @@ tf.setBackend("webgl").then(() => {
             })
         })
     }
+    let p1Ctrl = new Array(7).fill(false)
+    let p2Ctrl = new Array(7).fill(false)
+    document.addEventListener("keydown", (event) => {
+        switch (event.code) {
+            case "KeyW":
+                p1Ctrl[0] = true
+                break
+            case "KeyS":
+                p1Ctrl[1] = true
+                break
+            case "KeyA":
+                p1Ctrl[2] = true
+                break
+            case "KeyD":
+                p1Ctrl[3] = true
+                break
+            case "KeyJ":
+                p1Ctrl[4] = true
+                break
+            case "KeyK":
+                p1Ctrl[5] = true
+                break
+            case "KeyL":
+                p1Ctrl[6] = true
+                break
+
+            case "ArrowUp":
+                p2Ctrl[0] = true
+                break
+            case "ArrowDown":
+                p2Ctrl[1] = true
+                break
+            case "ArrowLeft":
+                p2Ctrl[2] = true
+                break
+            case "ArrowRight":
+                p2Ctrl[3] = true
+                break
+            case "Numpad1":
+                p2Ctrl[4] = true
+                break
+            case "Numpad2":
+                p2Ctrl[5] = true
+                break
+            case "Numpad3":
+                p2Ctrl[6] = true
+                break
+        }
+    })
+
+    document.addEventListener("keyup", (event) => {
+        switch (event.code) {
+            case "KeyW":
+                p1Ctrl[0] = false
+                break
+            case "KeyS":
+                p1Ctrl[1] = false
+                break
+            case "KeyA":
+                p1Ctrl[2] = false
+                break
+            case "KeyD":
+                p1Ctrl[3] = false
+                break
+            case "KeyJ":
+                p1Ctrl[4] = false
+                break
+            case "KeyK":
+                p1Ctrl[5] = false
+                break
+            case "KeyL":
+                p1Ctrl[6] = false
+                break
+
+            case "ArrowUp":
+                p2Ctrl[0] = false
+                break
+            case "ArrowDown":
+                p2Ctrl[1] = false
+                break
+            case "ArrowLeft":
+                p2Ctrl[2] = false
+                break
+            case "ArrowRight":
+                p2Ctrl[3] = false
+                break
+            case "Numpad1":
+                p2Ctrl[4] = false
+                break
+            case "Numpad2":
+                p2Ctrl[5] = false
+                break
+            case "Numpad3":
+                p2Ctrl[6] = false
+                break
+        }
+    })
+    let runTest = false
     ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
-        test(64)
+        if (runTest) runTest = false
+        else {
+            runTest = true
+
+            const L = 64
+            let fileIdx = Math.floor(Math.random() * trainDatas.length)
+
+            let input_enc = <tf.Tensor4D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
+            let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
+            let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
+
+            const tt = () => {
+                tf.tidy(() => {
+                    const p1Ctrl = [
+                        Math.random() < 0.3 ? true : false,
+                        Math.random() < 0.1 ? true : false,
+                        Math.random() < 0.5 ? true : false,
+                        Math.random() < 0.5 ? true : false,
+                        Math.random() < 0.01 ? true : false,
+                        Math.random() < 0.01 ? true : false,
+                        Math.random() < 0.01 ? true : false,
+                    ]
+
+                    const p2Ctrl = [
+                        Math.random() < 0.2 ? true : false,
+                        Math.random() < 0.2 ? true : false,
+                        Math.random() < 0.4 ? true : false,
+                        Math.random() < 0.4 ? true : false,
+                        Math.random() < 0.1 ? true : false,
+                        Math.random() < 0.1 ? true : false,
+                        Math.random() < 0.1 ? true : false,
+                    ]
+                    let next_enc = <tf.Tensor4D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
+                    next_enc = tf.concat([
+                        input_enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),
+                        next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1]),
+                    ])
+                    input_enc.dispose()
+                    input_enc = tf.keep(next_enc)
+                    input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+                    input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+
+                    tf.browser.toPixels(
+                        <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1])).squeeze([0]),
+                        canvas
+                    )
+                })
+                if (runTest) requestAnimationFrame(tt)
+                else input_enc.dispose()
+            }
+            tt()
+        }
     }
     const testFPS = false
     if (testFPS) {
