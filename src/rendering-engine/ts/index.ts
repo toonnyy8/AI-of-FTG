@@ -63,11 +63,16 @@ tf.setBackend("webgl").then(() => {
                     op.minimize(
                         () => {
                             let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
-                            return tf.losses.logLoss(batch, out)
+                            let mainLoss = tf.losses.logLoss(batch, out)
+                            mainLoss.print()
+                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...enc_ws(), ...dec_ws()].length)
+                            return mainLoss.add(l2Loss)
                         },
-                        true,
+                        false,
                         <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )?.print()
+                    )
                 })
 
                 batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))

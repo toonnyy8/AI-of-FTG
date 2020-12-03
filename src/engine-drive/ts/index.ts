@@ -172,7 +172,7 @@ tf.setBackend("webgl").then(() => {
                             const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
                                 return <tf.Scalar>tf.sub(y, _y).square().mean(axis).mul(lossWeight).sum()
                             }
-                            return y_encs
+                            const mainLoss = y_encs
                                 .reduce(
                                     (prev, y_enc, idx) => {
                                         let next_enc = <tf.Tensor4D>(
@@ -192,8 +192,14 @@ tf.setBackend("webgl").then(() => {
                                     { loss: tf.scalar(0), enc: x_enc }
                                 )
                                 .loss.div(t)
+                            mainLoss.print()
+                            const l2Loss = driver
+                                .ws()
+                                .reduce((loss, ws) => loss.add(ws.square().mean()), tf.scalar(0))
+                                .div(driver.ws().length)
+                            return mainLoss.add(l2Loss)
                         },
-                        true,
+                        false,
                         <tf.Variable[]>(<unknown>[...driver.ws()])
                     )?.print()
                 })
@@ -445,20 +451,5 @@ tf.setBackend("webgl").then(() => {
             }
             tt()
         }
-    }
-    const testFPS = false
-    if (testFPS) {
-        const H = 5,
-            W = 10
-        const tt = () =>
-            tf.tidy(() => {
-                let test = <tf.Tensor4D>tf.ones([64, H, W, dk])
-                test = <tf.Tensor4D>(
-                    driver.fn(test, new Array(2).fill(new Array(64).fill(0))).slice([63, 0, 0, 0], [1, -1, -1, -1])
-                )
-                tf.browser.toPixels(<tf.Tensor3D>dec_fn(test).squeeze([0]), canvas)
-                requestAnimationFrame(tt)
-            })
-        tt()
     }
 })
