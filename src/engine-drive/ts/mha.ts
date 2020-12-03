@@ -95,7 +95,7 @@ export const FF = (d_model: number, hiddens: number) => {
         ],
     })
     return {
-        fn: (x: tf.Tensor) => ff.apply(x),
+        fn: <T extends tf.Tensor>(x: T) => <T>ff.apply(x),
         ws: () => <tf.Variable[]>[...ff.getWeights()],
     }
 }

@@ -22,12 +22,13 @@ tf.setBackend("webgl").then(() => {
         ctrlNum: 2,
         actionNum: 2 ** 7,
         dact: 64,
-        dmodel: h * w * dk,
+        dinp: h * w * dk,
+        dmodel: 256,
         r: 8,
         head: 8,
         dk: 32,
         dv: 32,
-        hiddens: 400,
+        hiddens: 512,
     })
 
     let trainDatas: tf.Tensor4D[] = []
@@ -138,7 +139,7 @@ tf.setBackend("webgl").then(() => {
     const opt = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 16
+        let t = 1
         const train = (loop: number = 64) => {
             for (let j = 0; j < loop; j++) {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -180,7 +181,12 @@ tf.setBackend("webgl").then(() => {
 
                                         return {
                                             loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc, [1, 2, 3])),
-                                            enc: <tf.Tensor4D>tf.add(next_enc.mul(mask), y_enc.mul(tf.sub(1, mask))),
+                                            enc: <tf.Tensor4D>(
+                                                tf.concat([
+                                                    prev.enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),
+                                                    next_enc.slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1]),
+                                                ])
+                                            ), //next_enc, //tf.add(next_enc.mul(mask), y_enc.mul(tf.sub(1, mask)))
                                         }
                                     },
                                     { loss: tf.scalar(0), enc: x_enc }
@@ -400,25 +406,25 @@ tf.setBackend("webgl").then(() => {
 
             const tt = () => {
                 tf.tidy(() => {
-                    const p1Ctrl = [
-                        Math.random() < 0.3 ? true : false,
-                        Math.random() < 0.1 ? true : false,
-                        Math.random() < 0.5 ? true : false,
-                        Math.random() < 0.5 ? true : false,
-                        Math.random() < 0.01 ? true : false,
-                        Math.random() < 0.01 ? true : false,
-                        Math.random() < 0.01 ? true : false,
-                    ]
+                    // const p1Ctrl = [
+                    //     Math.random() < 0.3 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    // ]
 
-                    const p2Ctrl = [
-                        Math.random() < 0.2 ? true : false,
-                        Math.random() < 0.2 ? true : false,
-                        Math.random() < 0.4 ? true : false,
-                        Math.random() < 0.4 ? true : false,
-                        Math.random() < 0.1 ? true : false,
-                        Math.random() < 0.1 ? true : false,
-                        Math.random() < 0.1 ? true : false,
-                    ]
+                    // const p2Ctrl = [
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    // ]
                     let next_enc = <tf.Tensor4D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
                     next_enc = tf.concat([
                         input_enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),

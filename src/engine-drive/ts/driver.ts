@@ -7,6 +7,7 @@ import { sequential } from "@tensorflow/tfjs"
 export const Driver = (config: {
     ctrlNum: number
     actionNum: number
+    dinp: number
     dmodel: number
     dact?: number
     r?: number
@@ -17,10 +18,10 @@ export const Driver = (config: {
 }): {
     fn: (input: tf.Tensor4D, actions: number[][]) => tf.Tensor
     ws: () => tf.Variable[]
-    unk: () => tf.Variable
 } => {
     const ctrlNum = config.ctrlNum
     const actionNum = config.actionNum
+    const dinp = config.dinp
     const dmodel = config.dmodel
     const dact = config.dact !== undefined ? config.dact : 32
     const r = config.r !== undefined ? config.r : 8
@@ -31,14 +32,10 @@ export const Driver = (config: {
 
     let actEmbs = new Array(ctrlNum)
         .fill(0)
-        .map((_, idx) => tf.variable(tf.randomNormal([actionNum, dact]), true, `actEmb${idx}`))
-    let unk = tf.variable(tf.randomNormal([dmodel + ctrlNum * dact]), true, "unk")
+        .map((_, idx) => tf.variable(tf.randomNormal([actionNum, dmodel]), true, `actEmb${idx}`))
 
-    let posConv1 = tf.sequential({
-        layers: [
-            tf.layers.inputLayer({ inputShape: [r, 1, dmodel + ctrlNum * dact] }),
-            tf.layers.separableConv2d({ filters: dmodel, kernelSize: [r, 1], padding: "valid" }),
-        ],
+    let inpLinear = tf.sequential({
+        layers: [tf.layers.inputLayer({ inputShape: [dinp] }), tf.layers.dense({ units: dmodel })],
     })
 
     let mha1 = MHA(dmodel, head, dk, dv)
@@ -47,7 +44,14 @@ export const Driver = (config: {
     let mha2 = MHA(dmodel, head, dk, dv)
     let ff2 = FF(dmodel, hiddens)
 
-    let ffout = FF(dmodel, hiddens)
+    let outLinear = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [dmodel] }),
+            tf.layers.dense({ units: dmodel * 2 }),
+            layers.mish({}),
+            tf.layers.dense({ units: dinp }),
+        ],
+    })
 
     const norm = <T extends tf.Tensor>(x: T) =>
         tf.tidy(() => {
@@ -63,21 +67,18 @@ export const Driver = (config: {
         fn: (input: tf.Tensor4D, ctrlActions: number[][]) =>
             tf.tidy(() => {
                 let [l, h, w, c] = input.shape
-                if (dmodel != h * w * c) throw new Error("h*w*c != dmodel")
+                if (dinp != h * w * c) throw new Error("h*w*c != dmodel")
                 if (posEnc[l] === undefined) posEnc[l] = tf.keep(positionalEncoding(l, dmodel))
-                let embs: tf.Variable<tf.Rank.R4>[] = ctrlActions.map((actions, idx) => {
-                    return <tf.Variable<tf.Rank.R4>>tf.gather(actEmbs[idx], actions, 0).reshape([1, l, 1, dact])
+                let embs: tf.Variable<tf.Rank.R2>[] = ctrlActions.map((actions, idx) => {
+                    return <tf.Variable<tf.Rank.R2>>tf.gather(actEmbs[idx], actions, 0)
                 })
-                let inp = unk
-                    .reshape([1, 1, 1, -1])
-                    .tile([1, r - 1, 1, 1])
-                    .concat(tf.concat([<tf.Tensor4D>input.reshape([1, l, 1, h * w * c]), ...embs], -1), 1)
 
-                let pos1Out = <tf.Tensor2D>(<tf.Tensor4D>posConv1.apply(inp)).reshape([l, h * w * c])
-                pos1Out = pos1Out.add(posEnc[l])
+                let inp = <tf.Tensor2D>input.reshape([l, dinp])
+                inp = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(inp))
+                inp = tf.addN([inp, ...embs, posEnc[l]])
 
-                let mha1Out = <tf.Tensor2D>mha1.fn(pos1Out, pos1Out)
-                mha1Out = mha1Out.add(pos1Out)
+                let mha1Out = <tf.Tensor2D>mha1.fn(inp, inp)
+                mha1Out = mha1Out.add(inp)
                 let ff1Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff1.fn(mha1Out))
                 ff1Out = ff1Out.add(mha1Out)
 
@@ -86,23 +87,19 @@ export const Driver = (config: {
                 let ff2Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff2.fn(mha2Out))
                 ff2Out = ff2Out.add(mha2Out)
 
-                let out = <tf.Tensor2D>ffout.fn(ff2Out)
+                let out = <tf.Tensor2D>outLinear.apply(ff2Out)
 
                 return out.reshape([l, h, w, c])
             }),
         ws: () =>
             tf.tidy(() => [
                 ...actEmbs,
-                unk,
-                ...(<tf.Variable[]>posConv1.getWeights()),
+                ...(<tf.Variable[]>inpLinear.getWeights()),
                 ...mha1.ws(),
                 ...ff1.ws(),
                 ...mha2.ws(),
                 ...ff2.ws(),
-                ...ffout.ws(),
+                ...(<tf.Variable[]>outLinear.getWeights()),
             ]),
-        unk: () => {
-            return unk
-        },
     }
 }
