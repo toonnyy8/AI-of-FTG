@@ -7,7 +7,7 @@ import { MHA, FF } from "./mha"
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
-    let dk = 4
+    let dk = 8
     let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = AED({
         assetGroups: 8,
         assetSize: 16,
@@ -15,50 +15,69 @@ tf.setBackend("webgl").then(() => {
         dk: dk,
     })
     let count = 0
-    let trainData: tf.Tensor4D = tf.ones([1, 1, 1, 1])
-    ;(<HTMLButtonElement>document.getElementById("load-data")).onclick = () => {
-        tf.tidy(() => {
-            let load = document.createElement("input")
-            load.type = "file"
-            load.accept = ".myz"
+    let trainDatas: tf.Tensor4D[] = []
 
-            load.onchange = (event) => {
-                const files = <FileList>load.files
-                var reader = new FileReader()
-                reader.addEventListener("loadend", () => {
-                    myz.load(<ArrayBuffer>reader.result).then((datas) => {
-                        let frames = datas.find((data) => {
-                            return data.name == "frames"
+    ;(<HTMLButtonElement>document.getElementById("load-data")).onclick = () => {
+        let load = document.createElement("input")
+        load.type = "file"
+        load.accept = ".myz"
+        load.multiple = true
+
+        load.onchange = (event) => {
+            const files = Array.from(<FileList>load.files)
+            trainDatas.forEach((trainData) => trainData.dispose())
+            trainDatas = []
+
+            const readLoop = (file: File, files: File[]) => {
+                myz.load(file)
+                    .then((datas) => {
+                        tf.tidy(() => {
+                            let frames = datas.find((data) => {
+                                return data.name == "frames"
+                            })
+                            let frameShape = datas.find((data) => {
+                                return data.name == "frameShape"
+                            })
+                            trainDatas = [
+                                ...trainDatas,
+                                tf.keep(
+                                    tf
+                                        .tensor4d(
+                                            <Uint8Array>frames?.values,
+                                            <[number, number, number, number]>Array.from(<Uint8Array>frameShape?.values)
+                                        )
+                                        .cast("float32")
+                                        .div(255)
+                                ),
+                            ]
                         })
-                        let frameShape = datas.find((data) => {
-                            return data.name == "frameShape"
-                        })
-                        trainData.dispose()
-                        trainData = tf.keep(
-                            tf
-                                .tensor4d(
-                                    <Uint8Array>frames?.values,
-                                    <[number, number, number, number]>Array.from(<Uint8Array>frameShape?.values)
-                                )
-                                .cast("float32")
-                                .div(255)
-                        )
                     })
-                })
-                reader.readAsArrayBuffer(files[0])
+                    .then(() => {
+                        if (files.length >= 1) {
+                            readLoop(files[0], files.slice(1))
+                        } else {
+                            console.log(trainDatas)
+                            console.log("end reading")
+                        }
+                    })
             }
 
-            load.click()
-        })
+            console.log("start reading")
+            readLoop(files[0], files.slice(1))
+        }
+
+        load.click()
     }
+
     const op = tf.train.adamax(0.01)
     ;(<HTMLButtonElement>document.getElementById("train-log")).onclick = async () => {
+        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 8
-        let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+        let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
         for (let i = 0; i < 64; i++) {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
-                    let batch = <tf.Tensor4D>trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                    let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
@@ -75,9 +94,10 @@ tf.setBackend("webgl").then(() => {
                     )
                 })
 
-                batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+                fileIdx = Math.floor(Math.random() * trainDatas.length)
+                batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
             }
-            let test = trainData.slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
+            let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)
@@ -91,12 +111,13 @@ tf.setBackend("webgl").then(() => {
         }
     }
     ;(<HTMLButtonElement>document.getElementById("train-ssim")).onclick = async () => {
+        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 8
-        let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+        let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
         for (let i = 0; i < 64; i++) {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
-                    let batch = <tf.Tensor4D>trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                    let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
@@ -108,9 +129,10 @@ tf.setBackend("webgl").then(() => {
                     )?.print()
                 })
 
-                batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+                fileIdx = Math.floor(Math.random() * trainDatas.length)
+                batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
             }
-            let test = trainData.slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
+            let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)
@@ -124,12 +146,13 @@ tf.setBackend("webgl").then(() => {
         }
     }
     ;(<HTMLButtonElement>document.getElementById("train-mix")).onclick = async () => {
+        let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 8
-        let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+        let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
         for (let i = 0; i < 64; i++) {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
-                    let batch = <tf.Tensor4D>trainData.slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                    let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
@@ -148,9 +171,10 @@ tf.setBackend("webgl").then(() => {
                     )?.print()
                 })
 
-                batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
+                fileIdx = Math.floor(Math.random() * trainDatas.length)
+                batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
             }
-            let test = trainData.slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
+            let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)
@@ -217,9 +241,10 @@ tf.setBackend("webgl").then(() => {
     }
     ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
         tf.tidy(() => {
+            let fileIdx = Math.floor(Math.random() * trainDatas.length)
             let batchSize = 1
-            let batchStart = Math.round(Math.random() * (trainData.shape[0] - batchSize))
-            let test = trainData.slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
+            let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
+            let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)

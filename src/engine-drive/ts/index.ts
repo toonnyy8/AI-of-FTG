@@ -167,7 +167,7 @@ tf.setBackend("webgl").then(() => {
                         return tf.tensor4d(arr, [batchSize, 1, 1, 1])
                     })()
                     // let mask = lossWeight.reshape([-1, 1, 1, 1])
-                    opt.minimize(
+                    let { value, grads } = opt.computeGradients(
                         () => {
                             const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
                                 return <tf.Scalar>tf.sub(y, _y).square().mean(axis).mul(lossWeight).sum()
@@ -199,9 +199,12 @@ tf.setBackend("webgl").then(() => {
                                 .div(driver.ws().length)
                             return mainLoss.add(l2Loss)
                         },
-                        false,
                         <tf.Variable[]>(<unknown>[...driver.ws()])
-                    )?.print()
+                    )
+                    Object.keys(grads).forEach((key) => {
+                        grads[key] = grads[key].where(grads[key].isFinite(), 0)
+                    })
+                    opt.applyGradients(<[]>(<unknown>grads))
                 })
             }
         }
