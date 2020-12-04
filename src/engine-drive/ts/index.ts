@@ -11,7 +11,7 @@ let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 tf.setBackend("webgl").then(() => {
     let h = 5,
         w = 10,
-        dk = 4
+        dk = 8
     let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }, { mapping }] = AED({
         assetGroups: 8,
         assetSize: 16,

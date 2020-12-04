@@ -49,7 +49,7 @@ export const Driver = (config: {
             tf.layers.inputLayer({ inputShape: [dmodel] }),
             tf.layers.dense({ units: dmodel * 2 }),
             layers.mish({}),
-            tf.layers.dense({ units: dinp }),
+            tf.layers.dense({ units: dinp, activation: "tanh" }),
         ],
     })
 
