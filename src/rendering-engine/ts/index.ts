@@ -102,7 +102,7 @@ tf.setBackend("webgl").then(() => {
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)
 
-            await tf.browser.toPixels(test_print, canvas)
+            await tf.browser.toPixels(tf.image.resizeNearestNeighbor(test_print, [64, 128]), canvas)
 
             test.dispose()
             test_in.dispose()
@@ -249,7 +249,7 @@ tf.setBackend("webgl").then(() => {
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
             let test_print = tf.concat([test_in, test_out], 1)
 
-            tf.browser.toPixels(test_print, canvas)
+            tf.browser.toPixels(tf.image.resizeNearestNeighbor(test_print, [64, 128]), canvas)
         })
     }
     const testFPS = false

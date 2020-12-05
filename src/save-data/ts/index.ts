@@ -378,7 +378,7 @@ tf.setBackend("webgl")
                     // maxPool3,
                     // <nn.tfFn>blurPooling3.fn,
                     <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [32, 64])),
-                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [64, 64])),
+                    // <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [64, 64])),
                     <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
                 )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
 
