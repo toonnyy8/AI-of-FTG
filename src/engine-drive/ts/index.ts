@@ -139,7 +139,7 @@ tf.setBackend("webgl").then(() => {
     const opt = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 16
+        let t = 1
         const train = (loop: number = 64) => {
             for (let j = 0; j < loop; j++) {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -170,7 +170,13 @@ tf.setBackend("webgl").then(() => {
                     let { value, grads } = opt.computeGradients(
                         () => {
                             const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
-                                return <tf.Scalar>tf.sub(y, _y).square().mean(axis).mul(lossWeight).sum()
+                                return nn
+                                    .ssim2d(<tf.Tensor4D>y, <tf.Tensor4D>_y)
+                                    .neg()
+                                    .add(1)
+                                    .mul(lossWeight)
+                                    .sum()
+                                    .add(tf.losses.logLoss(y, _y))
                             }
                             const mainLoss = y_encs
                                 .reduce(
@@ -180,9 +186,7 @@ tf.setBackend("webgl").then(() => {
                                         )
 
                                         return {
-                                            loss: <tf.Scalar>(
-                                                prev.loss.add(loss_fn(y_enc.mul(10), next_enc.mul(10), [1, 2, 3]))
-                                            ),
+                                            loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc, [1, 2, 3])),
                                             enc: <tf.Tensor4D>(
                                                 tf.concat([
                                                     prev.enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),

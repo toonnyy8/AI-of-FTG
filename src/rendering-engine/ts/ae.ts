@@ -118,7 +118,12 @@ export const AED = (
         tf.sequential({
             layers: [
                 tf.layers.inputLayer({ inputShape: [5, 10, 160] }),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: config.dk, padding: "same", activation: "tanh" }),
+                tf.layers.separableConv2d({
+                    kernelSize: 3,
+                    filters: config.dk,
+                    padding: "same",
+                    activation: "sigmoid",
+                }),
                 // layers.mish({}),
                 // tf.layers.batchNormalization(),
             ],
