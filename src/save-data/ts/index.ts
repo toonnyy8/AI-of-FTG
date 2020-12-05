@@ -371,16 +371,16 @@ tf.setBackend("webgl")
             )
 
             tf.tidy(() => {
-                let pix = <tf.Tensor3D>(
-                    nn.pipe(
-                        maxPool,
-                        <nn.tfFn>blurPooling3.fn,
-                        maxPool3,
-                        <nn.tfFn>blurPooling3.fn,
-                        <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeBilinear(inp, [40, 40])),
-                        <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
-                    )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
-                )
+                let pix = <tf.Tensor3D>nn.pipe(
+                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [256, 256])),
+                    maxPool,
+                    // <nn.tfFn>blurPooling3.fn,
+                    // maxPool3,
+                    // <nn.tfFn>blurPooling3.fn,
+                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [32, 64])),
+                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [64, 64])),
+                    <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
+                )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
 
                 tf.browser.toPixels(pix, pixcanvas)
                 write(tf.keep(pix))
