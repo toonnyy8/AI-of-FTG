@@ -49,7 +49,7 @@ export const Driver = (config: {
             tf.layers.inputLayer({ inputShape: [dmodel] }),
             tf.layers.dense({ units: dmodel * 2 }),
             layers.mish({}),
-            tf.layers.dense({ units: dinp, activation: "tanh" }),
+            tf.layers.dense({ units: dinp, activation: "sigmoid" }),
         ],
     })
 
@@ -73,7 +73,7 @@ export const Driver = (config: {
                     return <tf.Variable<tf.Rank.R2>>tf.gather(actEmbs[idx], actions, 0)
                 })
 
-                let inp = <tf.Tensor2D>input.reshape([l, dinp]).atanh().maximum(-8).minimum(8)
+                let inp = <tf.Tensor2D>input.reshape([l, dinp])
                 inp = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(inp))
                 inp = tf.addN([inp, ...embs, posEnc[l]])
 
