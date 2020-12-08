@@ -100,9 +100,9 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
-            let test_print = tf.concat([test_in, test_out], 1)
+            let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
-            await tf.browser.toPixels(tf.image.resizeNearestNeighbor(test_print, [64, 128]), canvas)
+            await tf.browser.toPixels(test_print, canvas)
 
             test.dispose()
             test_in.dispose()
@@ -247,15 +247,15 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
-            let test_print = tf.concat([test_in, test_out], 1)
+            let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
-            tf.browser.toPixels(tf.image.resizeNearestNeighbor(test_print, [64, 128]), canvas)
+            tf.browser.toPixels(test_print, canvas)
         })
     }
     const testFPS = false
     if (testFPS) {
-        const H = 5,
-            W = 10
+        const H = 4,
+            W = 8
         const mha = MHA(H * W * dk, 8, 32, 32)
         const ff = FF(H * W * dk, H * W * dk * 2)
         const conv = tf.sequential({

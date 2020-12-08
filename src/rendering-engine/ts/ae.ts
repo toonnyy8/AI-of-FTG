@@ -18,6 +18,17 @@ const c2pix = (t: tf.Tensor4D) => {
         .transpose([0, 2, 1, 3])
         .reshape([batch, h * 2, w * 2, c / 4])
 }
+const c2pix_1_2 = (t: tf.Tensor4D) => {
+    let [batch, h, w, c] = t.shape
+    return <tf.Tensor4D>t.reshape([batch, h, w * 2, c / 2])
+}
+const c2pix_2_1 = (t: tf.Tensor4D) => {
+    let [batch, h, w, c] = t.shape
+    return <tf.Tensor4D>t
+        .transpose([0, 2, 1, 3])
+        .reshape([batch, w, h * 2, c / 2])
+        .transpose([0, 2, 1, 3])
+}
 const mirrorPad = (outputShape: tf.Shape) => {
     return layers.lambda({
         fn: (t) =>
@@ -59,85 +70,76 @@ export const AED = (
     let pooling = (a: tf.Tensor) => {
         return blurPooling.fn(tf.maxPool(<tf.Tensor4D | tf.Tensor3D>a, 2, 1, "same"))
     }
-    let inLayer = tf.sequential({
+    let enc = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [32, 64, 3] }),
-            tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
+            tf.layers.conv2d({ name: "ein", filters: 32, kernelSize: 1, padding: "same" }),
             layers.mish({}),
-            tf.layers.batchNormalization(),
+            tf.layers.batchNormalization({ name: "ein_bn" }),
+
+            tf.layers.conv2d({ name: "e1-1", filters: 32, kernelSize: 3, padding: "same" }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "e1-1_bn" }),
+            tf.layers.conv2d({ name: "e1-2", filters: 32, kernelSize: 3, padding: "same" }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "e1-2_bn" }),
+            tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
+
+            tf.layers.reshape({ targetShape: [16, 32 * 32] }),
+            tf.layers.dense({ name: "ew", units: 8 * 32 }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "ew_bn" }),
+            tf.layers.reshape({ targetShape: [16, 8, 32] }),
+
+            tf.layers.permute({ dims: [2, 1, 3] }),
+
+            tf.layers.reshape({ targetShape: [8, 16 * 32] }),
+            tf.layers.dense({ name: "eh", units: 4 * 32 }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "eh_bn" }),
+            tf.layers.reshape({ targetShape: [8, 4, 32] }),
+
+            tf.layers.permute({ dims: [2, 1, 3] }),
+
+            // tf.layers.dense({ name: "ed", units: 8 }),
+            // layers.mish({}),
+            // tf.layers.batchNormalization({ name: "ed_bn" }),
         ],
     })
-    let encs = [
-        tf.sequential({
-            layers: [
-                tf.layers.inputLayer({ inputShape: [32, 64, 32] }),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-            ],
-        }),
-        tf.sequential({
-            layers: [
-                tf.layers.inputLayer({ inputShape: [16, 32, 64] }),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-            ],
-        }),
-        tf.sequential({
-            layers: [
-                tf.layers.inputLayer({ inputShape: [8, 16, 96] }),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 32, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-                tf.layers.separableConv2d({ kernelSize: 3, filters: 8, padding: "same" }),
-                layers.mish({}),
-                tf.layers.batchNormalization(),
-            ],
-        }),
-    ]
 
     let dec = tf.sequential({
         layers: [
-            tf.layers.inputLayer({ inputShape: [8, 16, 8], dtype: "float32" }),
+            tf.layers.inputLayer({ inputShape: [16, 8, 32], dtype: "float32" }),
 
-            tf.layers.separableConv2d({
-                name: "decoderConv1",
-                kernelSize: 3,
-                filters: 128,
-                padding: "same",
-            }),
+            // tf.layers.dense({ name: "dd", units: 32 }),
+
+            tf.layers.permute({ dims: [2, 1, 3] }),
+
+            tf.layers.reshape({ targetShape: [8, 4 * 32] }),
             layers.mish({}),
-            // layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [8, 16, 32] }),
+            tf.layers.dense({ name: "dh", units: 16 * 32 }),
+            tf.layers.reshape({ targetShape: [8, 16, 32] }),
 
-            tf.layers.separableConv2d({
-                name: "decoderConv2",
-                kernelSize: 3,
-                filters: 128,
-                padding: "same",
-            }),
+            tf.layers.permute({ dims: [2, 1, 3] }),
+
+            tf.layers.reshape({ targetShape: [16, 8 * 32] }),
             layers.mish({}),
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [16, 32, 32] }),
+            tf.layers.dense({ name: "dw", units: 32 * 32 }),
+            tf.layers.reshape({ targetShape: [16, 32, 32] }),
 
-            tf.layers.separableConv2d({
-                name: "decoderConv3",
-                kernelSize: 3,
-                filters: 128,
-                padding: "same",
-            }),
             layers.mish({}),
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 32] }),
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 8] }),
+            tf.layers.separableConv2d({ name: "d3", filters: 32, kernelSize: 3, padding: "same" }),
 
-            tf.layers.separableConv2d({
-                name: "decoderConv4",
-                kernelSize: 3,
+            // layers.mish({}),
+            // layers.lambda({ fn: (t) => c2pix_2_1(<tf.Tensor4D>t), outputShape: [64, 64, 16] }),
+            // tf.layers.separableConv2d({ name: "d4", filters: 32, kernelSize: 3, padding: "same" }),
+
+            layers.mish({}),
+            tf.layers.conv2d({
+                name: "dout",
                 filters: 3,
+                kernelSize: 3,
                 padding: "same",
                 activation: "sigmoid",
             }),
@@ -148,34 +150,21 @@ export const AED = (
         {
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
-                    // let a = <tf.Tensor>inLayer.apply(input)
-                    // let b = <tf.Tensor>encs[0].apply(tf.add(a, <tf.Tensor>encs[0].apply(a)))
-                    // a = encRes(a, b)
-                    // b = <tf.Tensor>encs[1].apply(tf.add(a, <tf.Tensor>encs[1].apply(a)))
-                    // a = encRes(a, b)
-                    // b = <tf.Tensor>encs[2].apply(tf.add(a, <tf.Tensor>encs[2].apply(a)))
-                    // a = encRes(a, b)
-                    // b = <tf.Tensor>encs[3].apply(tf.add(a, <tf.Tensor>encs[3].apply(a)))
-                    // a = tf.add(a, b)
-                    // let out = <tf.Tensor>encs[4].apply(a)
-                    // return out
-                    let a = <tf.Tensor>inLayer.apply(input)
-                    a = pooling(tf.concat([<tf.Tensor>encs[0].apply(a), a], -1))
-                    a = pooling(tf.concat([<tf.Tensor>encs[1].apply(a), a], -1))
-                    // a = pooling(<tf.Tensor4D>tf.concat([<tf.Tensor>encs[2].apply(a), a], -1))
-                    // a = tf.concat([<tf.Tensor>encs[3].apply(a), a], -1)
-                    let out = <tf.Tensor>encs[2].apply(a)
-                    return out
+                    let out = <tf.Tensor>enc.apply(input)
+                    // let v = <tf.Tensor>enc_v.apply(out)
+                    // let h = <tf.Tensor>enc_h.apply(out)
+                    // let vh = tf.concat([v, h], -1)
+                    return out.sigmoid() //(<tf.Tensor>enc_vh.apply(vh)).add(vh).sigmoid() //out_vh
                 }),
-            ws: () =>
-                tf.tidy(() => [
-                    ...(<tf.Variable[]>inLayer.getWeights()),
-                    ...encs.reduce((prev, enc) => prev.concat(<tf.Variable[]>enc.getWeights()), <tf.Variable[]>[]),
-                ]),
+            ws: () => tf.tidy(() => [...(<tf.Variable[]>enc.getWeights())]),
         },
         {
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
+                    // let [v, h] = input.split(2, -1)
+                    // v = <tf.Tensor>dec_v.apply(v.reshape([-1, 1, 16, 16]))
+                    // h = <tf.Tensor>dec_h.apply(h.reshape([-1, 8, 1, 32]))
+                    // let temp = tf.concat([v, h], -1)
                     return <tf.Tensor>dec.apply(input)
                 }),
             ws: () => tf.tidy(() => [...(<tf.Variable[]>dec.getWeights())]),
