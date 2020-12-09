@@ -101,47 +101,26 @@ export const AED = (
             tf.layers.batchNormalization({ name: "e3-2_bn" }),
             tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
 
-            tf.layers.conv2d({ name: "e4-1", filters: 64, kernelSize: 3, padding: "same" }),
+            tf.layers.conv2d({ name: "eout", filters: 8, kernelSize: 3, padding: "same" }),
             layers.mish({}),
-            tf.layers.batchNormalization({ name: "e4-1_bn" }),
-            tf.layers.conv2d({ name: "e4-2", filters: 64, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "e4-2_bn" }),
-            tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
+            tf.layers.batchNormalization({ name: "eout_bn" }),
 
-            // tf.layers.flatten(),
-
-            // tf.layers.dense({ name: "eout", units: 256, useBias: false }),
-            // layers.mish({}),
-            // tf.layers.batchNormalization({ name: "eout_bn" }),
+            tf.layers.flatten(),
+            tf.layers.dense({ units: 256, name: "ef" }),
+            tf.layers.reshape({ targetShape: [8, 32] }),
         ],
     })
 
-    let template = tf.variable(tf.randomNormal([1, 8, 16, 4, 1, 32]))
+    let template = tf.variable(tf.randomNormal([1, 16, 32, 8, 1, 32]), true, "template")
     let dec = tf.sequential({
         layers: [
-            tf.layers.inputLayer({ inputShape: [2, 4, 64], dtype: "float32" }),
-            // tf.layers.dense({ units: 512, useBias: false }),
-            // tf.layers.reshape({ targetShape: [2, 4, 64] }),
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [4, 8, 16] }),
+            tf.layers.inputLayer({ inputShape: [16, 32, 64], dtype: "float32" }),
+            tf.layers.separableConv2d({ name: "din", filters: 32, kernelSize: 3, padding: "same" }),
             layers.mish({}),
-            tf.layers.separableConv2d({ name: "d0", filters: 64, kernelSize: 3, padding: "same" }),
-
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [8, 16, 16] }),
-            layers.mish({}),
-            tf.layers.separableConv2d({ name: "d1", filters: 32, kernelSize: 3, padding: "same" }),
-
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [16, 32, 8] }),
-            layers.mish({}),
-            tf.layers.separableConv2d({ name: "d2", filters: 32, kernelSize: 3, padding: "same" }),
 
             layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 8] }),
             layers.mish({}),
             tf.layers.separableConv2d({ name: "d3", filters: 32, kernelSize: 3, padding: "same" }),
-
-            // layers.mish({}),
-            // layers.lambda({ fn: (t) => c2pix_2_1(<tf.Tensor4D>t), outputShape: [64, 64, 16] }),
-            // tf.layers.separableConv2d({ name: "d4", filters: 32, kernelSize: 3, padding: "same" }),
 
             layers.mish({}),
             tf.layers.conv2d({
@@ -169,11 +148,11 @@ export const AED = (
         {
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
-                    let a = input
-                    // let a = tf
-                    //     .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
-                    //     .sum(-1)
-                    //     .reshape([-1, 8, 16, 32])
+                    // let a = input
+                    let a = tf
+                        .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
+                        .sum(-1)
+                        .reshape([-1, 16, 32, 64])
 
                     return <tf.Tensor>dec.apply(a)
                 }),
