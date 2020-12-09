@@ -46,7 +46,7 @@ const mirrorPad = (outputShape: tf.Shape) => {
     })
 }
 
-export const AED = (
+export const VAE = (
     config: {
         assetGroups: number
         assetSize: number
@@ -99,17 +99,19 @@ export const AED = (
             tf.layers.conv2d({ name: "e3-2", filters: 64, kernelSize: 3, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e3-2_bn" }),
-            tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
+            // tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
 
+            tf.layers.conv2d({ name: "mean-sd", filters: 2, kernelSize: 3, padding: "same" }),
+            tf.layers.activation({ activation: "sigmoid" }),
             // tf.layers.conv2d({ name: "eout", filters: 8, kernelSize: 3, padding: "same" }),
             // layers.mish({}),
             // tf.layers.batchNormalization({ name: "eout_bn" }),
 
-            tf.layers.flatten(),
-            tf.layers.dense({ units: 256, name: "ef" }),
-            tf.layers.batchNormalization({ name: "ef_bn" }),
-            tf.layers.activation({ activation: "sigmoid" }),
-            tf.layers.reshape({ targetShape: [8, 32] }),
+            // tf.layers.flatten(),
+            // tf.layers.dense({ units: 256, name: "ef" }),
+            // tf.layers.batchNormalization({ name: "ef_bn" }),
+            // tf.layers.activation({ activation: "sigmoid" }),
+            // tf.layers.reshape({ targetShape: [8, 32] }),
         ],
     })
 
@@ -152,14 +154,14 @@ export const AED = (
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
                     // let a = input
-                    // let [batch, h, w] = (<tf.Tensor4D>input).shape
-                    // let [mean, sd] = input.split(2, -1)
-                    // let r = tf.randomNormal([batch, h, w, 64], 0, 0)
-                    // let a = tf.mul(r, sd).add(mean)
-                    let a = tf
-                        .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
-                        .sum(-1)
-                        .reshape([-1, 8, 16, 64])
+                    let [batch, h, w] = (<tf.Tensor4D>input).shape
+                    let [mean, sd] = input.split(2, -1)
+                    let r = tf.randomNormal([batch, h, w, 64], 0, 0)
+                    let a = tf.mul(r, sd).add(mean)
+                    // let a = tf
+                    //     .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
+                    //     .sum(-1)
+                    //     .reshape([-1, 8, 16, 64])
 
                     return <tf.Tensor>dec.apply(a)
                 }),

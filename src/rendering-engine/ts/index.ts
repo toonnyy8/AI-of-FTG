@@ -1,14 +1,14 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { AED } from "./ae"
+import { VAE } from "./vae"
 import { MHA, FF } from "./mha"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
     let dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = AED({
+    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = VAE({
         assetGroups: 8,
         assetSize: 16,
         assetNum: 32,
@@ -122,11 +122,16 @@ tf.setBackend("webgl").then(() => {
                     op.minimize(
                         () => {
                             let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
-                            return <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 5).mean().neg())
+                            let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 5).mean().neg())
+                            mainLoss.print()
+                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...enc_ws(), ...dec_ws()].length)
+                            return mainLoss.add(l2Loss)
                         },
-                        true,
+                        false,
                         <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )?.print()
+                    )
                 })
 
                 fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -135,7 +140,7 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
-            let test_print = tf.concat([test_in, test_out], 1)
+            let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             await tf.browser.toPixels(test_print, canvas)
 
@@ -157,7 +162,7 @@ tf.setBackend("webgl").then(() => {
                     op.minimize(
                         () => {
                             let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
-                            return <tf.Scalar>(
+                            let mainLoss = <tf.Scalar>(
                                 tf
                                     .add(
                                         tf.losses.logLoss(batch, out).mul(2),
@@ -165,10 +170,15 @@ tf.setBackend("webgl").then(() => {
                                     )
                                     .div(3)
                             )
+                            mainLoss.print()
+                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...enc_ws(), ...dec_ws()].length)
+                            return mainLoss.add(l2Loss)
                         },
-                        true,
+                        false,
                         <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )?.print()
+                    )
                 })
 
                 fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -177,7 +187,7 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
-            let test_print = tf.concat([test_in, test_out], 1)
+            let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             await tf.browser.toPixels(test_print, canvas)
 
