@@ -101,22 +101,28 @@ export const AED = (
             tf.layers.batchNormalization({ name: "e3-2_bn" }),
             tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
 
-            tf.layers.conv2d({ name: "eout", filters: 8, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "eout_bn" }),
+            // tf.layers.conv2d({ name: "eout", filters: 8, kernelSize: 3, padding: "same" }),
+            // layers.mish({}),
+            // tf.layers.batchNormalization({ name: "eout_bn" }),
 
             tf.layers.flatten(),
             tf.layers.dense({ units: 256, name: "ef" }),
+            tf.layers.batchNormalization({ name: "ef_bn" }),
+            tf.layers.activation({ activation: "sigmoid" }),
             tf.layers.reshape({ targetShape: [8, 32] }),
         ],
     })
 
-    let template = tf.variable(tf.randomNormal([1, 16, 32, 8, 1, 32]), true, "template")
+    let template = tf.variable(tf.randomNormal([1, 8, 16, 8, 1, 32]), true, "template")
     let dec = tf.sequential({
         layers: [
-            tf.layers.inputLayer({ inputShape: [16, 32, 64], dtype: "float32" }),
-            tf.layers.separableConv2d({ name: "din", filters: 32, kernelSize: 3, padding: "same" }),
+            tf.layers.inputLayer({ inputShape: [8, 16, 64], dtype: "float32" }),
+            tf.layers.separableConv2d({ name: "din", filters: 64, kernelSize: 3, padding: "same" }),
             layers.mish({}),
+
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 16] }),
+            layers.mish({}),
+            tf.layers.separableConv2d({ name: "d2", filters: 32, kernelSize: 3, padding: "same" }),
 
             layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 8] }),
             layers.mish({}),
@@ -152,7 +158,7 @@ export const AED = (
                     let a = tf
                         .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
                         .sum(-1)
-                        .reshape([-1, 16, 32, 64])
+                        .reshape([-1, 8, 16, 64])
 
                     return <tf.Tensor>dec.apply(a)
                 }),
