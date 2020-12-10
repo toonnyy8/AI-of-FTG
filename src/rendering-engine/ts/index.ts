@@ -264,8 +264,9 @@ tf.setBackend("webgl").then(() => {
     }
     const testFPS = false
     if (testFPS) {
-        const H = 4,
-            W = 8
+        const dk = 2,
+            H = 8,
+            W = 16
         const mha = MHA(H * W * dk, 8, 32, 32)
         const ff = FF(H * W * dk, H * W * dk * 2)
         const conv = tf.sequential({
@@ -291,7 +292,7 @@ tf.setBackend("webgl").then(() => {
                 test = mha.fn(test, test).slice([0, 63, 0], [1, 1, -1])
                 test = (<tf.Tensor>ff.fn(test)).reshape([1, H, W, dk])
                 // let test = tf.ones([1, H, W, dk])
-                tf.browser.toPixels(<tf.Tensor3D>dec_fn(test.reshape([1, H * W * dk])).squeeze([0]), canvas)
+                tf.browser.toPixels(<tf.Tensor3D>dec_fn(test).squeeze([0]), canvas)
                 requestAnimationFrame(tt)
             })
         tt()

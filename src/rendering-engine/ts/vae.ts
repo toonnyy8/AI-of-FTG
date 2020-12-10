@@ -115,7 +115,16 @@ export const VAE = (
         ],
     })
 
-    let template = tf.variable(tf.randomNormal([1, 8, 16, 64], 0, 0), true, "template")
+    let template1 = tf.variable(tf.randomNormal([1, 8, 16, 32], 0, 0), true, "template1")
+    let template2 = tf.variable(tf.randomNormal([1, 8, 16, 32], 0, 0), true, "template2")
+    let ss = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [1, 1, 2], dtype: "float32" }),
+            tf.layers.conv2d({ name: "ss1", filters: 8, kernelSize: 3, padding: "same" }),
+            layers.mish({}),
+            tf.layers.conv2d({ name: "ssout", filters: 4, kernelSize: 1, padding: "same" }),
+        ],
+    })
     let dec = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [8, 16, 64], dtype: "float32" }),
@@ -153,15 +162,24 @@ export const VAE = (
         {
             fn: (input: tf.Tensor, random?: boolean) =>
                 tf.tidy(() => {
-                    // let a = input
-                    let [batch, h, w] = (<tf.Tensor4D>input).shape
-                    let [mean, sd] = input.split(2, -1)
-                    let r = random ? tf.randomNormal([batch, h, w, 64], 0, 0) : template
-                    let out = tf.mul(r, sd).add(mean)
+                    // random = true
+                    let ssInp = <tf.Tensor4D>ss.apply(input)
+                    let [batch, h, w] = ssInp.shape
+                    let [mean1, sd1, mean2, sd2] = ssInp.split(4, -1)
+                    let r1 = random ? tf.randomNormal([batch, h, w, 32], 0, 0) : template1
+                    let r2 = random ? tf.randomNormal([batch, h, w, 32], 0, 0) : template2
+                    // let r = random ? tf.randomNormal([batch, h, w, 64], 0, 0) : template
+                    let out = tf.concat([tf.mul(r1, sd1).add(mean1), tf.mul(r2, sd2).add(mean2)], -1)
 
                     return <tf.Tensor>dec.apply(out)
                 }),
-            ws: () => tf.tidy(() => [template, ...(<tf.Variable[]>dec.getWeights())]),
+            ws: () =>
+                tf.tidy(() => [
+                    template1,
+                    template2,
+                    ...(<tf.Variable[]>ss.getWeights()),
+                    ...(<tf.Variable[]>dec.getWeights()),
+                ]),
         },
     ]
 }
