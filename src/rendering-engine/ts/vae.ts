@@ -59,7 +59,7 @@ export const VAE = (
         ws: () => tf.Variable[]
     },
     {
-        fn: (input: tf.Tensor) => tf.Tensor
+        fn: (input: tf.Tensor, random?: boolean) => tf.Tensor
         ws: () => tf.Variable[]
     }
 ] => {
@@ -115,7 +115,7 @@ export const VAE = (
         ],
     })
 
-    let template = tf.variable(tf.randomNormal([1, 8, 16, 8, 1, 32]), true, "template")
+    let template = tf.variable(tf.randomNormal([1, 8, 16, 64], 0, 0), true, "template")
     let dec = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [8, 16, 64], dtype: "float32" }),
@@ -151,19 +151,15 @@ export const VAE = (
             ws: () => tf.tidy(() => [...(<tf.Variable[]>enc.getWeights())]),
         },
         {
-            fn: (input: tf.Tensor) =>
+            fn: (input: tf.Tensor, random?: boolean) =>
                 tf.tidy(() => {
                     // let a = input
                     let [batch, h, w] = (<tf.Tensor4D>input).shape
                     let [mean, sd] = input.split(2, -1)
-                    let r = tf.randomNormal([batch, h, w, 64], 0, 0)
-                    let a = tf.mul(r, sd).add(mean)
-                    // let a = tf
-                    //     .mul(template.softmax(-1), input.reshape([-1, 1, 1, 1, 8, 32]))
-                    //     .sum(-1)
-                    //     .reshape([-1, 8, 16, 64])
+                    let r = random ? tf.randomNormal([batch, h, w, 64], 0, 0) : template
+                    let out = tf.mul(r, sd).add(mean)
 
-                    return <tf.Tensor>dec.apply(a)
+                    return <tf.Tensor>dec.apply(out)
                 }),
             ws: () => tf.tidy(() => [template, ...(<tf.Variable[]>dec.getWeights())]),
         },
