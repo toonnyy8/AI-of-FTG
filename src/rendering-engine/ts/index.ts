@@ -292,7 +292,7 @@ tf.setBackend("webgl").then(() => {
                 test = mha.fn(test, test).slice([0, 63, 0], [1, 1, -1])
                 test = (<tf.Tensor>ff.fn(test)).reshape([1, H, W, dk])
                 // let test = tf.ones([1, H, W, dk])
-                tf.browser.toPixels(<tf.Tensor3D>dec_fn(test).squeeze([0]), canvas)
+                tf.browser.toPixels(<tf.Tensor3D>dec_fn(test.reshape([1, H * W * dk])).squeeze([0]), canvas)
                 requestAnimationFrame(tt)
             })
         tt()
