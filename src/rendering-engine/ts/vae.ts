@@ -124,7 +124,7 @@ export const VAE = (
     let decIn = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [2, 4, 16], dtype: "float32" }),
-            tf.layers.separableConv2d({ name: "din", filters: 64, kernelSize: 3, padding: "same" }),
+            tf.layers.separableConv2d({ name: "din", filters: 256, kernelSize: 3, padding: "same" }),
         ],
     })
 
@@ -182,7 +182,7 @@ export const VAE = (
                     let spatial = <tf.Tensor4D>_spatial.reshape([batch, 8, 16, 1])
                     let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 16])
                     channel = <tf.Tensor4D>decIn.apply(channel)
-                    channel = tf.image.resizeBilinear(channel, [8, 16])
+                    channel = tf.image.resizeBilinear(c2pix(channel), [8, 16])
                     let inp = tf.mul(spatial, channel)
                     let out = <tf.Tensor4D>dec.apply(inp)
 
