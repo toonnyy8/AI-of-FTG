@@ -264,8 +264,9 @@ tf.setBackend("webgl").then(() => {
     }
     const testFPS = false
     if (testFPS) {
-        const H = 4,
-            W = 8
+        const dk = 2,
+            H = 8,
+            W = 16
         const mha = MHA(H * W * dk, 8, 32, 32)
         const ff = FF(H * W * dk, H * W * dk * 2)
         const conv = tf.sequential({

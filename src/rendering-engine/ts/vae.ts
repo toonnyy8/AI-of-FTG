@@ -70,7 +70,7 @@ export const VAE = (
     let pooling = (a: tf.Tensor) => {
         return blurPooling.fn(tf.maxPool(<tf.Tensor4D | tf.Tensor3D>a, 2, 1, "same"))
     }
-    let enc = tf.sequential({
+    let enc1 = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [32, 64, 3] }),
             tf.layers.conv2d({ name: "ein", filters: 32, kernelSize: 1, padding: "same" }),
@@ -80,53 +80,64 @@ export const VAE = (
             tf.layers.conv2d({ name: "e1-1", filters: 32, kernelSize: 3, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e1-1_bn" }),
-            tf.layers.conv2d({ name: "e1-2", filters: 32, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "e1-2_bn" }),
             tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
 
-            tf.layers.conv2d({ name: "e2-1", filters: 32, kernelSize: 3, padding: "same" }),
+            tf.layers.conv2d({ name: "e2-1", filters: 64, kernelSize: 3, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e2-1_bn" }),
-            tf.layers.conv2d({ name: "e2-2", filters: 32, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "e2-2_bn" }),
             tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
-
-            tf.layers.conv2d({ name: "e3-1", filters: 64, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "e3-1_bn" }),
-            tf.layers.conv2d({ name: "e3-2", filters: 64, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
-            tf.layers.batchNormalization({ name: "e3-2_bn" }),
-            // tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
-
-            tf.layers.conv2d({ name: "mean-sd", filters: 2, kernelSize: 3, padding: "same" }),
-            tf.layers.activation({ activation: "sigmoid" }),
-            // tf.layers.conv2d({ name: "eout", filters: 8, kernelSize: 3, padding: "same" }),
-            // layers.mish({}),
-            // tf.layers.batchNormalization({ name: "eout_bn" }),
-
-            // tf.layers.flatten(),
-            // tf.layers.dense({ units: 256, name: "ef" }),
-            // tf.layers.batchNormalization({ name: "ef_bn" }),
-            // tf.layers.activation({ activation: "sigmoid" }),
-            // tf.layers.reshape({ targetShape: [8, 32] }),
         ],
     })
 
-    let template = tf.variable(tf.randomNormal([1, 8, 16, 64], 0, 0), true, "template")
+    let enc2 = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [8, 16, 64] }),
+
+            tf.layers.conv2d({ name: "e3-1", filters: 128, kernelSize: 3, padding: "same" }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "e3-1_bn" }),
+            tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
+
+            tf.layers.conv2d({ name: "e4-1", filters: 256, kernelSize: 3, padding: "same" }),
+            layers.mish({}),
+            tf.layers.batchNormalization({ name: "e4-1_bn" }),
+            tf.layers.maxPool2d({ poolSize: 2, strides: 2, padding: "same" }),
+        ],
+    })
+
+    let enc_spatial = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [8, 16, 64] }),
+
+            tf.layers.conv2d({ name: "enc_spatial", filters: 1, kernelSize: 3, padding: "same" }),
+            tf.layers.activation({ activation: "tanh" }),
+        ],
+    })
+    let enc_channel = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [2, 4, 256] }),
+
+            tf.layers.conv2d({ name: "enc_channel", filters: 16, kernelSize: 3, padding: "same" }),
+            tf.layers.activation({ activation: "tanh" }),
+        ],
+    })
+    let decIn = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [2, 4, 16], dtype: "float32" }),
+            tf.layers.separableConv2d({ name: "din", filters: 256, kernelSize: 3, padding: "same" }),
+        ],
+    })
+
     let dec = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [8, 16, 64], dtype: "float32" }),
-            tf.layers.separableConv2d({ name: "din", filters: 64, kernelSize: 3, padding: "same" }),
-            layers.mish({}),
+            tf.layers.separableConv2d({ name: "d1", filters: 64, kernelSize: 3, padding: "same" }),
 
             layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 16] }),
             layers.mish({}),
-            tf.layers.separableConv2d({ name: "d2", filters: 32, kernelSize: 3, padding: "same" }),
+            tf.layers.separableConv2d({ name: "d2", filters: 64, kernelSize: 3, padding: "same" }),
 
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 8] }),
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 16] }),
             layers.mish({}),
             tf.layers.separableConv2d({ name: "d3", filters: 32, kernelSize: 3, padding: "same" }),
 
@@ -145,23 +156,39 @@ export const VAE = (
         {
             fn: (input: tf.Tensor) =>
                 tf.tidy(() => {
-                    let out = <tf.Tensor>enc.apply(input)
+                    let [batch] = input.shape
+                    let a = <tf.Tensor>enc1.apply(input)
+                    let b = <tf.Tensor>enc2.apply(a)
+                    let spatial = <tf.Tensor>enc_spatial.apply(a)
+                    let channel = <tf.Tensor>enc_channel.apply(b)
+                    let out = tf.concat([spatial.reshape([batch, -1]), channel.reshape([batch, -1])], -1)
                     return out
                 }),
-            ws: () => tf.tidy(() => [...(<tf.Variable[]>enc.getWeights())]),
+            ws: () =>
+                tf.tidy(() => [
+                    ...(<tf.Variable[]>enc1.getWeights()),
+                    ...(<tf.Variable[]>enc2.getWeights()),
+                    ...(<tf.Variable[]>enc_spatial.getWeights()),
+                    ...(<tf.Variable[]>enc_channel.getWeights()),
+                ]),
         },
         {
             fn: (input: tf.Tensor, random?: boolean) =>
                 tf.tidy(() => {
-                    // let a = input
-                    let [batch, h, w] = (<tf.Tensor4D>input).shape
-                    let [mean, sd] = input.split(2, -1)
-                    let r = random ? tf.randomNormal([batch, h, w, 64], 0, 0) : template
-                    let out = tf.mul(r, sd).add(mean)
+                    // let inp = input
+                    random = true
+                    let [batch] = input.shape
+                    let [_spatial, _channel] = <tf.Tensor[]>input.split(2, -1)
+                    let spatial = <tf.Tensor4D>_spatial.reshape([batch, 8, 16, 1])
+                    let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 16])
+                    channel = <tf.Tensor4D>decIn.apply(channel)
+                    channel = tf.image.resizeBilinear(c2pix(channel), [8, 16])
+                    let inp = tf.mul(spatial, channel)
+                    let out = <tf.Tensor4D>dec.apply(inp)
 
-                    return <tf.Tensor>dec.apply(out)
+                    return out
                 }),
-            ws: () => tf.tidy(() => [template, ...(<tf.Variable[]>dec.getWeights())]),
+            ws: () => tf.tidy(() => [...(<tf.Variable[]>decIn.getWeights()), ...(<tf.Variable[]>dec.getWeights())]),
         },
     ]
 }
