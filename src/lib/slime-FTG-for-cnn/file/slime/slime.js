@@ -1671,8 +1671,8 @@ export class Actor {
         }
         this.mesh.position = this.mesh.position.add(this.vector)
 
-        if (this.mesh.position.x > 6.5) { this.mesh.position.x = 6.5 }
-        if (this.mesh.position.x < -6.5) { this.mesh.position.x = -6.5 }
+        if (this.mesh.position.x > 6) { this.mesh.position.x = 6 }
+        if (this.mesh.position.x < -6) { this.mesh.position.x = -6 }
 
 
         if (this._state.chapter == "normal" && this._state.section != "jump") {

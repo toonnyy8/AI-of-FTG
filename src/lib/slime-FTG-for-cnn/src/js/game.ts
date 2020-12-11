@@ -214,7 +214,7 @@ export const Game = (
             // create a built-in "ground" shape;
             var ground = BABYLON.Mesh.CreateGround("ground1", 60, 60, 2, scene)
             ground.position.y = -0.1
-            ground.position.z = 20
+            ground.position.z = 28.5
 
             player1.setOpponent(player2)
             player2.setOpponent(player1)
