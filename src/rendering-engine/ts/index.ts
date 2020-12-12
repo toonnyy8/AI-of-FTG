@@ -1,19 +1,14 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { VAE } from "./vae"
+import { AE } from "./ae"
 import { MHA, FF } from "./mha"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
     let dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = VAE({
-        assetGroups: 8,
-        assetSize: 16,
-        assetNum: 32,
-        dk: dk,
-    })
+    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = AE({})
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
 
@@ -262,7 +257,7 @@ tf.setBackend("webgl").then(() => {
             tf.browser.toPixels(test_print, canvas)
         })
     }
-    const testFPS = false
+    const testFPS = false // true
     if (testFPS) {
         const dk = 2,
             H = 8,
