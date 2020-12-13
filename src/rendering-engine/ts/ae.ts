@@ -34,15 +34,17 @@ export const AE = (
             layers.mish({}),
             tf.layers.batchNormalization({ name: "ein_bn" }),
 
-            tf.layers.conv2d({ name: "e1-1", filters: 32, kernelSize: 3, padding: "same" }),
+            tf.layers.maxPooling2d({ poolSize: 2, strides: 1, padding: "same" }),
+
+            tf.layers.conv2d({ name: "e1-1", filters: 32, kernelSize: 3, strides: 2, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e1-1_bn" }),
-            layers.lambda({ fn: (t) => pooling(<tf.Tensor4D>t), outputShape: [16, 32, 32] }),
 
-            tf.layers.conv2d({ name: "e2-1", filters: 64, kernelSize: 3, padding: "same" }),
+            tf.layers.maxPooling2d({ poolSize: 2, strides: 1, padding: "same" }),
+
+            tf.layers.conv2d({ name: "e2-1", filters: 64, kernelSize: 3, strides: 2, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e2-1_bn" }),
-            layers.lambda({ fn: (t) => pooling(<tf.Tensor4D>t), outputShape: [8, 16, 64] }),
         ],
     })
 
@@ -50,15 +52,17 @@ export const AE = (
         layers: [
             tf.layers.inputLayer({ inputShape: [8, 16, 64] }),
 
-            tf.layers.conv2d({ name: "e3-1", filters: 128, kernelSize: 3, padding: "same" }),
+            tf.layers.maxPooling2d({ poolSize: 2, strides: 1, padding: "same" }),
+
+            tf.layers.conv2d({ name: "e3-1", filters: 128, kernelSize: 3, strides: 2, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e3-1_bn" }),
-            layers.lambda({ fn: (t) => pooling(<tf.Tensor4D>t), outputShape: [4, 8, 128] }),
 
-            tf.layers.conv2d({ name: "e4-1", filters: 256, kernelSize: 3, padding: "same" }),
+            tf.layers.maxPooling2d({ poolSize: 2, strides: 1, padding: "same" }),
+
+            tf.layers.conv2d({ name: "e4-1", filters: 256, kernelSize: 3, strides: 2, padding: "same" }),
             layers.mish({}),
             tf.layers.batchNormalization({ name: "e4-1_bn" }),
-            layers.lambda({ fn: (t) => pooling(<tf.Tensor4D>t), outputShape: [2, 4, 256] }),
         ],
     })
 
