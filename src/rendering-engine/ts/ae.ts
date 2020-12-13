@@ -15,11 +15,12 @@ export const AE = (
     config: {} = {}
 ): [
     {
-        fn: (input: tf.Tensor) => tf.Tensor
+        fn: (input: tf.Tensor4D) => tf.Tensor2D
         ws: () => tf.Variable[]
     },
     {
-        fn: (input: tf.Tensor, random?: boolean) => tf.Tensor
+        fn: (input: tf.Tensor2D, random?: boolean) => tf.Tensor4D
+        synthesizer: (input: tf.Tensor2D) => tf.Tensor4D
         ws: () => tf.Variable[]
     }
 ] => {
@@ -82,10 +83,10 @@ export const AE = (
             tf.layers.activation({ activation: "tanh" }),
         ],
     })
-    let decIn = tf.sequential({
+    let synthesizerIn = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [2, 4, 16], dtype: "float32" }),
-            tf.layers.conv2d({ name: "din", filters: 256, kernelSize: 1, padding: "same" }),
+            tf.layers.conv2d({ name: "synthesizer", filters: 256, kernelSize: 1, padding: "same" }),
         ],
     })
 
@@ -112,17 +113,26 @@ export const AE = (
             }),
         ],
     })
+    const synthesizer = (input: tf.Tensor2D): tf.Tensor4D => {
+        let [batch] = input.shape
+        let [_spatial, _channel] = <tf.Tensor[]>input.split(2, -1)
+        let spatial = <tf.Tensor4D>_spatial.reshape([batch, 8, 16, 1])
+        let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 16])
+        channel = <tf.Tensor4D>synthesizerIn.apply(channel)
+        channel = tf.image.resizeBilinear(c2pix(channel), [8, 16])
+        return tf.mul(spatial, channel)
+    }
 
     return [
         {
-            fn: (input: tf.Tensor) =>
+            fn: (input: tf.Tensor4D) =>
                 tf.tidy(() => {
                     let [batch] = input.shape
                     let a = <tf.Tensor>enc1.apply(input)
                     let b = <tf.Tensor>enc2.apply(a)
                     let spatial = <tf.Tensor>enc_spatial.apply(a)
                     let channel = <tf.Tensor>enc_channel.apply(b)
-                    let out = tf.concat([spatial.reshape([batch, -1]), channel.reshape([batch, -1])], -1)
+                    let out = <tf.Tensor2D>tf.concat([spatial.reshape([batch, -1]), channel.reshape([batch, -1])], -1)
                     return out
                 }),
             ws: () =>
@@ -134,22 +144,15 @@ export const AE = (
                 ]),
         },
         {
-            fn: (input: tf.Tensor, random?: boolean) =>
+            fn: (input: tf.Tensor2D, random?: boolean) =>
                 tf.tidy(() => {
-                    // let inp = input
-                    random = true
-                    let [batch] = input.shape
-                    let [_spatial, _channel] = <tf.Tensor[]>input.split(2, -1)
-                    let spatial = <tf.Tensor4D>_spatial.reshape([batch, 8, 16, 1])
-                    let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 16])
-                    channel = <tf.Tensor4D>decIn.apply(channel)
-                    channel = tf.image.resizeBilinear(c2pix(channel), [8, 16])
-                    let inp = tf.mul(spatial, channel)
+                    let inp = synthesizer(input)
                     let out = <tf.Tensor4D>dec.apply(inp)
-
                     return out
                 }),
-            ws: () => tf.tidy(() => [...(<tf.Variable[]>decIn.getWeights()), ...(<tf.Variable[]>dec.getWeights())]),
+            synthesizer,
+            ws: () =>
+                tf.tidy(() => [...(<tf.Variable[]>synthesizerIn.getWeights()), ...(<tf.Variable[]>dec.getWeights())]),
         },
     ]
 }
