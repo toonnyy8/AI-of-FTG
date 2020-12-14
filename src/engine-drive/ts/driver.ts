@@ -2,7 +2,6 @@ import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as layers from "./layers"
 import { MHA, FF, positionalEncoding } from "./mha"
-import { sequential } from "@tensorflow/tfjs"
 
 export const Driver = (config: {
     ctrlNum: number
@@ -16,7 +15,7 @@ export const Driver = (config: {
     dv?: number
     hiddens?: number
 }): {
-    fn: (input: tf.Tensor4D, actions: number[][]) => tf.Tensor
+    fn: (input: tf.Tensor2D, actions: number[][]) => tf.Tensor2D
     ws: () => tf.Variable[]
 } => {
     const ctrlNum = config.ctrlNum
@@ -47,9 +46,9 @@ export const Driver = (config: {
     let outLinear = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [dmodel] }),
-            tf.layers.dense({ units: dmodel * 2 }),
+            tf.layers.dense({ units: hiddens }),
             layers.mish({}),
-            tf.layers.dense({ units: dinp, activation: "sigmoid" }),
+            tf.layers.dense({ units: dinp, activation: "tanh" }),
         ],
     })
 
@@ -64,17 +63,16 @@ export const Driver = (config: {
 
     return {
         // ctrlActions:number[ctrls][len]
-        fn: (input: tf.Tensor4D, ctrlActions: number[][]) =>
+        fn: (input: tf.Tensor2D, ctrlActions: number[][]) =>
             tf.tidy(() => {
-                let [l, h, w, c] = input.shape
-                if (dinp != h * w * c) throw new Error("h*w*c != dmodel")
+                let [l, c] = input.shape
+                if (dinp != c) throw new Error("c != dinp")
                 if (posEnc[l] === undefined) posEnc[l] = tf.keep(positionalEncoding(l, dmodel))
                 let embs: tf.Variable<tf.Rank.R2>[] = ctrlActions.map((actions, idx) => {
                     return <tf.Variable<tf.Rank.R2>>tf.gather(actEmbs[idx], actions, 0)
                 })
 
-                let inp = <tf.Tensor2D>input.reshape([l, dinp])
-                inp = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(inp))
+                let inp = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(input))
                 inp = tf.addN([inp, ...embs, posEnc[l]])
 
                 let mha1Out = <tf.Tensor2D>mha1.fn(inp, inp)
@@ -89,7 +87,7 @@ export const Driver = (config: {
 
                 let out = <tf.Tensor2D>outLinear.apply(ff2Out)
 
-                return out.reshape([l, h, w, c])
+                return out
             }),
         ws: () =>
             tf.tidy(() => [

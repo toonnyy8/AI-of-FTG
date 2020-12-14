@@ -1,10 +1,8 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { AED } from "./ae"
-import { MHA, FF } from "./mha"
+import { AE } from "./ae"
 import { Driver } from "./driver"
-import { tensor, unstack } from "@tensorflow/tfjs"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
@@ -12,23 +10,18 @@ tf.setBackend("webgl").then(() => {
     let h = 5,
         w = 10,
         dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }, { mapping }] = AED({
-        assetGroups: 8,
-        assetSize: 16,
-        assetNum: 32,
-        dk: dk,
-    })
+    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, synthesizer, ws: dec_ws }] = AE({})
     let driver = Driver({
         ctrlNum: 2,
         actionNum: 2 ** 7,
         dact: 64,
-        dinp: h * w * dk,
-        dmodel: 256,
+        dinp: 256,
+        dmodel: 64,
         r: 8,
         head: 8,
         dk: 32,
         dv: 32,
-        hiddens: 512,
+        hiddens: 1024,
     })
 
     let trainDatas: tf.Tensor4D[] = []
@@ -45,7 +38,7 @@ tf.setBackend("webgl").then(() => {
                     dec_fn(
                         enc_fn(
                             trainDatas[fileIdx]
-                                .slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                                .slice([batchStart + 1, 0, 0, 0], [batchSize, -1, -1, -1])
                                 .slice([batchSize - 2, 0, 0, 0], [2, -1, -1, -1])
                         )
                     ).unstack(0)
@@ -54,12 +47,26 @@ tf.setBackend("webgl").then(() => {
                 let ctrl2Batch = ctrl2s[fileIdx].slice(batchStart, batchStart + batchSize)
                 let test_out = <tf.Tensor3D>(
                     tf.tidy(() =>
-                        (<tf.Tensor>dec_fn(driver.fn(<tf.Tensor4D>enc_fn(test_xImg), [ctrl1Batch, ctrl2Batch])))
+                        (<tf.Tensor>dec_fn(driver.fn(<tf.Tensor2D>enc_fn(test_xImg), [ctrl1Batch, ctrl2Batch])))
                             .slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1])
                             .squeeze([0])
                     )
                 )
-                let test_print = tf.concat([...test_yImgs, test_out], 1)
+                // enc_fn(
+                //     trainDatas[fileIdx]
+                //         .slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
+                //         .slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1])
+                // )
+                //     .squeeze([0])
+                //     .sub(
+                //         driver
+                //             .fn(<tf.Tensor2D>enc_fn(test_xImg), [ctrl1Batch, ctrl2Batch])
+                //             .slice([batchSize - 1, 0], [1, -1])
+                //             .squeeze([0])
+                //     )
+                //     .array()
+                //     .then((arr) => console.log(arr))
+                let test_print = tf.image.resizeNearestNeighbor(tf.concat([...test_yImgs, test_out], 1), [64, 64 * 3])
 
                 resolve(tf.browser.toPixels(test_print, canvas))
             })
@@ -145,7 +152,7 @@ tf.setBackend("webgl").then(() => {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
                 let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize - t))
                 tf.tidy(() => {
-                    let lossWeight = tf.linspace(0, 1, 64) //.sqrt()
+                    let lossWeight = <tf.Tensor2D>tf.linspace(0, 1, 64).reshape([64, 1]) //.sqrt()
                     lossWeight = lossWeight.div(lossWeight.sum())
                     let xImg = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     let yImgs = new Array(t).fill(0).map((_, offset) => {
@@ -157,60 +164,83 @@ tf.setBackend("webgl").then(() => {
                         return ctrl1s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
                     let ctrl2Batchs = new Array(t).fill(0).map((_, offset) => {
-                        return ctrl1s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
+                        return ctrl2s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
-                    let x_enc = <tf.Tensor4D>enc_fn(xImg)
-                    let y_encs = yImgs.map((yImg) => <tf.Tensor4D>enc_fn(yImg))
+                    let x_enc = <tf.Tensor2D>enc_fn(xImg)
+                    let y_encs = yImgs.map((yImg) => <tf.Tensor2D>enc_fn(yImg))
                     let mask = (() => {
                         let arr = new Array(batchSize).fill(0)
                         arr[arr.length - 1] = 1
-                        return tf.tensor4d(arr, [batchSize, 1, 1, 1])
+                        return tf.tensor2d(arr, [batchSize, 1])
                     })()
                     // let mask = lossWeight.reshape([-1, 1, 1, 1])
-                    let { value, grads } = opt.computeGradients(
-                        () => {
-                            const loss_fn = <T extends tf.Tensor>(y: T, _y: T, axis: number[]) => {
-                                return nn
-                                    .ssim2d(<tf.Tensor4D>y, <tf.Tensor4D>_y)
-                                    .neg()
-                                    .add(1)
-                                    .mul(lossWeight)
-                                    .sum()
-                                    .add(tf.losses.logLoss(y, _y))
-                            }
-                            const mainLoss = y_encs
-                                .reduce(
-                                    (prev, y_enc, idx) => {
-                                        let next_enc = <tf.Tensor4D>(
-                                            driver.fn(prev.enc, [ctrl1Batchs[idx], ctrl2Batchs[idx]])
+                    const logLoss = (label: tf.Tensor2D, pred: tf.Tensor2D): tf.Scalar => {
+                        let eps = 0.0000001
+                        let p = tf.clipByValue(pred, eps, 1 - eps)
+                        return tf.mean(
+                            label
+                                .mul(tf.log(p))
+                                .neg()
+                                .sub(tf.sub(1, label).mul(tf.log(tf.sub(1, p))))
+                                .mul(lossWeight)
+                                .sum(0)
+                        )
+                    }
+                    const loss_fn = <T extends tf.Tensor2D>(y: T, _y: T): tf.Scalar => {
+                        return logLoss(y.mul(0.5).add(0.5), _y.mul(0.5).add(0.5))
+                    }
+                    const { gradients, loss } = y_encs.reduce(
+                        (prev, y_enc, idx) => {
+                            let next_enc: tf.Tensor2D
+                            let { value, grads } = opt.computeGradients(
+                                () =>
+                                    tf.tidy(() => {
+                                        next_enc = tf.keep(
+                                            <tf.Tensor2D>driver.fn(prev.enc, [ctrl1Batchs[idx], ctrl2Batchs[idx]])
                                         )
+                                        return loss_fn(y_enc, next_enc)
+                                    }),
+                                <tf.Variable[]>(<unknown>[...driver.ws()])
+                            )
+                            let enc = tf.tidy(
+                                () =>
+                                    <tf.Tensor2D>(
+                                        tf.concat([
+                                            prev.enc.slice([1, 0], [-1, -1]),
+                                            next_enc.slice([batchSize - 1, 0], [1, -1]),
+                                        ])
+                                    )
+                            )
+                            // @ts-ignore
+                            next_enc.dispose()
+                            prev.enc.dispose()
+                            let gradients = tf.tidy(() =>
+                                Object.keys(grads).reduce((gradients, name) => {
+                                    let g = grads[name].where(grads[name].isFinite(), 0)
+                                    if (prev.gradients[name] !== undefined) {
+                                        gradients[name] = prev.gradients[name].add(g)
+                                        prev.gradients[name].dispose()
+                                    } else gradients[name] = g.clone()
 
-                                        return {
-                                            loss: <tf.Scalar>prev.loss.add(loss_fn(y_enc, next_enc, [1, 2, 3])),
-                                            enc: <tf.Tensor4D>(
-                                                tf.concat([
-                                                    prev.enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),
-                                                    next_enc.slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1]),
-                                                ])
-                                            ), //next_enc, //tf.add(next_enc.mul(mask), y_enc.mul(tf.sub(1, mask)))
-                                        }
-                                    },
-                                    { loss: tf.scalar(0), enc: x_enc }
-                                )
-                                .loss.div(t)
-                            mainLoss.print()
-                            const l2Loss = driver
-                                .ws()
-                                .reduce((loss, ws) => loss.add(ws.square().mean()), tf.scalar(0))
-                                .div(driver.ws().length)
-                            return mainLoss.add(l2Loss)
+                                    grads[name].dispose()
+                                    g.dispose()
+                                    return gradients
+                                }, <tf.NamedTensorMap>{})
+                            )
+
+                            return {
+                                gradients: gradients,
+                                enc: enc,
+                                loss: <tf.Scalar>prev.loss.add(value),
+                            }
                         },
-                        <tf.Variable[]>(<unknown>[...driver.ws()])
+                        { gradients: <tf.NamedTensorMap>{}, enc: x_enc.clone(), loss: tf.scalar(0) }
                     )
-                    Object.keys(grads).forEach((key) => {
-                        grads[key] = grads[key].where(grads[key].isFinite(), 0)
+                    loss.div(t).print()
+                    Object.keys(gradients).map((name) => {
+                        gradients[name] = gradients[name].div(t)
                     })
-                    opt.applyGradients(<[]>(<unknown>grads))
+                    opt.applyGradients(<[]>(<unknown>gradients))
                 })
             }
         }
@@ -408,57 +438,55 @@ tf.setBackend("webgl").then(() => {
     })
     let runTest = false
     ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
-        if (runTest) runTest = false
-        else {
-            runTest = true
+        test(64)
+        // if (runTest) runTest = false
+        // else {
+        //     runTest = true
 
-            const L = 64
-            let fileIdx = Math.floor(Math.random() * trainDatas.length)
+        //     const L = 64
+        //     let fileIdx = Math.floor(Math.random() * trainDatas.length)
 
-            let input_enc = <tf.Tensor4D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
-            let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
-            let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
+        //     let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
+        //     let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
+        //     let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
 
-            const tt = () => {
-                tf.tidy(() => {
-                    // const p1Ctrl = [
-                    //     Math.random() < 0.3 ? true : false,
-                    //     Math.random() < 0.1 ? true : false,
-                    //     Math.random() < 0.5 ? true : false,
-                    //     Math.random() < 0.5 ? true : false,
-                    //     Math.random() < 0.01 ? true : false,
-                    //     Math.random() < 0.01 ? true : false,
-                    //     Math.random() < 0.01 ? true : false,
-                    // ]
+        //     const tt = () => {
+        //         tf.tidy(() => {
+        //             // const p1Ctrl = [
+        //             //     Math.random() < 0.3 ? true : false,
+        //             //     Math.random() < 0.1 ? true : false,
+        //             //     Math.random() < 0.5 ? true : false,
+        //             //     Math.random() < 0.5 ? true : false,
+        //             //     Math.random() < 0.01 ? true : false,
+        //             //     Math.random() < 0.01 ? true : false,
+        //             //     Math.random() < 0.01 ? true : false,
+        //             // ]
 
-                    // const p2Ctrl = [
-                    //     Math.random() < 0.2 ? true : false,
-                    //     Math.random() < 0.2 ? true : false,
-                    //     Math.random() < 0.4 ? true : false,
-                    //     Math.random() < 0.4 ? true : false,
-                    //     Math.random() < 0.1 ? true : false,
-                    //     Math.random() < 0.1 ? true : false,
-                    //     Math.random() < 0.1 ? true : false,
-                    // ]
-                    let next_enc = <tf.Tensor4D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
-                    next_enc = tf.concat([
-                        input_enc.slice([1, 0, 0, 0], [-1, -1, -1, -1]),
-                        next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1]),
-                    ])
-                    input_enc.dispose()
-                    input_enc = tf.keep(next_enc)
-                    input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
-                    input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+        //             // const p2Ctrl = [
+        //             //     Math.random() < 0.2 ? true : false,
+        //             //     Math.random() < 0.2 ? true : false,
+        //             //     Math.random() < 0.4 ? true : false,
+        //             //     Math.random() < 0.4 ? true : false,
+        //             //     Math.random() < 0.1 ? true : false,
+        //             //     Math.random() < 0.1 ? true : false,
+        //             //     Math.random() < 0.1 ? true : false,
+        //             // ]
+        //             let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
+        //             next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
+        //             input_enc.dispose()
+        //             input_enc = tf.keep(next_enc)
+        //             input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+        //             input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
 
-                    tf.browser.toPixels(
-                        <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1])).squeeze([0]),
-                        canvas
-                    )
-                })
-                if (runTest) requestAnimationFrame(tt)
-                else input_enc.dispose()
-            }
-            tt()
-        }
+        //             tf.browser.toPixels(
+        //                 <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1])).squeeze([0]),
+        //                 canvas
+        //             )
+        //         })
+        //         if (runTest) requestAnimationFrame(tt)
+        //         else input_enc.dispose()
+        //     }
+        //     tt()
+        // }
     }
 })
