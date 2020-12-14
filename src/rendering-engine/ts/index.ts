@@ -8,7 +8,7 @@ let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
     let dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, ws: dec_ws }] = AE({})
+    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, synthesizer, ws: dec_ws }] = AE({})
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
 

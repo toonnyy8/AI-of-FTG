@@ -72,20 +72,28 @@ export const AE = (
             tf.layers.inputLayer({ inputShape: [8, 16, 64] }),
 
             tf.layers.conv2d({ name: "enc_spatial", filters: 1, kernelSize: 3, padding: "same" }),
-            tf.layers.activation({ activation: "tanh" }),
         ],
     })
     let enc_channel = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [2, 4, 256] }),
 
-            tf.layers.conv2d({ name: "enc_channel", filters: 16, kernelSize: 3, padding: "same" }),
+            tf.layers.conv2d({ name: "enc_channel", filters: 32, kernelSize: 3, padding: "same" }),
+        ],
+    })
+    let zip = tf.sequential({
+        layers: [
+            tf.layers.inputLayer({ inputShape: [384] }),
+            tf.layers.dense({ name: "zip", units: 256 }),
             tf.layers.activation({ activation: "tanh" }),
         ],
     })
+    let unzip = tf.sequential({
+        layers: [tf.layers.inputLayer({ inputShape: [256] }), tf.layers.dense({ name: "unzip", units: 384 })],
+    })
     let synthesizerIn = tf.sequential({
         layers: [
-            tf.layers.inputLayer({ inputShape: [2, 4, 16], dtype: "float32" }),
+            tf.layers.inputLayer({ inputShape: [2, 4, 32], dtype: "float32" }),
             tf.layers.conv2d({ name: "synthesizer", filters: 256, kernelSize: 1, padding: "same" }),
         ],
     })
@@ -93,9 +101,9 @@ export const AE = (
     let dec = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [8, 16, 64], dtype: "float32" }),
-            tf.layers.separableConv2d({ name: "d1", filters: 256, kernelSize: 3, padding: "same" }),
+            tf.layers.separableConv2d({ name: "d1", filters: 128, kernelSize: 3, padding: "same" }),
 
-            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 64] }),
+            layers.lambda({ fn: (t) => c2pix(<tf.Tensor4D>t), outputShape: [32, 64, 32] }),
             layers.mish({}),
             tf.layers.separableConv2d({ name: "d2", filters: 128, kernelSize: 3, padding: "same" }),
 
@@ -115,9 +123,9 @@ export const AE = (
     })
     const synthesizer = (input: tf.Tensor2D): tf.Tensor4D => {
         let [batch] = input.shape
-        let [_spatial, _channel] = <tf.Tensor[]>input.split(2, -1)
+        let [_spatial, _channel] = <tf.Tensor[]>input.split([128, 256], -1)
         let spatial = <tf.Tensor4D>_spatial.reshape([batch, 8, 16, 1])
-        let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 16])
+        let channel = <tf.Tensor4D>_channel.reshape([batch, 2, 4, 32])
         channel = <tf.Tensor4D>synthesizerIn.apply(channel)
         channel = tf.image.resizeBilinear(c2pix(channel), [8, 16])
         return tf.mul(spatial, channel)
@@ -133,6 +141,7 @@ export const AE = (
                     let spatial = <tf.Tensor>enc_spatial.apply(a)
                     let channel = <tf.Tensor>enc_channel.apply(b)
                     let out = <tf.Tensor2D>tf.concat([spatial.reshape([batch, -1]), channel.reshape([batch, -1])], -1)
+                    out = <tf.Tensor2D>zip.apply(out)
                     return out
                 }),
             ws: () =>
@@ -141,18 +150,24 @@ export const AE = (
                     ...(<tf.Variable[]>enc2.getWeights()),
                     ...(<tf.Variable[]>enc_spatial.getWeights()),
                     ...(<tf.Variable[]>enc_channel.getWeights()),
+                    ...(<tf.Variable[]>zip.getWeights()),
                 ]),
         },
         {
             fn: (input: tf.Tensor2D, random?: boolean) =>
                 tf.tidy(() => {
-                    let inp = synthesizer(input)
+                    let inp = synthesizer(<tf.Tensor2D>unzip.apply(input))
+                    // let inp = synthesizer(input)
                     let out = <tf.Tensor4D>dec.apply(inp)
                     return out
                 }),
             synthesizer,
             ws: () =>
-                tf.tidy(() => [...(<tf.Variable[]>synthesizerIn.getWeights()), ...(<tf.Variable[]>dec.getWeights())]),
+                tf.tidy(() => [
+                    ...(<tf.Variable[]>unzip.getWeights()),
+                    ...(<tf.Variable[]>synthesizerIn.getWeights()),
+                    ...(<tf.Variable[]>dec.getWeights()),
+                ]),
         },
     ]
 }
