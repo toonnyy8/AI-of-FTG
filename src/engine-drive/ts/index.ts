@@ -438,55 +438,52 @@ tf.setBackend("webgl").then(() => {
     })
     let runTest = false
     ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
-        test(64)
-        // if (runTest) runTest = false
-        // else {
-        //     runTest = true
+        // test(64)
+        if (runTest) runTest = false
+        else {
+            runTest = true
 
-        //     const L = 64
-        //     let fileIdx = Math.floor(Math.random() * trainDatas.length)
+            const L = 64
+            let fileIdx = Math.floor(Math.random() * trainDatas.length)
 
-        //     let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
-        //     let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
-        //     let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
+            let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
+            let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
+            let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
 
-        //     const tt = () => {
-        //         tf.tidy(() => {
-        //             // const p1Ctrl = [
-        //             //     Math.random() < 0.3 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.5 ? true : false,
-        //             //     Math.random() < 0.5 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             // ]
+            const tt = () => {
+                tf.tidy(() => {
+                    // const p1Ctrl = [
+                    //     Math.random() < 0.3 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    // ]
 
-        //             // const p2Ctrl = [
-        //             //     Math.random() < 0.2 ? true : false,
-        //             //     Math.random() < 0.2 ? true : false,
-        //             //     Math.random() < 0.4 ? true : false,
-        //             //     Math.random() < 0.4 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             // ]
-        //             let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
-        //             next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
-        //             input_enc.dispose()
-        //             input_enc = tf.keep(next_enc)
-        //             input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
-        //             input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+                    // const p2Ctrl = [
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    // ]
+                    let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
+                    next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
+                    input_enc.dispose()
+                    input_enc = tf.keep(next_enc)
+                    input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+                    input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
 
-        //             tf.browser.toPixels(
-        //                 <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1])).squeeze([0]),
-        //                 canvas
-        //             )
-        //         })
-        //         if (runTest) requestAnimationFrame(tt)
-        //         else input_enc.dispose()
-        //     }
-        //     tt()
-        // }
+                    tf.browser.toPixels(<tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0], [1, -1])).squeeze([0]), canvas)
+                })
+                if (runTest) requestAnimationFrame(tt)
+                else input_enc.dispose()
+            }
+            tt()
+        }
     }
 })
