@@ -46,164 +46,61 @@ let canvas = <HTMLCanvasElement>document.getElementById("bobylonCanvas")
 let pixcanvas = <HTMLCanvasElement>document.getElementById("pixCanvas")
 let d1canvas = <HTMLCanvasElement>document.getElementById("d1Canvas")
 
-let control = (ctrl: number, keySet: KeySet) => {
-    switch (ctrl) {
-        case 0: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["jump"],
-                })
-            )
-            break
-        }
-        case 1: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["squat"],
-                })
-            )
-            break
-        }
-        case 2: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["left"],
-                })
-            )
-            break
-        }
-        case 3: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["right"],
-                })
-            )
-            break
-        }
-        case 4: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["attack"]["light"],
-                })
-            )
-            break
-        }
-        case 5: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["attack"]["medium"],
-                })
-            )
-            break
-        }
-        case 6: {
-            document.dispatchEvent(
-                new KeyboardEvent("keydown", {
-                    key: keySet["attack"]["heavy"],
-                })
-            )
-            break
-        }
-        case 7: {
-            break
-        }
-        case 8: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["jump"],
-                })
-            )
-        }
-        case 9: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["squat"],
-                })
-            )
-        }
-        case 10: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["left"],
-                })
-            )
-        }
-        case 11: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["right"],
-                })
-            )
-        }
-        case 12: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["attack"]["light"],
-                })
-            )
-        }
-        case 13: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["attack"]["medium"],
-                })
-            )
-        }
-        case 14: {
-            document.dispatchEvent(
-                new KeyboardEvent("keyup", {
-                    key: keySet["attack"]["heavy"],
-                })
-            )
-        }
-    }
-}
-
-const _control = (
+const control = (
     ctrl: {
-        jump: boolean
-        squat: boolean
-        left: boolean
-        right: boolean
+        arrow: {
+            jump: 1 | 0 | -1
+            squat: 1 | 0 | -1
+            left: 1 | 0 | -1
+            right: 1 | 0 | -1
+        }
         attack: {
-            light: boolean
-            medium: boolean
-            heavy: boolean
+            light: 1 | 0 | -1
+            medium: 1 | 0 | -1
+            heavy: 1 | 0 | -1
         }
     },
     keySet: KeySet
 ) => {
-    Object.keys(ctrl).map((ctrlName) => {
-        if (ctrlName == "attack") {
-            Object.keys(ctrl.attack).map((atkName) => {
-                if (ctrl.attack[<"light" | "medium" | "heavy">atkName]) {
-                    document.dispatchEvent(
-                        new KeyboardEvent("keydown", {
-                            key: keySet.attack[<"light" | "medium" | "heavy">atkName],
-                        })
-                    )
-                } else {
-                    document.dispatchEvent(
-                        new KeyboardEvent("keyup", {
-                            key: keySet.attack[<"light" | "medium" | "heavy">atkName],
-                        })
-                    )
-                }
-            })
-        } else {
-            if (ctrl[<"jump" | "squat" | "left" | "right">ctrlName]) {
+    Object.keys(ctrl.arrow).forEach((arrow) => {
+        switch (ctrl.arrow[<"jump" | "squat" | "left" | "right">arrow]) {
+            case 1:
                 document.dispatchEvent(
                     new KeyboardEvent("keydown", {
-                        key: keySet[<"jump" | "squat" | "left" | "right">ctrlName],
+                        key: keySet[<"jump" | "squat" | "left" | "right">arrow],
                     })
                 )
-            } else {
+                break
+            case 0:
+                break
+            case -1:
                 document.dispatchEvent(
                     new KeyboardEvent("keyup", {
-                        key: keySet[<"jump" | "squat" | "left" | "right">ctrlName],
+                        key: keySet[<"jump" | "squat" | "left" | "right">arrow],
                     })
                 )
-            }
+                break
+        }
+    })
+
+    Object.keys(ctrl.attack).forEach((attack) => {
+        switch (ctrl.attack[<"light" | "medium" | "heavy">attack]) {
+            case 1:
+                document.dispatchEvent(
+                    new KeyboardEvent("keydown", {
+                        key: keySet.attack[<"light" | "medium" | "heavy">attack],
+                    })
+                )
+                break
+            case 0:
+                break
+            case -1:
+                document.dispatchEvent(
+                    new KeyboardEvent("keyup", {
+                        key: keySet.attack[<"light" | "medium" | "heavy">attack],
+                    })
+                )
+                break
         }
     })
 }
@@ -247,22 +144,6 @@ tf.setBackend("webgl")
 
         ;(<HTMLButtonElement>document.getElementById("save")).onclick = () => {
             tf.tidy(() => {
-                // let frames = tf.stack(clone(), 0)
-                // let frameSave = { name: "frames", values: new Uint8Array(frames.dataSync()) }
-                // let frameShape = { name: "frameShape", values: new Uint32Array(frames.shape) }
-
-                // let ctrl1 = tf.stack(ctrl1Clone(), 0)
-                // let ctrl1Save = { name: "ctrl1", values: new Uint8Array(ctrl1.dataSync()) }
-                // let ctrl1Shape = { name: "ctrl1Shape", values: new Uint32Array(ctrl1.shape) }
-
-                // let ctrl2 = tf.stack(ctrl2Clone(), 0)
-                // let ctrl2Save = { name: "ctrl2", values: new Uint8Array(ctrl2.dataSync()) }
-                // let ctrl2Shape = { name: "ctrl2Shape", values: new Uint32Array(ctrl2.shape) }
-
-                // let blob = myz.save([frameSave, frameShape, ctrl1Save, ctrl1Shape, ctrl2Save, ctrl2Shape])
-                // myz.load(blob).then((data) => {
-                //     console.log(data)
-                // })
                 blobs.forEach((blob) => {
                     let a = document.createElement("a")
                     let url = URL.createObjectURL(blob)
@@ -273,25 +154,14 @@ tf.setBackend("webgl")
                     window.URL.revokeObjectURL(url)
                 })
                 blobs = []
-                // clear()
             })
         }
 
         let maxPool = <nn.tfFn>((inp: tf.Tensor) => {
             return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 5, 2, "same")
         })
-        let maxPool3 = <nn.tfFn>((inp: tf.Tensor) => {
-            return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, 3, 2, "same")
-        })
-        let maxPool_1_2 = <nn.tfFn>((inp: tf.Tensor) => {
-            return <tf.Tensor>tf.maxPool(<tf.Tensor4D>inp, [1, 2], [1, 2], "same")
-        })
-        let avgPool2 = <nn.tfFn>((inp: tf.Tensor) => {
-            return <tf.Tensor>tf.avgPool(<tf.Tensor4D>inp, 2, 2, "same")
-        })
-        let blurPooling = nn.blurPooling(7, 2)
-        let blurPooling3 = nn.blurPooling(3, 2)
-        let blurPooling5 = nn.blurPooling(5, 2)
+        let prevCtrl1: number[] = new Array(7).fill(0)
+        let prevCtrl2: number[] = new Array(7).fill(0)
         const loop = () => {
             count++
             if (getRestart()) {
@@ -319,68 +189,76 @@ tf.setBackend("webgl")
             next()
             render()
 
-            const ctrl1 = [
-                Math.random() < 0.3 ? true : false,
-                Math.random() < 0.1 ? true : false,
-                Math.random() < 0.5 ? true : false,
-                Math.random() < 0.5 ? true : false,
-                Math.random() < 0.01 ? true : false,
-                Math.random() < 0.01 ? true : false,
-                Math.random() < 0.01 ? true : false,
+            let arrow1 = Math.floor(Math.random() * 8.99) + 1
+            let attack1 = Math.floor(Math.random() * 3.99)
+            const nowCtrl1 = [
+                Number(arrow1 == 7 || arrow1 == 8 || arrow1 == 9),
+                Number(arrow1 == 1 || arrow1 == 2 || arrow1 == 3),
+                Number(arrow1 == 1 || arrow1 == 4 || arrow1 == 7),
+                Number(arrow1 == 3 || arrow1 == 6 || arrow1 == 9),
+                Number(attack1 == 1),
+                Number(attack1 == 2),
+                Number(attack1 == 3),
             ]
-            ctrl1Write(tf.keep(tf.tensor(ctrl1.reduce((prev, curr) => prev * 2 + Number(curr), 0))))
+            ctrl1Write(tf.keep(tf.tensor((arrow1 - 1) * 4 + attack1)))
 
-            const ctrl2 = [
-                Math.random() < 0.2 ? true : false,
-                Math.random() < 0.2 ? true : false,
-                Math.random() < 0.4 ? true : false,
-                Math.random() < 0.4 ? true : false,
-                Math.random() < 0.1 ? true : false,
-                Math.random() < 0.1 ? true : false,
-                Math.random() < 0.1 ? true : false,
+            let arrow2 = Math.floor(Math.random() * 8.99) + 1
+            let attack2 = Math.floor(Math.random() * 3.99)
+            const nowCtrl2 = [
+                Number(arrow2 == 7 || arrow2 == 8 || arrow2 == 9),
+                Number(arrow2 == 1 || arrow2 == 2 || arrow2 == 3),
+                Number(arrow2 == 1 || arrow2 == 4 || arrow2 == 7),
+                Number(arrow2 == 3 || arrow2 == 6 || arrow2 == 9),
+                Number(attack2 == 1),
+                Number(attack2 == 2),
+                Number(attack2 == 3),
             ]
-            ctrl2Write(tf.keep(tf.tensor(ctrl2.reduce((prev, curr) => prev * 2 + Number(curr), 0))))
+            ctrl2Write(tf.keep(tf.tensor((arrow2 - 1) * 4 + attack2)))
 
-            _control(
+            control(
                 {
-                    jump: ctrl1[0],
-                    squat: ctrl1[1],
-                    left: ctrl1[2],
-                    right: ctrl1[3],
+                    arrow: {
+                        jump: <1 | 0 | -1>(nowCtrl1[0] - prevCtrl1[0]),
+                        squat: <1 | 0 | -1>(nowCtrl1[1] - prevCtrl1[1]),
+                        left: <1 | 0 | -1>(nowCtrl1[2] - prevCtrl1[2]),
+                        right: <1 | 0 | -1>(nowCtrl1[3] - prevCtrl1[3]),
+                    },
                     attack: {
-                        light: ctrl1[4],
-                        medium: ctrl1[5],
-                        heavy: ctrl1[6],
+                        light: <1 | 0 | -1>(nowCtrl1[4] - prevCtrl1[4]),
+                        medium: <1 | 0 | -1>(nowCtrl1[5] - prevCtrl1[5]),
+                        heavy: <1 | 0 | -1>(nowCtrl1[6] - prevCtrl1[6]),
                     },
                 },
                 keySets[0]
             )
-            _control(
+            prevCtrl1 = nowCtrl1
+            control(
                 {
-                    jump: ctrl2[0],
-                    squat: ctrl2[1],
-                    left: ctrl2[2],
-                    right: ctrl2[3],
+                    arrow: {
+                        jump: <1 | 0 | -1>(nowCtrl2[0] - prevCtrl2[0]),
+                        squat: <1 | 0 | -1>(nowCtrl2[1] - prevCtrl2[1]),
+                        left: <1 | 0 | -1>(nowCtrl2[2] - prevCtrl2[2]),
+                        right: <1 | 0 | -1>(nowCtrl2[3] - prevCtrl2[3]),
+                    },
                     attack: {
-                        light: ctrl2[4],
-                        medium: ctrl2[5],
-                        heavy: ctrl2[6],
+                        light: <1 | 0 | -1>(nowCtrl2[4] - prevCtrl2[4]),
+                        medium: <1 | 0 | -1>(nowCtrl2[5] - prevCtrl2[5]),
+                        heavy: <1 | 0 | -1>(nowCtrl2[6] - prevCtrl2[6]),
                     },
                 },
                 keySets[1]
             )
+            prevCtrl2 = nowCtrl2
 
             tf.tidy(() => {
-                let pix = <tf.Tensor3D>nn.pipe(
-                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [256, 256])),
-                    maxPool,
-                    // <nn.tfFn>blurPooling3.fn,
-                    // maxPool3,
-                    // <nn.tfFn>blurPooling3.fn,
-                    <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [32, 64])),
-                    // <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [64, 64])),
-                    <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
-                )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
+                let pix = <tf.Tensor3D>(
+                    nn.pipe(
+                        <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [256, 256])),
+                        maxPool,
+                        <nn.tfFn>((inp: tf.Tensor3D) => tf.image.resizeNearestNeighbor(inp, [32, 64])),
+                        <nn.tfFn>((inp: tf.Tensor3D) => tf.cast(inp, "int32"))
+                    )(<tf.Tensor3D>tf.browser.fromPixels(canvas))
+                )
 
                 tf.browser.toPixels(pix, pixcanvas)
                 write(tf.keep(pix))

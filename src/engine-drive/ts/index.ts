@@ -13,7 +13,7 @@ tf.setBackend("webgl").then(() => {
     let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, synthesizer, ws: dec_ws }] = AE({})
     let driver = Driver({
         ctrlNum: 2,
-        actionNum: 2 ** 7,
+        actionNum: 36,
         dact: 64,
         dinp: 256,
         dmodel: 64,
@@ -339,154 +339,223 @@ tf.setBackend("webgl").then(() => {
             })
         })
     }
-    let p1Ctrl = new Array(7).fill(false)
-    let p2Ctrl = new Array(7).fill(false)
+    let arrow1 = 4
+    let attack1 = 0
+    let arrow2 = 4
+    let attack2 = 0
     document.addEventListener("keydown", (event) => {
         switch (event.code) {
-            case "KeyW":
-                p1Ctrl[0] = true
+            case "KeyZ":
+                arrow1 = 1
                 break
-            case "KeyS":
-                p1Ctrl[1] = true
+            case "KeyX":
+                arrow1 = 2
+                break
+            case "KeyC":
+                arrow1 = 3
                 break
             case "KeyA":
-                p1Ctrl[2] = true
+                arrow1 = 4
                 break
             case "KeyD":
-                p1Ctrl[3] = true
+                arrow1 = 6
+                break
+            case "KeyQ":
+                arrow1 = 7
+                break
+            case "KeyW":
+                arrow1 = 8
+                break
+            case "KeyE":
+                arrow1 = 9
                 break
             case "KeyJ":
-                p1Ctrl[4] = true
+                attack1 = 1
                 break
             case "KeyK":
-                p1Ctrl[5] = true
+                attack1 = 2
                 break
             case "KeyL":
-                p1Ctrl[6] = true
+                attack1 = 3
                 break
 
-            case "ArrowUp":
-                p2Ctrl[0] = true
-                break
-            case "ArrowDown":
-                p2Ctrl[1] = true
-                break
-            case "ArrowLeft":
-                p2Ctrl[2] = true
-                break
-            case "ArrowRight":
-                p2Ctrl[3] = true
-                break
+            case "Digit1":
             case "Numpad1":
-                p2Ctrl[4] = true
+                arrow2 = 1
                 break
+            case "Digit2":
             case "Numpad2":
-                p2Ctrl[5] = true
+                arrow2 = 2
                 break
+            case "Digit3":
             case "Numpad3":
-                p2Ctrl[6] = true
+                arrow2 = 3
+                break
+            case "Digit4":
+            case "Numpad4":
+                arrow2 = 4
+                break
+            case "Digit6":
+            case "Numpad6":
+                arrow2 = 6
+                break
+            case "Digit7":
+            case "Numpad7":
+                arrow2 = 7
+                break
+            case "Digit8":
+            case "Numpad8":
+                arrow2 = 8
+                break
+            case "Digit9":
+            case "Numpad9":
+                arrow2 = 9
+                break
+            case "Digit0":
+            case "Numpad0":
+                attack2 = 1
+                break
+            case "Minus":
+            case "NumpadSubtract":
+                attack2 = 2
+                break
+            case "Equal":
+            case "NumpadAdd":
+                attack2 = 3
                 break
         }
     })
 
     document.addEventListener("keyup", (event) => {
         switch (event.code) {
-            case "KeyW":
-                p1Ctrl[0] = false
+            case "KeyZ":
+                if (arrow1 == 1) arrow1 = 5
                 break
-            case "KeyS":
-                p1Ctrl[1] = false
+            case "KeyX":
+                if (arrow1 == 2) arrow1 = 5
+                break
+            case "KeyC":
+                if (arrow1 == 3) arrow1 = 5
                 break
             case "KeyA":
-                p1Ctrl[2] = false
+                if (arrow1 == 4) arrow1 = 5
                 break
             case "KeyD":
-                p1Ctrl[3] = false
+                if (arrow1 == 6) arrow1 = 5
+                break
+            case "KeyQ":
+                if (arrow1 == 7) arrow1 = 5
+                break
+            case "KeyW":
+                if (arrow1 == 8) arrow1 = 5
+                break
+            case "KeyE":
+                if (arrow1 == 9) arrow1 = 5
                 break
             case "KeyJ":
-                p1Ctrl[4] = false
+                if (attack1 == 1) attack1 = 0
                 break
             case "KeyK":
-                p1Ctrl[5] = false
+                if (attack1 == 2) attack1 = 0
                 break
             case "KeyL":
-                p1Ctrl[6] = false
+                if (attack1 == 3) attack1 = 0
                 break
 
-            case "ArrowUp":
-                p2Ctrl[0] = false
-                break
-            case "ArrowDown":
-                p2Ctrl[1] = false
-                break
-            case "ArrowLeft":
-                p2Ctrl[2] = false
-                break
-            case "ArrowRight":
-                p2Ctrl[3] = false
-                break
+            case "Digit1":
             case "Numpad1":
-                p2Ctrl[4] = false
+                if (arrow2 == 1) arrow2 = 5
                 break
+            case "Digit2":
             case "Numpad2":
-                p2Ctrl[5] = false
+                if (arrow2 == 2) arrow2 = 5
                 break
+            case "Digit3":
             case "Numpad3":
-                p2Ctrl[6] = false
+                if (arrow2 == 3) arrow2 = 5
+                break
+            case "Digit4":
+            case "Numpad4":
+                if (arrow2 == 4) arrow2 = 5
+                break
+            case "Digit6":
+            case "Numpad6":
+                if (arrow2 == 6) arrow2 = 5
+                break
+            case "Digit7":
+            case "Numpad7":
+                if (arrow2 == 7) arrow2 = 5
+                break
+            case "Digit8":
+            case "Numpad8":
+                if (arrow2 == 8) arrow2 = 5
+                break
+            case "Digit9":
+            case "Numpad9":
+                if (arrow2 == 9) arrow2 = 5
+                break
+            case "Digit0":
+            case "Numpad0":
+                if (attack2 == 3) attack2 = 0
+                break
+            case "Minus":
+            case "NumpadSubtract":
+                if (attack2 == 3) attack2 = 0
+                break
+            case "Equal":
+            case "NumpadAdd":
+                if (attack2 == 3) attack2 = 0
                 break
         }
     })
     let runTest = false
     ;(<HTMLButtonElement>document.getElementById("test")).onclick = () => {
-        test(64)
-        // if (runTest) runTest = false
-        // else {
-        //     runTest = true
+        // test(64)
+        if (runTest) runTest = false
+        else {
+            runTest = true
 
-        //     const L = 64
-        //     let fileIdx = Math.floor(Math.random() * trainDatas.length)
+            const L = 64
+            let fileIdx = Math.floor(Math.random() * trainDatas.length)
 
-        //     let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0, 0, 0], [L, -1, -1, -1]))
-        //     let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
-        //     let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
+            let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0], [L, -1]))
+            let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
+            let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
 
-        //     const tt = () => {
-        //         tf.tidy(() => {
-        //             // const p1Ctrl = [
-        //             //     Math.random() < 0.3 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.5 ? true : false,
-        //             //     Math.random() < 0.5 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             //     Math.random() < 0.01 ? true : false,
-        //             // ]
+            const tt = () => {
+                tf.tidy(() => {
+                    // const p1Ctrl = [
+                    //     Math.random() < 0.3 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.5 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    //     Math.random() < 0.01 ? true : false,
+                    // ]
 
-        //             // const p2Ctrl = [
-        //             //     Math.random() < 0.2 ? true : false,
-        //             //     Math.random() < 0.2 ? true : false,
-        //             //     Math.random() < 0.4 ? true : false,
-        //             //     Math.random() < 0.4 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             //     Math.random() < 0.1 ? true : false,
-        //             // ]
-        //             let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
-        //             next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
-        //             input_enc.dispose()
-        //             input_enc = tf.keep(next_enc)
-        //             input_ctrl1 = [...input_ctrl1.slice(1), p1Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
-        //             input_ctrl2 = [...input_ctrl2.slice(1), p2Ctrl.reduce((prev, curr) => prev * 2 + Number(curr), 0)]
+                    // const p2Ctrl = [
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.2 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.4 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    //     Math.random() < 0.1 ? true : false,
+                    // ]
+                    let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
+                    next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
+                    input_enc.dispose()
+                    input_enc = tf.keep(next_enc)
+                    input_ctrl1 = [...input_ctrl1.slice(1), (arrow1 - 1) * 4 + attack1]
+                    input_ctrl2 = [...input_ctrl2.slice(1), (arrow2 - 1) * 4 + attack2]
 
-        //             tf.browser.toPixels(
-        //                 <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0, 0, 0], [1, -1, -1, -1])).squeeze([0]),
-        //                 canvas
-        //             )
-        //         })
-        //         if (runTest) requestAnimationFrame(tt)
-        //         else input_enc.dispose()
-        //     }
-        //     tt()
-        // }
+                    tf.browser.toPixels(<tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0], [1, -1])).squeeze([0]), canvas)
+                })
+                if (runTest) requestAnimationFrame(tt)
+                else input_enc.dispose()
+            }
+            tt()
+        }
     }
 })
