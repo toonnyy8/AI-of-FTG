@@ -33,21 +33,24 @@ export const positionalEncoding = (position: number, d_model: number) => {
     }
 }
 
-export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
+export const MHA = (d_model: number, h: number, dk: number, dv: number, name?: string) => {
     const QLinear = tf.sequential({
-        layers: [tf.layers.inputLayer({ inputShape: [d_model] }), tf.layers.dense({ units: dk * h, name: "QLinear" })],
+        layers: [
+            tf.layers.inputLayer({ inputShape: [d_model] }),
+            tf.layers.dense({ units: dk * h, name: `${name !== undefined ? `${name}-` : ""}QLinear` }),
+        ],
     })
     const KVLinear = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [d_model] }),
-            tf.layers.dense({ units: (dk + dv) * h, name: "KVLinear" }),
+            tf.layers.dense({ units: (dk + dv) * h, name: `${name !== undefined ? `${name}-` : ""}KVLinear` }),
         ],
     })
 
     const outLinear = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [dv * h] }),
-            tf.layers.dense({ units: d_model, name: "outLinear" }),
+            tf.layers.dense({ units: d_model, name: `${name !== undefined ? `${name}-` : ""}outLinear` }),
         ],
     })
 
@@ -85,13 +88,13 @@ export const MHA = (d_model: number, h: number, dk: number, dv: number) => {
     }
 }
 
-export const FF = (d_model: number, hiddens: number) => {
+export const FF = (d_model: number, hiddens: number, name?: string) => {
     const ff = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [d_model] }),
-            tf.layers.dense({ units: hiddens, name: "FF-hidden" }),
+            tf.layers.dense({ units: hiddens, name: `${name !== undefined ? `${name}-` : ""}FF-hidden` }),
             layers.mish({}),
-            tf.layers.dense({ units: d_model, name: "FF-out" }),
+            tf.layers.dense({ units: d_model, name: `${name !== undefined ? `${name}-` : ""}FF-out` }),
         ],
     })
     return {

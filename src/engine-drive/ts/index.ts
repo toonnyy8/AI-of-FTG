@@ -1,27 +1,27 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { AE } from "./ae"
+import { VAE } from "./vae"
 import { Driver } from "./driver"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
-    let h = 5,
-        w = 10,
-        dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, synthesizer, ws: dec_ws }] = AE({})
+    let {
+        enc: { fn: enc_fn, ws: enc_ws },
+        reparametrize,
+        dec: { fn: dec_fn, synthesizer, ws: dec_ws },
+    } = VAE({})
     let driver = Driver({
         ctrlNum: 2,
         actionNum: 36,
-        dact: 64,
         dinp: 256,
-        dmodel: 64,
-        r: 8,
+        dmodel: 256,
         head: 8,
         dk: 32,
         dv: 32,
         hiddens: 1024,
+        restrictHead: 32,
     })
 
     let trainDatas: tf.Tensor4D[] = []
@@ -34,23 +34,33 @@ tf.setBackend("webgl").then(() => {
             let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize - 1))
             tf.tidy(() => {
                 let test_xImg = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
-                let test_yImgs = <tf.Tensor3D[]>(
-                    dec_fn(
-                        enc_fn(
+                let test_yImgs = <tf.Tensor3D[]>tf
+                    .tidy(() => {
+                        const { mu, logvar } = enc_fn(
                             trainDatas[fileIdx]
                                 .slice([batchStart + 1, 0, 0, 0], [batchSize, -1, -1, -1])
                                 .slice([batchSize - 2, 0, 0, 0], [2, -1, -1, -1])
                         )
-                    ).unstack(0)
-                )
+                        let out = <tf.Tensor4D>dec_fn(mu)
+                        return out
+                    })
+                    .unstack(0)
                 let ctrl1Batch = ctrl1s[fileIdx].slice(batchStart, batchStart + batchSize)
                 let ctrl2Batch = ctrl2s[fileIdx].slice(batchStart, batchStart + batchSize)
-                let test_out = <tf.Tensor3D>(
-                    tf.tidy(() =>
-                        (<tf.Tensor>dec_fn(driver.fn(<tf.Tensor2D>enc_fn(test_xImg), [ctrl1Batch, ctrl2Batch])))
-                            .slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1])
-                            .squeeze([0])
-                    )
+
+                let test_out = <tf.Tensor3D>tf.tidy(() =>
+                    (<tf.Tensor>dec_fn(
+                        driver.fn(
+                            tf.tidy(() => {
+                                const { mu, logvar } = enc_fn(test_xImg)
+                                const z = reparametrize(mu, logvar)
+                                return z
+                            }),
+                            [ctrl1Batch, ctrl2Batch]
+                        )
+                    ))
+                        .slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1])
+                        .squeeze([0])
                 )
                 // enc_fn(
                 //     trainDatas[fileIdx]
@@ -146,7 +156,7 @@ tf.setBackend("webgl").then(() => {
     const opt = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 1
+        let t = 8
         const train = (loop: number = 64) => {
             for (let j = 0; j < loop; j++) {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -166,8 +176,17 @@ tf.setBackend("webgl").then(() => {
                     let ctrl2Batchs = new Array(t).fill(0).map((_, offset) => {
                         return ctrl2s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
-                    let x_enc = <tf.Tensor2D>enc_fn(xImg)
-                    let y_encs = yImgs.map((yImg) => <tf.Tensor2D>enc_fn(yImg))
+                    let x_enc = tf.tidy(() => {
+                        const { mu, logvar } = enc_fn(xImg)
+                        const z = reparametrize(mu, logvar)
+                        return z
+                    })
+                    let y_encs = yImgs.map((yImg) =>
+                        tf.tidy(() => {
+                            const { mu, logvar } = enc_fn(yImg)
+                            return mu
+                        })
+                    )
                     let mask = (() => {
                         let arr = new Array(batchSize).fill(0)
                         arr[arr.length - 1] = 1
@@ -187,7 +206,8 @@ tf.setBackend("webgl").then(() => {
                         )
                     }
                     const loss_fn = <T extends tf.Tensor2D>(y: T, _y: T): tf.Scalar => {
-                        return logLoss(y.mul(0.5).add(0.5), _y.mul(0.5).add(0.5))
+                        return tf.sub(y, _y).square().mean() //.mul(lossWeight).sum()
+                        // return logLoss(y.mul(0.5).add(0.5), _y.mul(0.5).add(0.5))
                     }
                     const { gradients, loss } = y_encs.reduce(
                         (prev, y_enc, idx) => {
@@ -496,11 +516,11 @@ tf.setBackend("webgl").then(() => {
                 break
             case "Digit0":
             case "Numpad0":
-                if (attack2 == 3) attack2 = 0
+                if (attack2 == 1) attack2 = 0
                 break
             case "Minus":
             case "NumpadSubtract":
-                if (attack2 == 3) attack2 = 0
+                if (attack2 == 2) attack2 = 0
                 break
             case "Equal":
             case "NumpadAdd":
@@ -517,8 +537,10 @@ tf.setBackend("webgl").then(() => {
 
             const L = 64
             let fileIdx = Math.floor(Math.random() * trainDatas.length)
-
-            let input_enc = <tf.Tensor2D>enc_fn(trainDatas[fileIdx].slice([0, 0], [L, -1]))
+            let input_enc = tf.tidy(() => {
+                const { mu, logvar } = enc_fn(trainDatas[fileIdx].slice([0, 0], [L, -1]))
+                return mu
+            })
             let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
             let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
 
