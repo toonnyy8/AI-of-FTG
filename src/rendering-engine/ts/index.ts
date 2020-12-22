@@ -1,14 +1,18 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { AE } from "./ae"
+import { VAE } from "./vae"
 import { MHA, FF } from "./mha"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
 tf.setBackend("webgl").then(() => {
     let dk = 8
-    let [{ fn: enc_fn, ws: enc_ws }, { fn: dec_fn, synthesizer, ws: dec_ws }] = AE({})
+    let {
+        enc: { fn: enc_fn, ws: enc_ws },
+        reparametrize,
+        dec: { fn: dec_fn, synthesizer, ws: dec_ws },
+    } = VAE({})
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
 
@@ -76,7 +80,9 @@ tf.setBackend("webgl").then(() => {
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
-                            let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
+                            const { mu, logvar } = enc_fn(batch)
+                            const z = reparametrize(mu, logvar)
+                            let out = <tf.Tensor4D>dec_fn(z)
                             let mainLoss = tf.losses.logLoss(batch, out)
                             mainLoss.print()
                             let l2Loss = [...enc_ws(), ...dec_ws()]
@@ -94,7 +100,12 @@ tf.setBackend("webgl").then(() => {
             }
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
-            let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
+            let test_out = <tf.Tensor3D>tf.tidy(() => {
+                const { mu, logvar } = enc_fn(test)
+                const z = reparametrize(mu, logvar)
+                let out = <tf.Tensor4D>dec_fn(z)
+                return out.squeeze([0])
+            })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             await tf.browser.toPixels(test_print, canvas)
@@ -116,7 +127,9 @@ tf.setBackend("webgl").then(() => {
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
-                            let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
+                            const { mu, logvar } = enc_fn(batch)
+                            const z = reparametrize(mu, logvar)
+                            let out = <tf.Tensor4D>dec_fn(z)
                             let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 5).mean().neg())
                             mainLoss.print()
                             let l2Loss = [...enc_ws(), ...dec_ws()]
@@ -134,7 +147,12 @@ tf.setBackend("webgl").then(() => {
             }
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
-            let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
+            let test_out = <tf.Tensor3D>tf.tidy(() => {
+                const { mu, logvar } = enc_fn(test)
+                const z = reparametrize(mu, logvar)
+                let out = <tf.Tensor4D>dec_fn(z)
+                return out.squeeze([0])
+            })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             await tf.browser.toPixels(test_print, canvas)
@@ -156,7 +174,9 @@ tf.setBackend("webgl").then(() => {
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
                     op.minimize(
                         () => {
-                            let out = <tf.Tensor4D>dec_fn(enc_fn(batch))
+                            const { mu, logvar } = enc_fn(batch)
+                            const z = reparametrize(mu, logvar)
+                            let out = <tf.Tensor4D>dec_fn(z)
                             let mainLoss = <tf.Scalar>(
                                 tf
                                     .add(
@@ -181,7 +201,12 @@ tf.setBackend("webgl").then(() => {
             }
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
-            let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
+            let test_out = <tf.Tensor3D>tf.tidy(() => {
+                const { mu, logvar } = enc_fn(test)
+                const z = reparametrize(mu, logvar)
+                let out = <tf.Tensor4D>dec_fn(z)
+                return out.squeeze([0])
+            })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             await tf.browser.toPixels(test_print, canvas)
@@ -251,7 +276,11 @@ tf.setBackend("webgl").then(() => {
             let batchStart = Math.round(Math.random() * (trainDatas[fileIdx].shape[0] - batchSize))
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
-            let test_out = <tf.Tensor3D>tf.tidy(() => (<tf.Tensor>dec_fn(enc_fn(test))).squeeze([0]))
+            let test_out = <tf.Tensor3D>tf.tidy(() => {
+                const { mu, logvar } = enc_fn(test)
+                let out = <tf.Tensor4D>dec_fn(mu)
+                return out.squeeze([0])
+            })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
 
             tf.browser.toPixels(test_print, canvas)
