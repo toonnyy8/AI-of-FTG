@@ -11,7 +11,7 @@ tf.setBackend("webgl").then(() => {
     let {
         enc: { fn: enc_fn, ws: enc_ws },
         reparametrize,
-        dec: { fn: dec_fn, synthesizer, ws: dec_ws },
+        dec: { fn: dec_fn, ws: dec_ws },
     } = VAE({})
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
@@ -77,13 +77,13 @@ tf.setBackend("webgl").then(() => {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
-                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
+                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
                     op.minimize(
                         () => {
                             const { mu, logvar } = enc_fn(batch)
                             const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(z)
-                            let mainLoss = tf.losses.logLoss(batch, out)
+                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
+                            let mainLoss = tf.losses.logLoss(tf.concat([batch, batch], 0), out)
                             mainLoss.print()
                             let l2Loss = [...enc_ws(), ...dec_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
@@ -124,13 +124,19 @@ tf.setBackend("webgl").then(() => {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
-                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
+                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
                     op.minimize(
                         () => {
                             const { mu, logvar } = enc_fn(batch)
                             const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(z)
-                            let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 5).mean().neg())
+                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
+                            let mainLoss = <tf.Scalar>tf.add(
+                                1,
+                                nn
+                                    .ssim2d(tf.concat([batch, batch], 0), out, 11)
+                                    .mean()
+                                    .neg()
+                            )
                             mainLoss.print()
                             let l2Loss = [...enc_ws(), ...dec_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
@@ -171,20 +177,22 @@ tf.setBackend("webgl").then(() => {
             for (let j = 0; j < 64; j++) {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
-                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2])])
+                    batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
                     op.minimize(
                         () => {
                             const { mu, logvar } = enc_fn(batch)
                             const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(z)
-                            let mainLoss = <tf.Scalar>(
-                                tf
-                                    .add(
-                                        tf.losses.logLoss(batch, out).mul(2),
-                                        nn.ssim2d(batch, out, 5).mean().log().neg()
-                                    )
-                                    .div(3)
-                            )
+                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
+                            let mainLoss = <tf.Scalar>tf
+                                .add(
+                                    tf.losses.logLoss(tf.concat([batch, batch], 0), out).mul(2),
+                                    nn
+                                        .ssim2d(tf.concat([batch, batch], 0), out, 11)
+                                        .mean()
+                                        .log()
+                                        .neg()
+                                )
+                                .div(3)
                             mainLoss.print()
                             let l2Loss = [...enc_ws(), ...dec_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
