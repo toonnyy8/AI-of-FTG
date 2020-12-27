@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { VAE } from "./vae"
+import { QVAE } from "./qvae"
 import { Driver } from "./driver"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
@@ -9,9 +9,8 @@ let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 tf.setBackend("webgl").then(() => {
     let {
         enc: { fn: enc_fn, ws: enc_ws },
-        reparametrize,
         dec: { fn: dec_fn, synthesizer, ws: dec_ws },
-    } = VAE({})
+    } = QVAE({})
     let driver = Driver({
         ctrlNum: 2,
         actionNum: 36,
@@ -36,12 +35,12 @@ tf.setBackend("webgl").then(() => {
                 let test_xImg = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                 let test_yImgs = <tf.Tensor3D[]>tf
                     .tidy(() => {
-                        const { mu, logvar } = enc_fn(
+                        const { q_z } = enc_fn(
                             trainDatas[fileIdx]
                                 .slice([batchStart + 1, 0, 0, 0], [batchSize, -1, -1, -1])
                                 .slice([batchSize - 2, 0, 0, 0], [2, -1, -1, -1])
                         )
-                        let out = <tf.Tensor4D>dec_fn(mu)
+                        let out = <tf.Tensor4D>dec_fn(q_z)
                         return out
                     })
                     .unstack(0)
@@ -50,14 +49,15 @@ tf.setBackend("webgl").then(() => {
 
                 let test_out = <tf.Tensor3D>tf.tidy(() =>
                     (<tf.Tensor>dec_fn(
-                        driver.fn(
-                            tf.tidy(() => {
-                                const { mu, logvar } = enc_fn(test_xImg)
-                                const z = reparametrize(mu, logvar)
-                                return z
-                            }),
-                            [ctrl1Batch, ctrl2Batch]
-                        )
+                        driver
+                            .fn(
+                                tf.tidy(() => {
+                                    const { q_z } = enc_fn(test_xImg)
+                                    return q_z
+                                }),
+                                [ctrl1Batch, ctrl2Batch]
+                            )
+                            .round()
                     ))
                         .slice([batchSize - 1, 0, 0, 0], [1, -1, -1, -1])
                         .squeeze([0])
@@ -177,14 +177,13 @@ tf.setBackend("webgl").then(() => {
                         return ctrl2s[fileIdx].slice(batchStart + offset, batchStart + batchSize + offset)
                     })
                     let x_enc = tf.tidy(() => {
-                        const { mu, logvar } = enc_fn(xImg)
-                        const z = reparametrize(mu, logvar)
-                        return z
+                        const { q_z } = enc_fn(xImg)
+                        return q_z
                     })
                     let y_encs = yImgs.map((yImg) =>
                         tf.tidy(() => {
-                            const { mu, logvar } = enc_fn(yImg)
-                            return mu
+                            const { q_z } = enc_fn(xImg)
+                            return q_z
                         })
                     )
                     let mask = (() => {
@@ -227,7 +226,7 @@ tf.setBackend("webgl").then(() => {
                                     <tf.Tensor2D>(
                                         tf.concat([
                                             prev.enc.slice([1, 0], [-1, -1]),
-                                            next_enc.slice([batchSize - 1, 0], [1, -1]),
+                                            next_enc.slice([batchSize - 1, 0], [1, -1]).round(),
                                         ])
                                     )
                             )
@@ -538,8 +537,8 @@ tf.setBackend("webgl").then(() => {
             const L = 64
             let fileIdx = Math.floor(Math.random() * trainDatas.length)
             let input_enc = tf.tidy(() => {
-                const { mu, logvar } = enc_fn(trainDatas[fileIdx].slice([0, 0], [L, -1]))
-                return mu
+                const { q_z } = enc_fn(trainDatas[fileIdx].slice([0, 0], [L, -1]))
+                return q_z
             })
             let input_ctrl1 = ctrl1s[fileIdx].slice(0, L)
             let input_ctrl2 = ctrl2s[fileIdx].slice(0, L)
@@ -566,7 +565,10 @@ tf.setBackend("webgl").then(() => {
                     //     Math.random() < 0.1 ? true : false,
                     // ]
                     let next_enc = <tf.Tensor2D>driver.fn(input_enc, [input_ctrl1, input_ctrl2])
-                    next_enc = tf.concat([input_enc.slice([1, 0], [-1, -1]), next_enc.slice([L - 1, 0], [1, -1])])
+                    next_enc = tf.concat([
+                        input_enc.slice([1, 0], [-1, -1]),
+                        next_enc.slice([L - 1, 0], [1, -1]).round(),
+                    ])
                     input_enc.dispose()
                     input_enc = tf.keep(next_enc)
                     input_ctrl1 = [...input_ctrl1.slice(1), (arrow1 - 1) * 4 + attack1]

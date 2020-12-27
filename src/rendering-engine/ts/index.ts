@@ -1,7 +1,7 @@
 import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
-import { VAE } from "./vae"
+import { QVAE } from "./qvae"
 import { MHA, FF } from "./mha"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
@@ -10,9 +10,8 @@ tf.setBackend("webgl").then(() => {
     let dk = 8
     let {
         enc: { fn: enc_fn, ws: enc_ws },
-        reparametrize,
         dec: { fn: dec_fn, ws: dec_ws },
-    } = VAE({})
+    } = QVAE({})
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
 
@@ -68,7 +67,7 @@ tf.setBackend("webgl").then(() => {
         load.click()
     }
 
-    const op = tf.train.adamax(0.01)
+    const opt = tf.train.adamax(0.01)
     ;(<HTMLButtonElement>document.getElementById("train-log")).onclick = async () => {
         let fileIdx = Math.floor(Math.random() * trainDatas.length)
         let batchSize = 8
@@ -78,21 +77,38 @@ tf.setBackend("webgl").then(() => {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
-                    op.minimize(
+                    let z: tf.Tensor2D,
+                        q_z: tf.Tensor2D = tf.tensor2d([[0]])
+                    const grads1 = opt.computeGradients(
                         () => {
-                            const { mu, logvar } = enc_fn(batch)
-                            const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
-                            let mainLoss = tf.losses.logLoss(tf.concat([batch, batch], 0), out)
-                            mainLoss.print()
-                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                            ;({ z, q_z } = enc_fn(batch))
+                            q_z = tf.keep(q_z)
+                            let out = <tf.Tensor4D>dec_fn(z)
+                            let mainLoss = tf.losses.logLoss(batch, out)
+                            let l2Loss = [...enc_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws(), ...dec_ws()].length)
+                                .div([...enc_ws()].length)
+
                             return mainLoss.add(l2Loss)
                         },
-                        false,
-                        <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )
+                        <tf.Variable[]>(<unknown>[...enc_ws()])
+                    ).grads
+                    const grads2 = opt.computeGradients(
+                        () => {
+                            let out = <tf.Tensor4D>dec_fn(q_z)
+                            let mainLoss = tf.losses.logLoss(batch, out)
+                            mainLoss.print()
+                            let l2Loss = [...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...dec_ws()].length)
+
+                            return mainLoss.add(l2Loss)
+                        },
+                        <tf.Variable[]>(<unknown>[...dec_ws()])
+                    ).grads
+
+                    opt.applyGradients(<[]>(<unknown>{ ...grads1, ...grads2 }))
+                    q_z.dispose()
                 })
 
                 fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -101,9 +117,9 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => {
-                const { mu, logvar } = enc_fn(test)
-                const z = reparametrize(mu, logvar)
-                let out = <tf.Tensor4D>dec_fn(z)
+                const { z, q_z } = enc_fn(test)
+
+                let out = <tf.Tensor4D>dec_fn(q_z)
                 return out.squeeze([0])
             })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
@@ -125,27 +141,39 @@ tf.setBackend("webgl").then(() => {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
-                    op.minimize(
+
+                    let z: tf.Tensor2D,
+                        q_z: tf.Tensor2D = tf.tensor2d([[0]])
+                    const grads1 = opt.computeGradients(
                         () => {
-                            const { mu, logvar } = enc_fn(batch)
-                            const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
-                            let mainLoss = <tf.Scalar>tf.add(
-                                1,
-                                nn
-                                    .ssim2d(tf.concat([batch, batch], 0), out, 11)
-                                    .mean()
-                                    .neg()
-                            )
-                            mainLoss.print()
-                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                            ;({ z, q_z } = enc_fn(batch))
+                            q_z = tf.keep(q_z)
+                            let out = <tf.Tensor4D>dec_fn(z)
+                            let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 11).mean().neg())
+                            let l2Loss = [...enc_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws(), ...dec_ws()].length)
+                                .div([...enc_ws()].length)
+
                             return mainLoss.add(l2Loss)
                         },
-                        false,
-                        <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )
+                        <tf.Variable[]>(<unknown>[...enc_ws()])
+                    ).grads
+                    const grads2 = opt.computeGradients(
+                        () => {
+                            let out = <tf.Tensor4D>dec_fn(q_z)
+                            let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 11).mean().neg())
+                            mainLoss.print()
+                            let l2Loss = [...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...dec_ws()].length)
+
+                            return mainLoss.add(l2Loss)
+                        },
+                        <tf.Variable[]>(<unknown>[...dec_ws()])
+                    ).grads
+
+                    opt.applyGradients(<[]>(<unknown>{ ...grads1, ...grads2 }))
+                    q_z.dispose()
                 })
 
                 fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -154,9 +182,9 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => {
-                const { mu, logvar } = enc_fn(test)
-                const z = reparametrize(mu, logvar)
-                let out = <tf.Tensor4D>dec_fn(z)
+                const { q_z } = enc_fn(test)
+
+                let out = <tf.Tensor4D>dec_fn(q_z)
                 return out.squeeze([0])
             })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
@@ -178,30 +206,53 @@ tf.setBackend("webgl").then(() => {
                 tf.tidy(() => {
                     let batch = <tf.Tensor4D>trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [batchSize, -1, -1, -1])
                     batch = tf.concat([batch, batch.reverse(2), batch.reverse(3), batch.reverse([2, 3])])
-                    op.minimize(
+
+                    let z: tf.Tensor2D,
+                        q_z: tf.Tensor2D = tf.tensor2d([[0]])
+                    const grads1 = opt.computeGradients(
                         () => {
-                            const { mu, logvar } = enc_fn(batch)
-                            const z = reparametrize(mu, logvar)
-                            let out = <tf.Tensor4D>dec_fn(tf.concat([mu, z], 0))
-                            let mainLoss = <tf.Scalar>tf
-                                .add(
-                                    tf.losses.logLoss(tf.concat([batch, batch], 0), out).mul(2),
-                                    nn
-                                        .ssim2d(tf.concat([batch, batch], 0), out, 11)
-                                        .mean()
-                                        .log()
-                                        .neg()
-                                )
-                                .div(3)
-                            mainLoss.print()
-                            let l2Loss = [...enc_ws(), ...dec_ws()]
+                            ;({ z, q_z } = enc_fn(batch))
+                            q_z = tf.keep(q_z)
+                            let out = <tf.Tensor4D>dec_fn(z)
+                            let mainLoss = <tf.Scalar>(
+                                tf
+                                    .add(
+                                        tf.losses.logLoss(batch, out).mul(2),
+                                        nn.ssim2d(batch, out, 11).mean().log().neg()
+                                    )
+                                    .div(2)
+                            )
+                            let l2Loss = [...enc_ws()]
                                 .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws(), ...dec_ws()].length)
+                                .div([...enc_ws()].length)
+
                             return mainLoss.add(l2Loss)
                         },
-                        false,
-                        <tf.Variable[]>(<unknown>[...enc_ws(), ...dec_ws()])
-                    )
+                        <tf.Variable[]>(<unknown>[...enc_ws()])
+                    ).grads
+                    const grads2 = opt.computeGradients(
+                        () => {
+                            let out = <tf.Tensor4D>dec_fn(q_z)
+                            let mainLoss = <tf.Scalar>(
+                                tf
+                                    .add(
+                                        tf.losses.logLoss(batch, out).mul(2),
+                                        nn.ssim2d(batch, out, 11).mean().log().neg()
+                                    )
+                                    .div(2)
+                            )
+                            mainLoss.print()
+                            let l2Loss = [...dec_ws()]
+                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                                .div([...dec_ws()].length)
+
+                            return mainLoss.add(l2Loss)
+                        },
+                        <tf.Variable[]>(<unknown>[...dec_ws()])
+                    ).grads
+
+                    opt.applyGradients(<[]>(<unknown>{ ...grads1, ...grads2 }))
+                    q_z.dispose()
                 })
 
                 fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -210,9 +261,9 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => {
-                const { mu, logvar } = enc_fn(test)
-                const z = reparametrize(mu, logvar)
-                let out = <tf.Tensor4D>dec_fn(z)
+                const { q_z } = enc_fn(test)
+
+                let out = <tf.Tensor4D>dec_fn(q_z)
                 return out.squeeze([0])
             })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))
@@ -285,8 +336,8 @@ tf.setBackend("webgl").then(() => {
             let test = trainDatas[fileIdx].slice([batchStart, 0, 0, 0], [1, -1, -1, -1])
             let test_in = <tf.Tensor3D>test.squeeze([0])
             let test_out = <tf.Tensor3D>tf.tidy(() => {
-                const { mu, logvar } = enc_fn(test)
-                let out = <tf.Tensor4D>dec_fn(mu)
+                const { z, q_z } = enc_fn(test)
+                let out = <tf.Tensor4D>dec_fn(q_z)
                 return out.squeeze([0])
             })
             let test_print = tf.tidy(() => tf.image.resizeNearestNeighbor(tf.concat([test_in, test_out], 1), [64, 128]))

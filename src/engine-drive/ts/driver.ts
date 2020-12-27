@@ -116,7 +116,7 @@ export const Driver = (config: {
 
                 let out = <tf.Tensor2D>outLinear.apply(ff3Out)
 
-                return out
+                return out.tanh()
             }),
         ws: () =>
             tf.tidy(() => [
