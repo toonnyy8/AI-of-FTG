@@ -2,7 +2,7 @@ import * as tf from "@tensorflow/tfjs"
 import * as nn from "./nn"
 import * as myz from "./myz"
 import { QVAE } from "./qvae"
-import { Driver } from "./driver"
+import { Driver } from "./qvae_driver"
 
 let canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
@@ -10,17 +10,18 @@ tf.setBackend("webgl").then(() => {
     let {
         enc: { fn: enc_fn, ws: enc_ws },
         dec: { fn: dec_fn, synthesizer, ws: dec_ws },
-    } = QVAE({})
+    } = QVAE({ hiddens: 512 })
     let driver = Driver({
         ctrlNum: 2,
         actionNum: 36,
-        dinp: 256,
-        dmodel: 256,
+        dinp: 512,
+        dmodel: 128,
         head: 8,
         dk: 32,
         dv: 32,
         hiddens: 1024,
         restrictHead: 32,
+        layerNum: 2,
     })
 
     let trainDatas: tf.Tensor4D[] = []
@@ -178,8 +179,8 @@ tf.setBackend("webgl").then(() => {
                     })
                     let x_enc = tf.tidy(() => {
                         const { q_z } = enc_fn(xImg)
-                        let rate = 0.1
-                        let mask = tf.dropout(tf.onesLike(q_z), rate).mul(1 - rate)
+                        let rate = Math.random() * 0.5
+                        let mask = tf.randomUniform(q_z.shape, 0, 1).greater(rate).cast("float32")
                         let randQ = tf.randomUniform(q_z.shape, -1.49, 1.49).round()
                         return <tf.Tensor2D>tf.mul(mask, q_z).add(tf.mul(tf.sub(1, mask), randQ))
 
@@ -363,9 +364,9 @@ tf.setBackend("webgl").then(() => {
             })
         })
     }
-    let arrow1 = 4
+    let arrow1 = 5
     let attack1 = 0
-    let arrow2 = 4
+    let arrow2 = 5
     let attack2 = 0
     document.addEventListener("keydown", (event) => {
         switch (event.code) {

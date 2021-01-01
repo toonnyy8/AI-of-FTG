@@ -359,9 +359,9 @@ tf.setBackend("webgl").then(() => {
             })
         })
     }
-    let arrow1 = 4
+    let arrow1 = 5
     let attack1 = 0
-    let arrow2 = 4
+    let arrow2 = 5
     let attack2 = 0
     document.addEventListener("keydown", (event) => {
         switch (event.code) {

@@ -11,7 +11,7 @@ tf.setBackend("webgl").then(() => {
     let {
         enc: { fn: enc_fn, ws: enc_ws },
         dec: { fn: dec_fn, ws: dec_ws },
-    } = QVAE({})
+    } = QVAE({ hiddens: 512 })
     let count = 0
     let trainDatas: tf.Tensor4D[] = []
 
@@ -82,32 +82,32 @@ tf.setBackend("webgl").then(() => {
                     const grads1 = opt.computeGradients(
                         () => {
                             ;({ z, q_z } = enc_fn(batch))
-                            let rate = 0.3
-                            let mask = tf.dropout(tf.onesLike(q_z), rate).mul(1 - rate)
+                            let rate = Math.random() * 0.5
+                            let mask = tf.randomUniform(q_z.shape, 0, 1).greater(rate).cast("float32")
                             let randQ = tf.randomUniform(q_z.shape, -1.49, 1.49).round()
                             z = <tf.Tensor2D>tf.mul(mask, z).add(tf.mul(tf.sub(1, mask), randQ))
                             q_z = <tf.Tensor2D>tf.mul(mask, q_z).add(tf.mul(tf.sub(1, mask), randQ))
                             q_z = tf.keep(q_z)
                             let out = <tf.Tensor4D>dec_fn(z)
-                            let mainLoss = tf.losses.logLoss(batch, out)
-                            let l2Loss = [...enc_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws()].length)
+                            let mainLoss = <tf.Scalar>tf.losses.logLoss(batch, out)
+                            // let l2Loss = [...enc_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...enc_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...enc_ws()])
                     ).grads
                     const grads2 = opt.computeGradients(
                         () => {
                             let out = <tf.Tensor4D>dec_fn(q_z)
-                            let mainLoss = tf.losses.logLoss(batch, out)
+                            let mainLoss = <tf.Scalar>tf.losses.logLoss(batch, out)
                             mainLoss.print()
-                            let l2Loss = [...dec_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...dec_ws()].length)
+                            // let l2Loss = [...dec_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...dec_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...dec_ws()])
                     ).grads
@@ -152,19 +152,19 @@ tf.setBackend("webgl").then(() => {
                     const grads1 = opt.computeGradients(
                         () => {
                             ;({ z, q_z } = enc_fn(batch))
-                            let rate = 0.1
-                            let mask = tf.dropout(tf.onesLike(q_z), rate).mul(1 - rate)
+                            let rate = Math.random() * 0.5
+                            let mask = tf.randomUniform(q_z.shape, 0, 1).greater(rate).cast("float32")
                             let randQ = tf.randomUniform(q_z.shape, -1.49, 1.49).round()
                             z = <tf.Tensor2D>tf.mul(mask, z).add(tf.mul(tf.sub(1, mask), randQ))
                             q_z = <tf.Tensor2D>tf.mul(mask, q_z).add(tf.mul(tf.sub(1, mask), randQ))
                             q_z = tf.keep(q_z)
                             let out = <tf.Tensor4D>dec_fn(z)
                             let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 11).mean().neg())
-                            let l2Loss = [...enc_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws()].length)
+                            // let l2Loss = [...enc_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...enc_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...enc_ws()])
                     ).grads
@@ -173,11 +173,11 @@ tf.setBackend("webgl").then(() => {
                             let out = <tf.Tensor4D>dec_fn(q_z)
                             let mainLoss = <tf.Scalar>tf.add(1, nn.ssim2d(batch, out, 11).mean().neg())
                             mainLoss.print()
-                            let l2Loss = [...dec_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...dec_ws()].length)
+                            // let l2Loss = [...dec_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...dec_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...dec_ws()])
                     ).grads
@@ -222,8 +222,8 @@ tf.setBackend("webgl").then(() => {
                     const grads1 = opt.computeGradients(
                         () => {
                             ;({ z, q_z } = enc_fn(batch))
-                            let rate = 0.1
-                            let mask = tf.dropout(tf.onesLike(q_z), rate).mul(1 - rate)
+                            let rate = Math.random() * 0.5
+                            let mask = tf.randomUniform(q_z.shape, 0, 1).greater(rate).cast("float32")
                             let randQ = tf.randomUniform(q_z.shape, -1.49, 1.49).round()
                             z = <tf.Tensor2D>tf.mul(mask, z).add(tf.mul(tf.sub(1, mask), randQ))
                             q_z = <tf.Tensor2D>tf.mul(mask, q_z).add(tf.mul(tf.sub(1, mask), randQ))
@@ -231,17 +231,14 @@ tf.setBackend("webgl").then(() => {
                             let out = <tf.Tensor4D>dec_fn(z)
                             let mainLoss = <tf.Scalar>(
                                 tf
-                                    .add(
-                                        tf.losses.logLoss(batch, out).mul(2),
-                                        nn.ssim2d(batch, out, 11).mean().log().neg()
-                                    )
+                                    .add(tf.losses.logLoss(batch, out), nn.ssim2d(batch, out, 11).mean().log().neg())
                                     .div(2)
                             )
-                            let l2Loss = [...enc_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...enc_ws()].length)
+                            // let l2Loss = [...enc_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...enc_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...enc_ws()])
                     ).grads
@@ -250,18 +247,15 @@ tf.setBackend("webgl").then(() => {
                             let out = <tf.Tensor4D>dec_fn(q_z)
                             let mainLoss = <tf.Scalar>(
                                 tf
-                                    .add(
-                                        tf.losses.logLoss(batch, out).mul(2),
-                                        nn.ssim2d(batch, out, 11).mean().log().neg()
-                                    )
+                                    .add(tf.losses.logLoss(batch, out), nn.ssim2d(batch, out, 11).mean().log().neg())
                                     .div(2)
                             )
                             mainLoss.print()
-                            let l2Loss = [...dec_ws()]
-                                .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
-                                .div([...dec_ws()].length)
+                            // let l2Loss = [...dec_ws()]
+                            //     .reduce((loss, w) => loss.add(w.square().mean()), tf.scalar(0))
+                            //     .div([...dec_ws()].length)
 
-                            return mainLoss.add(l2Loss)
+                            return mainLoss //.add(l2Loss)
                         },
                         <tf.Variable[]>(<unknown>[...dec_ws()])
                     ).grads

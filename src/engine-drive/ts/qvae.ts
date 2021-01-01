@@ -11,9 +11,9 @@ const c2pix = (t: tf.Tensor4D) => {
         .reshape([batch, h * 2, w * 2, c / 4])
 }
 
-export const QVAE = (
-    config: {} = {}
-): {
+export const QVAE = (config: {
+    hiddens: number
+}): {
     enc: {
         fn: (input: tf.Tensor4D) => { z: tf.Tensor2D; q_z: tf.Tensor2D }
         ws: () => tf.Variable[]
@@ -88,12 +88,15 @@ export const QVAE = (
     let zip = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [384] }),
-            tf.layers.dense({ name: "zip", units: 256 }),
+            tf.layers.dense({ name: "zip", units: config.hiddens }),
             tf.layers.batchNormalization({ name: "zip_bn" }),
         ],
     })
     let unzip = tf.sequential({
-        layers: [tf.layers.inputLayer({ inputShape: [256] }), tf.layers.dense({ name: "unzip", units: 384 })],
+        layers: [
+            tf.layers.inputLayer({ inputShape: [config.hiddens] }),
+            tf.layers.dense({ name: "unzip", units: 384 }),
+        ],
     })
     let synthesizerIn = tf.sequential({
         layers: [
