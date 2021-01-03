@@ -1,11 +1,11 @@
 import * as tf from "@tensorflow/tfjs"
 
-export const mish = (x: tf.Tensor) => tf.tidy(() => tf.mul(x, tf.tanh(tf.softplus(x))))
+export const mish = <T extends tf.Tensor>(x: T) => tf.tidy(() => <T>tf.mul(x, tf.tanh(tf.softplus(x))))
 
 export const softmax = <T extends tf.Tensor>(x: T, axis: number = -1) => <T>tf.tidy(() => {
-    const e = x.exp()
-    return e.div(e.sum(axis, true))
-})
+        const e = x.exp()
+        return e.div(e.sum(axis, true))
+    })
 
 export const insertPadding = (input: tf.Tensor) =>
     tf.tidy(() => {
@@ -45,7 +45,7 @@ export const unPooling = (input: tf.Tensor) =>
 
 export const stopGradient = tf.customGrad((x, save) => {
     // Save x to make sure it's available later for the gradient.
-    ; (<tf.GradSaveFunc>save)([<tf.Tensor>x])
+    ;(<tf.GradSaveFunc>save)([<tf.Tensor>x])
     // Override gradient of our custom x ^ 2 op to be dy * abs(x);
     return {
         value: (<tf.Tensor>x).clone(),

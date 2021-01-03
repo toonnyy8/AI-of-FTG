@@ -33,19 +33,12 @@ export const Driver = (config: {
         .fill(0)
         .map((_, idx) => tf.variable(tf.randomNormal([actionNum, dmodel]), true, `actEmb${idx}`))
 
-    if (dinp % restrictHead != 0) throw new Error("dinp % restrictHead!=0")
-    let restrictLayer = tf.sequential({
+    let inpLinear = tf.sequential({
         layers: [
             tf.layers.inputLayer({ inputShape: [dinp] }),
-            tf.layers.dense({ name: "restrict", units: dinp }),
-            tf.layers.reshape({ targetShape: [restrictHead, dinp / restrictHead] }),
-            tf.layers.softmax({ axis: -1 }),
-            tf.layers.reshape({ targetShape: [dinp] }),
+            tf.layers.dense({ name: "inpLinear", units: dmodel }),
+            layers.mish({}),
         ],
-    })
-
-    let inpLinear = tf.sequential({
-        layers: [tf.layers.inputLayer({ inputShape: [dinp] }), tf.layers.dense({ name: "inpLinear", units: dmodel })],
     })
 
     let mha_ff = new Array(layerNum).fill(0).map((_, idx) => {
@@ -76,30 +69,22 @@ export const Driver = (config: {
             tf.tidy(() => {
                 let [l, c] = input.shape
                 if (dinp != c) throw new Error("c != dinp")
+
                 if (posEnc[l] === undefined) posEnc[l] = tf.keep(positionalEncoding(l, dmodel))
+
                 let embs: tf.Variable<tf.Rank.R2>[] = ctrlActions.map((actions, idx) => {
                     return <tf.Variable<tf.Rank.R2>>tf.gather(actEmbs[idx], actions, 0)
                 })
 
-                let rtcInp = <tf.Tensor2D>restrictLayer.apply(input)
-
-                // let st = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(inp))
-                // st = tf.addN([st, posEnc[l]])
-                // let act = tf.addN([...embs, posEnc[l]])
-
-                // // 嵌入 act
-                // let stAct = <tf.Tensor2D>mha1.fn(st, act)
-                // stAct = tf.addN([stAct, st, act])
-                // let ff1Out = <tf.Tensor2D>nn.mish(<tf.Tensor2D>ff1.fn(stAct))
-                // ff1Out = ff1Out.add(stAct)
-
-                let inp = <tf.Tensor2D>nn.mish(<tf.Tensor2D>inpLinear.apply(rtcInp))
+                let inp = <tf.Tensor2D>inpLinear.apply(input)
                 inp = tf.addN([inp, ...embs, posEnc[l]])
 
                 let out = mha_ff.reduce((inp, curr) => {
                     let mhaOut = curr.mha.fn(inp, inp)
+                    mhaOut = nn.mish(mhaOut)
                     mhaOut = mhaOut.add(inp)
-                    let ffOut = <tf.Tensor2D>nn.mish(<tf.Tensor2D>curr.ff.fn(mhaOut))
+                    let ffOut = curr.ff.fn(mhaOut)
+                    ffOut = nn.mish(ffOut)
                     ffOut = ffOut.add(mhaOut)
                     return ffOut
                 }, inp)
@@ -111,7 +96,6 @@ export const Driver = (config: {
         ws: () =>
             tf.tidy(() => [
                 ...actEmbs,
-                ...(<tf.Variable[]>restrictLayer.getWeights()),
                 ...(<tf.Variable[]>inpLinear.getWeights()),
                 ...mha_ff.reduce((ws, curr) => {
                     return [...ws, ...curr.mha.ws(), ...curr.ff.ws()]

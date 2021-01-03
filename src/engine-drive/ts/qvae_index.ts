@@ -15,7 +15,7 @@ tf.setBackend("webgl").then(() => {
         ctrlNum: 2,
         actionNum: 36,
         dinp: 512,
-        dmodel: 128,
+        dmodel: 256,
         head: 8,
         dk: 32,
         dv: 32,
@@ -157,7 +157,7 @@ tf.setBackend("webgl").then(() => {
     const opt = tf.train.adamax(0.001)
     ;(<HTMLButtonElement>document.getElementById("train")).onclick = async () => {
         let batchSize = 64
-        let t = 1
+        let t = 4
         const train = (loop: number = 64) => {
             for (let j = 0; j < loop; j++) {
                 let fileIdx = Math.floor(Math.random() * trainDatas.length)
@@ -273,12 +273,12 @@ tf.setBackend("webgl").then(() => {
         const trainLoop = (epochs: number) => {
             test(batchSize).then(() => {
                 train(64)
-                if (epochs > 0) {
+                if (epochs - 1 > 0) {
                     trainLoop(epochs - 1)
                 }
             })
         }
-        trainLoop(64)
+        trainLoop(8)
     }
     ;(<HTMLButtonElement>document.getElementById("save-weights")).onclick = () => {
         tf.tidy(() => {
@@ -580,7 +580,17 @@ tf.setBackend("webgl").then(() => {
                     input_ctrl1 = [...input_ctrl1.slice(1), (arrow1 - 1) * 4 + attack1]
                     input_ctrl2 = [...input_ctrl2.slice(1), (arrow2 - 1) * 4 + attack2]
 
-                    tf.browser.toPixels(<tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0], [1, -1])).squeeze([0]), canvas)
+                    tf.browser.toPixels(
+                        <tf.Tensor3D>(
+                            tf.image
+                                .resizeNearestNeighbor(
+                                    <tf.Tensor3D>dec_fn(next_enc.slice([L - 1, 0], [1, -1])).squeeze([0]),
+                                    [64, 64]
+                                )
+                                .tile([1, 3, 1])
+                        ),
+                        canvas
+                    )
                 })
                 if (runTest) requestAnimationFrame(tt)
                 else input_enc.dispose()
