@@ -41,7 +41,8 @@
         "build:save-data": "parcel build --no-content-hash  ./src/save-data/index.html --out-dir build/save-data --public-url=./",
         "dev:rendering-engine": "parcel ./src/rendering-engine/index.html -p 8080 --open",
         "build:rendering-engine": "parcel build --no-content-hash  ./src/rendering-engine/index.html --out-dir build/rendering-engine --public-url=./",
-        "dev:engine-drive": "parcel ./src/engine-drive/index.html -p 8080 --open"
+        "dev:engine-drive": "parcel ./src/engine-drive/index.html -p 8080 --open",
+        "build:engine-drive": "parcel build --no-content-hash  ./src/engine-drive/index.html --out-dir build/engine-drive --public-url=./"
     },
     "keywords": [],
     "author": "",
